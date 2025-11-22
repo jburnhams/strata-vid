@@ -1,4 +1,24 @@
+import { FeatureCollection, Geometry, GeoJsonProperties } from 'geojson';
+
 export type AssetType = 'video' | 'gpx';
+
+export interface GpxStats {
+  distance: {
+    total: number; // meters
+  };
+  elevation: {
+    gain: number;
+    loss: number;
+    max: number;
+    min: number;
+    average: number;
+  };
+  time: {
+    start: Date;
+    end: Date;
+    duration: number; // milliseconds
+  };
+}
 
 export interface Asset {
   id: string;
@@ -6,6 +26,8 @@ export interface Asset {
   type: AssetType;
   src: string; // Blob URL
   file?: File; // Original file object
+  geoJson?: FeatureCollection<Geometry, GeoJsonProperties>;
+  stats?: GpxStats;
 }
 
 export interface Clip {

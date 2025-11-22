@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Asset } from '../types';
+import { MapPanel } from './MapPanel';
 
 interface PreviewPanelProps {
   activeAsset: Asset | null;
@@ -15,30 +16,21 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ activeAsset }) => {
   }, [activeAsset]);
 
   return (
-    <div className="preview">
+    <div className="relative w-full h-full bg-black flex items-center justify-center overflow-hidden">
       {activeAsset?.type === 'video' ? (
-        <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <div className="relative w-full h-full flex justify-center items-center">
           <video
             ref={videoRef}
             controls
-            style={{ maxWidth: '100%', maxHeight: '100%' }}
+            className="max-w-full max-h-full"
           />
-          {/* Map Overlay Placeholder */}
-          <div style={{
-            position: 'absolute',
-            top: '20px',
-            right: '20px',
-            background: 'rgba(0,0,0,0.5)',
-            border: '1px dashed #ce9178',
-            color: '#ce9178',
-            padding: '10px',
-            pointerEvents: 'none'
-          }}>
-            Map Overlay Layer
+          {/* Overlay Map - Positioned absolute (HUD style) */}
+          <div className="absolute top-4 right-4 w-64 h-48 border border-white/20 shadow-lg bg-black/50 backdrop-blur-sm z-10 rounded-lg overflow-hidden">
+             <MapPanel className="w-full h-full" zoom={13} />
           </div>
         </div>
       ) : (
-        <div style={{ textAlign: 'center', color: '#666' }}>
+        <div className="text-center text-gray-500">
           {activeAsset ? `Preview not available for ${activeAsset.type}` : 'Select a video to preview'}
         </div>
       )}

@@ -34,3 +34,24 @@ afterEach(() => {
 beforeEach(() => {
   installMatchMedia();
 });
+
+// Mock react-leaflet for component tests
+jest.mock('react-leaflet', () => ({
+  MapContainer: ({ children }: any) => (
+    <div data-testid="map-container">{children}</div>
+  ),
+  TileLayer: () => <div data-testid="tile-layer" />,
+  Marker: ({ children }: any) => <div data-testid="marker">{children}</div>,
+  Popup: ({ children }: any) => <div data-testid="popup">{children}</div>,
+  useMap: () => ({
+    setView: jest.fn(),
+    flyTo: jest.fn(),
+  }),
+}));
+
+// Mock ResizeObserver
+global.ResizeObserver = jest.fn().mockImplementation(() => ({
+  observe: jest.fn(),
+  unobserve: jest.fn(),
+  disconnect: jest.fn(),
+}));

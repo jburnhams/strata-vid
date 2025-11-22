@@ -1,30 +1,17 @@
 import { create } from 'zustand';
-import { Asset, Clip, ProjectState } from '../types';
+import { immer } from 'zustand/middleware/immer';
+import { createProjectSlice, ProjectSlice } from './slices/projectSlice';
+import { createAssetsSlice, AssetsSlice } from './slices/assetsSlice';
+import { createTimelineSlice, TimelineSlice } from './slices/timelineSlice';
+import { createPlaybackSlice, PlaybackSlice } from './slices/playbackSlice';
 
-interface ProjectActions {
-  addAsset: (asset: Asset) => void;
-  removeAsset: (id: string) => void;
-  selectAsset: (id: string | null) => void;
-  addClip: (clip: Clip) => void;
-  removeClip: (id: string) => void;
-  updateClip: (id: string, updates: Partial<Clip>) => void;
-}
+export type StoreState = ProjectSlice & AssetsSlice & TimelineSlice & PlaybackSlice;
 
-export const useProjectStore = create<ProjectState & ProjectActions>((set) => ({
-  assets: [],
-  timeline: [],
-  selectedAssetId: null,
-
-  addAsset: (asset) => set((state) => ({ assets: [...state.assets, asset] })),
-  removeAsset: (id) => set((state) => ({
-    assets: state.assets.filter((a) => a.id !== id),
-    timeline: state.timeline.filter((c) => c.assetId !== id)
-  })),
-  selectAsset: (id) => set({ selectedAssetId: id }),
-
-  addClip: (clip) => set((state) => ({ timeline: [...state.timeline, clip] })),
-  removeClip: (id) => set((state) => ({ timeline: state.timeline.filter((c) => c.id !== id) })),
-  updateClip: (id, updates) => set((state) => ({
-    timeline: state.timeline.map((c) => c.id === id ? { ...c, ...updates } : c)
-  })),
-}));
+export const useProjectStore = create<StoreState>()(
+  immer((...a) => ({
+    ...createProjectSlice(...a),
+    ...createAssetsSlice(...a),
+    ...createTimelineSlice(...a),
+    ...createPlaybackSlice(...a),
+  }))
+);

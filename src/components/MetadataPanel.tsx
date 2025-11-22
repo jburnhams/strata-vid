@@ -33,6 +33,22 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ activeAsset }) => 
              </div>
             )}
 
+            {activeAsset.type === 'gpx' && activeAsset.stats && (
+                <div style={{marginBottom: '1rem', paddingTop: '1rem', borderTop: '1px solid #444'}}>
+                  <h5 style={{marginBottom: '0.5rem', fontWeight: 'bold'}}>GPX Statistics</h5>
+                  <div style={{display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0.5rem', fontSize: '0.9rem'}}>
+                      <div className="text-gray-400">Distance:</div>
+                      <div>{(activeAsset.stats.distance.total / 1000).toFixed(2)} km</div>
+
+                      <div className="text-gray-400">Elev. Gain:</div>
+                      <div>{activeAsset.stats.elevation.gain.toFixed(0)} m</div>
+
+                      <div className="text-gray-400">Duration:</div>
+                      <div>{new Date(activeAsset.stats.time.duration).toISOString().substr(11, 8)}</div>
+                  </div>
+                </div>
+            )}
+
             <div style={{marginTop: '2rem', padding: '1rem', border: '1px dashed #555', borderRadius: '4px'}}>
               <h5>Map Properties (Placeholder)</h5>
               <label style={{display: 'block', marginTop: '0.5rem'}}>

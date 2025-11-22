@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import * as fs from 'fs';
 import * as path from 'path';
 import App from '@/src/App';
@@ -48,7 +48,7 @@ describe('Browser Integration Tests', () => {
       expect(screen.getByText('Timeline')).toBeInTheDocument();
     });
 
-    it('allows adding a video file to the library', () => {
+    it('allows adding a video file to the library', async () => {
       render(<App />);
 
       const input = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -62,8 +62,10 @@ describe('Browser Integration Tests', () => {
       fireEvent.change(input);
 
       // Verify it appears in the library (using getAllByText because it might be in Metadata too)
-      const items = screen.getAllByText('run_video.mp4');
-      expect(items.length).toBeGreaterThan(0);
+      await waitFor(() => {
+        const items = screen.getAllByText('run_video.mp4');
+        expect(items.length).toBeGreaterThan(0);
+      });
 
       // Verify preview is active (video element present)
       const video = document.querySelector('video');

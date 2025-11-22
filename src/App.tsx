@@ -5,6 +5,7 @@ import { MetadataPanel } from './components/MetadataPanel';
 import { TimelinePanel } from './components/TimelinePanel';
 import { useProjectStore } from './store/useProjectStore';
 import { AssetType, Asset } from './types';
+import { parseGpxFile } from './utils/gpxParser';
 
 function App() {
   const {
@@ -18,21 +19,35 @@ function App() {
 
   const activeAsset = assets.find(a => a.id === selectedAssetId) || null;
 
-  const handleAssetAdd = (fileList: FileList) => {
-    const newAssets = Array.from(fileList).map(file => {
+  const handleAssetAdd = async (fileList: FileList) => {
+    const newAssetsPromises = Array.from(fileList).map(async (file) => {
       const isVideo = file.type.startsWith('video/');
       const isGpx = file.name.toLowerCase().endsWith('.gpx');
       let type: AssetType = 'video';
       if (isGpx) type = 'gpx';
 
-      return {
+      const asset: Asset = {
         id: Math.random().toString(36).substr(2, 9),
         name: file.name,
         type,
         src: URL.createObjectURL(file),
         file
-      } as Asset;
+      };
+
+      if (isGpx) {
+        try {
+          const { geoJson, stats } = await parseGpxFile(file);
+          asset.geoJson = geoJson;
+          asset.stats = stats;
+        } catch (e) {
+          console.error('Error parsing GPX:', e);
+        }
+      }
+
+      return asset;
     });
+
+    const newAssets = await Promise.all(newAssetsPromises);
 
     newAssets.forEach(asset => {
         addAsset(asset);
@@ -81,7 +96,10 @@ function App() {
 
       {/* Preview */}
       <div className="[grid-area:preview] bg-black flex items-center justify-center relative overflow-hidden">
-        <PreviewPanel activeAsset={activeAsset} />
+        <PreviewPanel
+          activeAsset={activeAsset}
+          overlayAsset={assets.find(a => a.type === 'gpx')}
+        />
       </div>
 
       {/* Metadata */}

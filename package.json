@@ -20,6 +20,8 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@types/geojson": "^7946.0.16",
+    "@we-gold/gpxjs": "^1.1.0",
     "clsx": "^2.1.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.554.0",

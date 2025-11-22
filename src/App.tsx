@@ -4,19 +4,22 @@ import { PreviewPanel } from './components/PreviewPanel';
 import { MetadataPanel } from './components/MetadataPanel';
 import { TimelinePanel } from './components/TimelinePanel';
 import { useProjectStore } from './store/useProjectStore';
-import { AssetType, Asset } from './types';
+import { AssetType, Asset, Track } from './types';
 import { parseGpxFile } from './utils/gpxParser';
 
 function App() {
   const {
     assets,
-    timeline: clips,
+    clips: clipsRecord,
+    tracks,
     selectedAssetId,
     addAsset,
     selectAsset,
-    addClip
+    addClip,
+    addTrack
   } = useProjectStore();
 
+  const clips = Object.values(clipsRecord || {});
   const activeAsset = assets.find(a => a.id === selectedAssetId) || null;
 
   const handleAssetAdd = async (fileList: FileList) => {
@@ -52,12 +55,39 @@ function App() {
     newAssets.forEach(asset => {
         addAsset(asset);
         if (asset.type === 'video') {
-             // Placeholder logic: add to timeline
+             // Find or create a video track
+             let trackId = tracks.find(t => t.type === 'video')?.id;
+             if (!trackId) {
+                 trackId = Math.random().toString(36).substr(2, 9);
+                 const newTrack: Track = {
+                     id: trackId,
+                     type: 'video',
+                     label: 'Video Track 1',
+                     isMuted: false,
+                     isLocked: false,
+                     clips: []
+                 };
+                 addTrack(newTrack);
+             }
+
+             // Add clip to the track
              addClip({
                  id: Math.random().toString(36).substr(2, 9),
                  assetId: asset.id,
+                 trackId: trackId,
                  start: 0,
-                 duration: 10
+                 duration: asset.duration || 10,
+                 offset: 0,
+                 type: 'video',
+                 properties: {
+                     x: 0,
+                     y: 0,
+                     width: 100,
+                     height: 100,
+                     rotation: 0,
+                     opacity: 1,
+                     zIndex: 0
+                 }
              });
         }
     });

@@ -5,6 +5,7 @@ const baseConfig = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
     '^(\\.{1,2}/.*)\\.js$': '$1',
+    '\\.(css|less|scss|sass)$': '<rootDir>/tests/utils/styleMock.js',
   },
   transform: {
     '^.+\\.(ts|tsx|js|jsx)$': [

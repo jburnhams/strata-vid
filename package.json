@@ -1,9 +1,9 @@
 {
-  "name": "js-app-template",
+  "name": "strata-vid",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "A template for React + TypeScript web applications with comprehensive testing setup",
+  "description": "Browser-based video editor for stitching run videos with GPX data",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -29,6 +29,7 @@
     "@babel/preset-react": "^7.28.5",
     "@babel/preset-typescript": "^7.28.5",
     "@jest/globals": "^29.7.0",
+    "@playwright/test": "^1.56.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",

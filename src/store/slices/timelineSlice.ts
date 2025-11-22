@@ -1,62 +1,82 @@
 import { StateCreator } from 'zustand';
 import { TimelineSlice, StoreState } from '../types';
 
-export const createTimelineSlice: StateCreator<StoreState, [["zustand/immer", never]], [], TimelineSlice> = (set) => ({
-  tracks: [],
+export const createTimelineSlice: StateCreator<
+  StoreState,
+  [['zustand/immer', never]],
+  [],
+  TimelineSlice
+> = (set) => ({
+  tracks: {},
   clips: {},
-  addTrack: (track) => set((state) => {
-    state.tracks.push(track);
-  }),
-  removeTrack: (id) => set((state) => {
-    // Remove track
-    state.tracks = state.tracks.filter((t) => t.id !== id);
-    // Remove clips associated with track
-    const clipIdsToRemove = Object.values(state.clips)
-        .filter(c => c.trackId === id)
-        .map(c => c.id);
-
-    clipIdsToRemove.forEach(cId => {
-        delete state.clips[cId];
-    });
-  }),
-  addClip: (clip) => set((state) => {
-    state.clips[clip.id] = clip;
-    const track = state.tracks.find((t) => t.id === clip.trackId);
-    if (track) {
-      track.clips.push(clip.id);
-    }
-  }),
-  removeClip: (id) => set((state) => {
-    const clip = state.clips[id];
-    if (clip) {
-      const track = state.tracks.find((t) => t.id === clip.trackId);
+  trackOrder: [],
+  addTrack: (track) =>
+    set((state) => {
+      state.tracks[track.id] = track;
+      state.trackOrder.push(track.id);
+    }),
+  removeTrack: (id) =>
+    set((state) => {
+      // Remove clips associated with the track
+      const track = state.tracks[id];
       if (track) {
-        track.clips = track.clips.filter((cId) => cId !== id);
+        track.clips.forEach((clipId) => {
+          delete state.clips[clipId];
+        });
+      }
+      delete state.tracks[id];
+      state.trackOrder = state.trackOrder.filter((tId) => tId !== id);
+    }),
+  addClip: (clip) =>
+    set((state) => {
+      state.clips[clip.id] = clip;
+      const track = state.tracks[clip.trackId];
+      if (track) {
+        track.clips.push(clip.id);
+      }
+    }),
+  removeClip: (id) =>
+    set((state) => {
+      const clip = state.clips[id];
+      if (clip) {
+        const track = state.tracks[clip.trackId];
+        if (track) {
+          track.clips = track.clips.filter((cId) => cId !== id);
+        }
       }
       delete state.clips[id];
-    }
-  }),
-  updateClip: (id, updates) => set((state) => {
-    if (state.clips[id]) {
-      state.clips[id] = { ...state.clips[id], ...updates };
-    }
-  }),
-  moveClip: (clipId, trackId, newStart) => set((state) => {
-    const clip = state.clips[clipId];
-    if (clip) {
-      // Remove from old track
-      if (clip.trackId !== trackId) {
-        const oldTrack = state.tracks.find((t) => t.id === clip.trackId);
-        if (oldTrack) {
-          oldTrack.clips = oldTrack.clips.filter((cId) => cId !== clipId);
+    }),
+  moveClip: (id, newStart, newTrackId) =>
+    set((state) => {
+      const clip = state.clips[id];
+      if (!clip) return;
+
+      // If changing tracks
+      if (newTrackId && newTrackId !== clip.trackId) {
+        const oldTrack = state.tracks[clip.trackId];
+        const newTrack = state.tracks[newTrackId];
+
+        if (oldTrack && newTrack) {
+          // Remove from old track
+          oldTrack.clips = oldTrack.clips.filter((cId) => cId !== id);
+          // Add to new track
+          newTrack.clips.push(id);
+          // Update clip
+          clip.trackId = newTrackId;
         }
-        const newTrack = state.tracks.find((t) => t.id === trackId);
-        if (newTrack) {
-          newTrack.clips.push(clipId);
-        }
-        clip.trackId = trackId;
       }
+
+      // Update start time
       clip.start = newStart;
-    }
-  }),
+    }),
+  resizeClip: (id, newDuration, newOffset) =>
+    set((state) => {
+      const clip = state.clips[id];
+      if (!clip) return;
+
+      clip.duration = newDuration;
+      if (newOffset !== undefined) {
+        clip.offset = newOffset;
+      }
+    }),
 });

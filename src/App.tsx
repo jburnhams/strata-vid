@@ -9,9 +9,9 @@ import { parseGpxFile } from './utils/gpxParser';
 
 function App() {
   const {
-    assets,
+    assets: assetsRecord,
     clips: clipsRecord,
-    tracks,
+    tracks: tracksRecord,
     selectedAssetId,
     addAsset,
     selectAsset,
@@ -19,7 +19,11 @@ function App() {
     addTrack
   } = useProjectStore();
 
+  // Convert Records to Arrays for UI consumption and logic
+  const assets = Object.values(assetsRecord || {});
   const clips = Object.values(clipsRecord || {});
+  const tracks = Object.values(tracksRecord || {});
+
   const activeAsset = assets.find(a => a.id === selectedAssetId) || null;
 
   const handleAssetAdd = async (fileList: FileList) => {

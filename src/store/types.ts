@@ -1,12 +1,13 @@
-import { ProjectSettings, Asset, Track, Clip } from '../types';
+import { Asset, Clip, Track, ProjectSettings } from '../types';
 
 export interface ProjectSlice {
+  id: string;
   settings: ProjectSettings;
-  updateSettings: (settings: Partial<ProjectSettings>) => void;
+  setSettings: (settings: Partial<ProjectSettings>) => void;
 }
 
 export interface AssetsSlice {
-  assets: Asset[];
+  assets: Record<string, Asset>;
   selectedAssetId: string | null;
   addAsset: (asset: Asset) => void;
   removeAsset: (id: string) => void;
@@ -14,23 +15,22 @@ export interface AssetsSlice {
 }
 
 export interface TimelineSlice {
-  tracks: Track[];
+  tracks: Record<string, Track>;
   clips: Record<string, Clip>;
+  trackOrder: string[]; // Array of Track IDs to maintain order
   addTrack: (track: Track) => void;
   removeTrack: (id: string) => void;
   addClip: (clip: Clip) => void;
   removeClip: (id: string) => void;
-  updateClip: (id: string, updates: Partial<Clip>) => void;
-  moveClip: (clipId: string, trackId: string, newStart: number) => void;
+  moveClip: (id: string, newStart: number, newTrackId?: string) => void;
+  resizeClip: (id: string, newDuration: number, newOffset?: number) => void;
 }
 
 export interface PlaybackSlice {
   currentTime: number;
   isPlaying: boolean;
   playbackRate: number;
-  setPlaybackTime: (time: number) => void;
-  setIsPlaying: (isPlaying: boolean) => void;
-  setPlaybackRate: (rate: number) => void;
+  setPlaybackState: (state: Partial<Omit<PlaybackSlice, 'setPlaybackState'>>) => void;
 }
 
 export type StoreState = ProjectSlice & AssetsSlice & TimelineSlice & PlaybackSlice;

@@ -70,6 +70,8 @@ export interface ProjectSettings {
   duration: number; // Total project duration in seconds
 }
 
+// Note: The full Project State structure including slices is defined in src/store/types.ts
+// This interface below might be deprecated or used as a snapshot type.
 export interface ProjectState {
   id: string;
   settings: ProjectSettings;
@@ -77,8 +79,6 @@ export interface ProjectState {
   tracks: Track[];
   clips: Record<string, Clip>; // Map of ID -> Clip for easy access
   selectedAssetId: string | null;
-
-  // Playback State (could be separated, but putting here for now as per overview)
   currentTime: number;
   isPlaying: boolean;
   playbackRate: number;

@@ -23,6 +23,7 @@
     "@types/geojson": "^7946.0.16",
     "@we-gold/gpxjs": "^1.1.0",
     "clsx": "^2.1.1",
+    "immer": "^10.2.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.554.0",
     "mediabunny": "^1.25.1",

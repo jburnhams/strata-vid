@@ -2,8 +2,8 @@ import { StateCreator } from 'zustand';
 import { StoreState } from '../types';
 
 export const historyMiddleware = (
-  config: StateCreator<StoreState, [['zustand/immer', never]], []>
-): StateCreator<StoreState, [['zustand/immer', never]], []> => {
+  config: StateCreator<StoreState, [], [['zustand/immer', never]]>
+): StateCreator<StoreState, [], [['zustand/immer', never]]> => {
   return (set, get, api) => {
     const past: StoreState[] = [];
     const future: StoreState[] = [];
@@ -39,7 +39,7 @@ export const historyMiddleware = (
         const currentState = get();
 
         // Apply the update
-        set(args, ...rest);
+        (set as any)(args, ...rest);
 
         const nextState = get();
 

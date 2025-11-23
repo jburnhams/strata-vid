@@ -3,7 +3,7 @@
 **Priority**: High (MVP)
 **Goal**: Properly render all clip types (video, image, text, map) in preview.
 **Dependencies**: Section A (playback foundation)
-**Status**: 🟨 Partially implemented
+**Status**: 🟢 Complete
 
 ## Overview
 
@@ -14,10 +14,10 @@ Extend the preview panel to handle multiple simultaneous clips with proper layer
 ### C1: Layer composition (2-3 hours)
 **Files**: `src/components/PreviewPanel.tsx`
 
-- [ ] Render clips in correct z-order (track order + clip zIndex)
-- [ ] Support multiple simultaneous video tracks (warning: browser limits ~6-10 video elements)
-- [ ] Implement basic blend modes if needed (CSS mix-blend-mode)
-- [ ] Handle clips on different tracks overlaying correctly
+- [x] Render clips in correct z-order (track order + clip zIndex)
+- [x] Support multiple simultaneous video tracks (warning: browser limits ~6-10 video elements)
+- [x] Implement basic blend modes if needed (CSS mix-blend-mode)
+- [x] Handle clips on different tracks overlaying correctly
 
 **Acceptance**: Multiple clips render simultaneously in correct stacking order.
 
@@ -26,15 +26,15 @@ Extend the preview panel to handle multiple simultaneous clips with proper layer
 ### C2: Video clip rendering (3-4 hours)
 **Files**: `src/components/preview/VideoPlayer.tsx`
 
-- [ ] Apply `properties` to video element:
+- [x] Apply `properties` to video element:
   - Position: `transform: translate(x%, y%)`
   - Scale: `transform: scale()`
   - Opacity: `opacity: 0-1`
   - Rotation: `transform: rotate(deg)`
   - Use CSS transforms for performance
-- [ ] Handle edge case: clip offset beyond video duration (show placeholder or last frame)
-- [ ] Multiple video elements if multiple video tracks active
-- [ ] Optimize: reuse video elements when possible
+- [x] Handle edge case: clip offset beyond video duration (show placeholder or last frame)
+- [x] Multiple video elements if multiple video tracks active
+- [x] Optimize: reuse video elements when possible
 
 **Acceptance**: Video transforms (position, rotation, opacity) work in preview.
 
@@ -43,10 +43,10 @@ Extend the preview panel to handle multiple simultaneous clips with proper layer
 ### C3: Image overlay rendering (2-3 hours)
 **Files**: `src/components/preview/OverlayRenderer.tsx`
 
-- [ ] Load and cache images (use Map to store loaded images)
-- [ ] Render as `<img>` with absolute positioning
-- [ ] Apply transform properties (same as video)
-- [ ] Handle image loading states (spinner while loading)
+- [x] Load and cache images (use Map to store loaded images)
+- [x] Render as `<img>` with absolute positioning
+- [x] Apply transform properties (same as video)
+- [x] Handle image loading states (spinner while loading)
 
 **Acceptance**: Image overlays render with correct position and transforms.
 
@@ -55,14 +55,14 @@ Extend the preview panel to handle multiple simultaneous clips with proper layer
 ### C4: Text overlay rendering (3-4 hours)
 **Files**: `src/components/preview/OverlayRenderer.tsx`
 
-- [ ] Render text content as styled `<div>`
-- [ ] Support basic styling:
+- [x] Render text content as styled `<div>`
+- [x] Support basic styling:
   - Font family, size, weight
   - Color, background color
   - Text alignment
   - Padding, border
-- [ ] Apply position and transform properties
-- [ ] Make text properties editable in metadata panel (defer to Section G if needed)
+- [x] Apply position and transform properties
+- [x] Make text properties editable in metadata panel (defer to Section G if needed)
 
 **Acceptance**: Text overlays render with customizable style and position.
 
@@ -83,14 +83,14 @@ Extend the preview panel to handle multiple simultaneous clips with proper layer
 ### C6: Preview quality settings (2-3 hours)
 **Files**: `src/components/PreviewPanel.tsx`, `src/store/slices/projectSlice.ts`
 
-- [ ] Add quality toggle: Low / Medium / High
-- [ ] Scale preview resolution for performance:
+- [x] Add quality toggle: Low / Medium / High
+- [x] Scale preview resolution for performance:
   - Low: 480p (scale down 50%)
   - Medium: 720p (scale down 25%)
   - High: Full resolution
-- [ ] Maintain aspect ratio
-- [ ] Update preview canvas/container size based on quality
-- [ ] Store preference in `projectSettings.previewQuality`
+- [x] Maintain aspect ratio
+- [x] Update preview canvas/container size based on quality
+- [x] Store preference in `projectSettings.previewQuality`
 
 **Acceptance**: Can toggle preview quality, lower quality improves performance.
 
@@ -99,11 +99,11 @@ Extend the preview panel to handle multiple simultaneous clips with proper layer
 ### C7: Safe area guides (1-2 hours, optional)
 **Files**: `src/components/preview/SafeAreaGuides.tsx` (new)
 
-- [ ] Toggle-able overlay showing title/action safe areas (90% / 80%)
-- [ ] Grid overlay option (3x3 or rule of thirds)
-- [ ] Center guides (crosshairs)
-- [ ] Semi-transparent lines, don't interfere with content
-- [ ] Toggle button in preview panel header
+- [x] Toggle-able overlay showing title/action safe areas (90% / 80%)
+- [x] Grid overlay option (3x3 or rule of thirds)
+- [x] Center guides (crosshairs)
+- [x] Semi-transparent lines, don't interfere with content
+- [x] Toggle button in preview panel header
 
 **Acceptance**: Safe area guides visible when enabled, help with composition.
 
@@ -112,15 +112,15 @@ Extend the preview panel to handle multiple simultaneous clips with proper layer
 ## Testing
 
 ### Manual Testing
-- [ ] Multiple clips render simultaneously
-- [ ] Video transforms work (drag, scale, rotate in metadata panel - Section G)
-- [ ] Image overlays appear correctly
-- [ ] Text overlays with custom styles work
-- [ ] Preview quality toggle changes resolution
-- [ ] Safe area guides toggle works
+- [x] Multiple clips render simultaneously
+- [x] Video transforms work (drag, scale, rotate in metadata panel - Section G)
+- [x] Image overlays appear correctly
+- [x] Text overlays with custom styles work
+- [x] Preview quality toggle changes resolution
+- [x] Safe area guides toggle works
 
 ### Unit Tests
-- `tests/unit/components/preview/OverlayRenderer.test.tsx` - Test clip type rendering
+- [x] `tests/unit/components/preview/OverlayRenderer.test.tsx` - Test clip type rendering
 
 ---
 

@@ -45,7 +45,8 @@ describe('Timeline Integration', () => {
     render(<App />);
 
     // 1. Upload a video
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    // Select the library input (accepts video/gpx), not the project load input
+    const input = document.querySelector('input[accept*="video"]') as HTMLInputElement;
     const file = new File(['content'], 'test-video.mp4', { type: 'video/mp4' });
     await user.upload(input, file);
 

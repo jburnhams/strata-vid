@@ -23,9 +23,38 @@ export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, c
   };
 
   if (clip.type === 'text') {
+    const textStyle: React.CSSProperties = clip.textStyle
+      ? {
+          fontFamily: clip.textStyle.fontFamily,
+          fontSize: `${clip.textStyle.fontSize}px`,
+          fontWeight: clip.textStyle.fontWeight,
+          color: clip.textStyle.color,
+          backgroundColor: clip.textStyle.backgroundColor,
+          textAlign: clip.textStyle.textAlign,
+        }
+      : {
+          color: 'white',
+          fontSize: '24px',
+          fontWeight: 'bold',
+          textAlign: 'center',
+          textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+        };
+
     return (
-      <div style={style} className="flex items-center justify-center">
-        <p className="text-white text-xl font-bold drop-shadow-md">{clip.content}</p>
+      <div
+        style={{
+          ...style,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent:
+            textStyle.textAlign === 'left'
+              ? 'flex-start'
+              : textStyle.textAlign === 'right'
+              ? 'flex-end'
+              : 'center',
+        }}
+      >
+        <p style={{ ...textStyle, width: '100%', margin: 0 }}>{clip.content}</p>
       </div>
     );
   }

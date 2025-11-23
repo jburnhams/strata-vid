@@ -54,7 +54,8 @@ describe('App', () => {
     const user = userEvent.setup();
     render(<App />);
 
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    // Select the library input (accepts video/gpx), not the project load input
+    const input = document.querySelector('input[accept*="video"]') as HTMLInputElement;
     const file = new File(['content'], 'video.mp4', { type: 'video/mp4' });
 
     await user.upload(input, file);
@@ -72,7 +73,8 @@ describe('App', () => {
     render(<App />);
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
 
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    // Select the library input (accepts video/gpx)
+    const input = document.querySelector('input[accept*="video"]') as HTMLInputElement;
     // Use a valid file extension to pass 'accept' attribute check in LibraryPanel
     const file = new File(['content'], 'video.mp4', { type: 'video/mp4' });
 

@@ -1,105 +1,227 @@
 import React, { useState, useEffect } from 'react';
-import { ExportManager, ExportProgress } from '../services/ExportManager';
+import { ExportManager, ExportProgress, ExportSettings } from '../services/ExportManager';
 import { useProjectStore } from '../store/useProjectStore';
+import { Download, Settings, AlertCircle, CheckCircle, XCircle, X } from 'lucide-react';
 
 interface ExportModalProps {
   onClose: () => void;
 }
 
+const PRESETS = [
+    { name: '720p HD', width: 1280, height: 720, bitrate: 4_000_000 },
+    { name: '1080p Full HD', width: 1920, height: 1080, bitrate: 8_000_000 },
+    { name: '4K UHD', width: 3840, height: 2160, bitrate: 20_000_000 },
+];
+
 export const ExportModal: React.FC<ExportModalProps> = ({ onClose }) => {
-  const [progress, setProgress] = useState<ExportProgress | null>(null);
+  const [step, setStep] = useState<'settings' | 'progress'>('settings');
   const [manager] = useState(() => new ExportManager());
 
-  // We need the current state, but we don't want to re-render if it changes during export
-  // We just capture it once.
   const projectState = useProjectStore.getState();
 
-  useEffect(() => {
-    // Start export
-    const runExport = async () => {
-        try {
-            const blob = await manager.exportProject(
-                {
-                    id: projectState.id,
-                    settings: projectState.settings,
-                    assets: projectState.assets,
-                    tracks: projectState.tracks,
-                    clips: projectState.clips,
-                    trackOrder: projectState.trackOrder
-                },
-                setProgress
-            );
-            if (blob) {
-                // Download
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `strata-project-${new Date().getTime()}.mp4`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }
-        } catch (e) {
-            console.error('Export error:', e);
+  const [settings, setSettings] = useState<ExportSettings>({
+    width: projectState.settings.width,
+    height: projectState.settings.height,
+    fps: projectState.settings.fps,
+    videoBitrate: 6_000_000
+  });
+
+  const [progress, setProgress] = useState<ExportProgress | null>(null);
+
+  const handlePresetChange = (width: number, height: number, bitrate: number) => {
+      setSettings(s => ({ ...s, width, height, videoBitrate: bitrate }));
+  };
+
+  const handleExport = async () => {
+     setStep('progress');
+     try {
+        const blob = await manager.exportProject({
+             id: projectState.id,
+             settings: projectState.settings,
+             assets: projectState.assets,
+             tracks: projectState.tracks,
+             clips: projectState.clips,
+             trackOrder: projectState.trackOrder
+        }, settings, setProgress);
+
+        if (blob) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `strata-${projectState.id || 'project'}-${new Date().toISOString().slice(0,10)}.mp4`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
-    };
+     } catch (e) {
+         console.error("Export error", e);
+     }
+  };
 
-    // Defer slightly to allow UI to mount
-    setTimeout(runExport, 100);
-
-    return () => {
-        manager.cancel();
-    };
+  useEffect(() => {
+      return () => {
+          manager.cancel();
+      };
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
-      <div className="bg-neutral-800 p-6 rounded-lg w-96 text-white shadow-xl border border-neutral-700">
-        <h2 className="text-xl font-bold mb-4">Exporting Project</h2>
-
-        {progress ? (
-            <div className="space-y-4">
-                <div className="flex justify-between text-xs text-neutral-400">
-                    <span>{progress.status === 'initializing' ? 'Initializing...' :
-                           progress.status === 'encoding' ? 'Encoding...' :
-                           progress.status === 'completed' ? 'Done' :
-                           progress.status === 'cancelled' ? 'Cancelled' :
-                           progress.status === 'error' ? 'Failed' :
-                           `Rendering Frame ${progress.currentFrame} / ${progress.totalFrames}`}
-                    </span>
-                    <span>{Math.round(progress.percentage)}%</span>
-                </div>
-
-                <div className="w-full bg-neutral-700 h-2 rounded-full overflow-hidden">
-                    <div
-                        className={`h-full transition-all duration-300 ${
-                            progress.status === 'error' ? 'bg-red-500' :
-                            progress.status === 'completed' ? 'bg-green-500' :
-                            'bg-blue-500'
-                        }`}
-                        style={{ width: `${progress.percentage}%` }}
-                    />
-                </div>
-
-                {progress.status === 'completed' && (
-                    <div className="text-green-500 font-bold text-center py-2">Export Complete!</div>
-                )}
-                {progress.status === 'error' && (
-                    <div className="text-red-500 font-bold text-center py-2 text-sm">Error: {progress.error}</div>
-                )}
-            </div>
-        ) : (
-            <div className="text-neutral-400 text-sm">Starting export engine...</div>
-        )}
-
-        <div className="mt-6 flex justify-end gap-2">
-            {progress?.status === 'completed' || progress?.status === 'error' || progress?.status === 'cancelled' ? (
-                <button onClick={onClose} className="px-4 py-2 bg-neutral-600 hover:bg-neutral-500 rounded text-sm font-medium">Close</button>
-            ) : (
-                <button onClick={() => { manager.cancel(); onClose(); }} className="px-4 py-2 bg-red-600/80 hover:bg-red-500 rounded text-sm font-medium">Cancel</button>
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm">
+      <div className="bg-neutral-800 rounded-xl w-[480px] text-white shadow-2xl border border-neutral-700 flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-neutral-700 flex justify-between items-center bg-neutral-800">
+            <h2 className="text-lg font-bold flex items-center gap-2">
+                {step === 'settings' ? <Settings size={20} /> : <Download size={20} />}
+                {step === 'settings' ? 'Export Settings' : 'Exporting Project'}
+            </h2>
+            {step === 'settings' && (
+                <button onClick={onClose} className="text-neutral-400 hover:text-white">
+                    <X size={20} />
+                </button>
             )}
         </div>
+
+        {step === 'settings' ? (
+            <div className="p-6 space-y-6">
+                {/* Presets */}
+                <div className="space-y-2">
+                    <label className="text-xs font-medium text-neutral-400 uppercase tracking-wider">Resolution Preset</label>
+                    <div className="grid grid-cols-3 gap-2">
+                        {PRESETS.map(p => (
+                            <button
+                                key={p.name}
+                                onClick={() => handlePresetChange(p.width, p.height, p.bitrate)}
+                                className={`px-3 py-2 rounded text-sm font-medium border transition-colors ${
+                                    settings.width === p.width && settings.height === p.height
+                                    ? 'bg-blue-600 border-blue-500 text-white'
+                                    : 'bg-neutral-700 border-neutral-600 text-neutral-300 hover:bg-neutral-600'
+                                }`}
+                            >
+                                {p.name}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Custom Settings */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                         <label className="text-xs text-neutral-400">Width</label>
+                         <input
+                            type="number"
+                            value={settings.width}
+                            onChange={e => setSettings({...settings, width: Number(e.target.value)})}
+                            className="w-full bg-neutral-900 border border-neutral-700 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none"
+                         />
+                    </div>
+                    <div className="space-y-1">
+                         <label className="text-xs text-neutral-400">Height</label>
+                         <input
+                            type="number"
+                            value={settings.height}
+                            onChange={e => setSettings({...settings, height: Number(e.target.value)})}
+                            className="w-full bg-neutral-900 border border-neutral-700 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none"
+                         />
+                    </div>
+                    <div className="space-y-1">
+                         <label className="text-xs text-neutral-400">FPS</label>
+                         <select
+                            value={settings.fps}
+                            onChange={e => setSettings({...settings, fps: Number(e.target.value)})}
+                            className="w-full bg-neutral-900 border border-neutral-700 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none"
+                         >
+                             <option value="24">24 fps</option>
+                             <option value="30">30 fps</option>
+                             <option value="60">60 fps</option>
+                         </select>
+                    </div>
+                    <div className="space-y-1">
+                         <label className="text-xs text-neutral-400">Bitrate (Mbps)</label>
+                         <input
+                            type="number"
+                            value={Math.round((settings.videoBitrate || 6000000) / 1000000)}
+                            onChange={e => setSettings({...settings, videoBitrate: Number(e.target.value) * 1000000})}
+                            className="w-full bg-neutral-900 border border-neutral-700 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none"
+                         />
+                    </div>
+                </div>
+
+                <div className="pt-4 flex justify-end gap-3">
+                    <button onClick={onClose} className="px-4 py-2 text-neutral-300 hover:text-white font-medium">Cancel</button>
+                    <button
+                        onClick={handleExport}
+                        className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium shadow-lg shadow-blue-900/20"
+                    >
+                        Start Export
+                    </button>
+                </div>
+            </div>
+        ) : (
+            <div className="p-6 space-y-6">
+                {/* Progress View */}
+                {progress ? (
+                    <div className="space-y-4">
+                         <div className="flex items-center justify-between">
+                             <div className="flex items-center gap-2">
+                                 {progress.status === 'rendering' && <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />}
+                                 {progress.status === 'encoding' && <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />}
+                                 {progress.status === 'completed' && <CheckCircle size={16} className="text-green-500" />}
+                                 {progress.status === 'error' && <AlertCircle size={16} className="text-red-500" />}
+                                 <span className="text-sm font-medium capitalize">
+                                     {progress.status === 'initializing' ? 'Initializing...' :
+                                      progress.status === 'encoding' ? 'Encoding...' :
+                                      progress.status === 'completed' ? 'Done' :
+                                      progress.status === 'cancelled' ? 'Cancelled' :
+                                      progress.status === 'error' ? 'Failed' :
+                                      'Rendering...'}
+                                 </span>
+                             </div>
+                             <span className="text-sm font-mono text-neutral-400">{Math.round(progress.percentage)}%</span>
+                         </div>
+
+                         <div className="w-full bg-neutral-700 h-3 rounded-full overflow-hidden relative">
+                             <div
+                                className={`h-full transition-all duration-300 ease-out ${
+                                    progress.status === 'completed' ? 'bg-green-500' :
+                                    progress.status === 'error' ? 'bg-red-500' :
+                                    'bg-blue-500'
+                                }`}
+                                style={{ width: `${progress.percentage}%` }}
+                             />
+                         </div>
+
+                         <div className="text-center text-xs text-neutral-500">
+                             Frame {progress.currentFrame} / {progress.totalFrames}
+                         </div>
+
+                         {progress.status === 'completed' && (
+                             <div className="text-green-500 font-bold text-center py-2">Export Complete!</div>
+                         )}
+
+                         {progress.status === 'error' && (
+                             <div className="p-3 bg-red-900/20 border border-red-900/50 rounded text-red-200 text-xs">
+                                 {progress.error}
+                             </div>
+                         )}
+                    </div>
+                ) : (
+                    <div className="text-center text-neutral-400 py-8">Initializing export engine...</div>
+                )}
+
+                <div className="flex justify-end">
+                    {progress?.status === 'completed' ? (
+                        <button onClick={onClose} className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 rounded text-white font-medium">Close</button>
+                    ) : (
+                        <button
+                            onClick={() => { manager.cancel(); onClose(); }}
+                            className="px-4 py-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded font-medium"
+                        >
+                            Cancel
+                        </button>
+                    )}
+                </div>
+            </div>
+        )}
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { createProjectSlice } from './slices/projectSlice';
 import { createAssetsSlice } from './slices/assetsSlice';
 import { createTimelineSlice } from './slices/timelineSlice';
 import { createPlaybackSlice } from './slices/playbackSlice';
+import { createUiSlice } from './slices/uiSlice';
 
 export const useProjectStore = create<StoreState>()(
   immer((set, get, store) => ({
@@ -12,5 +13,6 @@ export const useProjectStore = create<StoreState>()(
     ...createAssetsSlice(set, get, store),
     ...createTimelineSlice(set, get, store),
     ...createPlaybackSlice(set, get, store),
+    ...createUiSlice(set, get, store),
   }))
 );

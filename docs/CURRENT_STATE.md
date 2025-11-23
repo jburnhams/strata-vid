@@ -20,7 +20,7 @@
 - ✅ Can display asset list
 - ✅ File upload button exists
 - ✅ Asset selection works
-- ❌ No thumbnails/previews
+- ✅ Asset thumbnails/previews
 - ❌ No asset management (delete, rename)
 
 #### Preview Panel
@@ -42,9 +42,9 @@
 - ❌ Ruler exists but may need refinement
 
 #### Metadata Panel
-- ✅ Shows basic asset info
+- ✅ Shows comprehensive asset info (thumbnails, resolution, duration)
+- ✅ GPX-specific metadata display (distance, elevation)
 - ❌ No editing capabilities
-- ❌ GPX-specific metadata display incomplete
 
 ### ❌ Not Yet Implemented
 
@@ -64,10 +64,11 @@
 #### User Experience
 - No project save/load
 - No undo/redo
-- No error messages or validation
-- No loading states
+- ✅ Error messages (Toast notifications)
+- ✅ Loading states (Overlay)
 - ✅ Keyboard shortcuts (Basic playback)
-- No tooltips or help
+- ✅ Tooltips
+- ❌ Help modal
 
 ## Critical Gaps for MVP
 

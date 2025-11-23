@@ -1,5 +1,6 @@
 import React from 'react';
 import { Asset } from '../types';
+import { Tooltip } from './Tooltip';
 
 interface LibraryPanelProps {
   assets: Asset[];
@@ -27,16 +28,18 @@ export const LibraryPanel: React.FC<LibraryPanelProps> = ({
     <div className="library">
       <div className="panel-header">
         <span>Library</span>
-        <label className="btn btn-primary" style={{cursor: 'pointer'}}>
-          + Add
-          <input
-            type="file"
-            multiple
-            accept="video/*,.gpx"
-            style={{display: 'none'}}
-            onChange={handleFileChange}
-          />
-        </label>
+        <Tooltip content="Add video or GPX files" position="bottom">
+            <label className="btn btn-primary" style={{cursor: 'pointer'}}>
+            + Add
+            <input
+                type="file"
+                multiple
+                accept="video/*,.gpx"
+                style={{display: 'none'}}
+                onChange={handleFileChange}
+            />
+            </label>
+        </Tooltip>
       </div>
       <div className="panel-content">
         {assets.length === 0 && <div style={{color: '#666', fontStyle: 'italic'}}>No assets loaded</div>}
@@ -45,20 +48,25 @@ export const LibraryPanel: React.FC<LibraryPanelProps> = ({
             <li
               key={asset.id}
               onClick={() => onAssetSelect(asset.id)}
-              style={{
-                padding: '8px',
-                cursor: 'pointer',
-                backgroundColor: asset.id === selectedAssetId ? '#37373d' : 'transparent',
-                marginBottom: '4px',
-                borderRadius: '4px',
-                borderLeft: `3px solid ${asset.type === 'video' ? '#007acc' : '#ce9178'}`
-              }}
+              className={`p-2 cursor-pointer mb-1 rounded flex gap-2 items-center ${
+                asset.id === selectedAssetId ? 'bg-neutral-700' : 'hover:bg-neutral-800'
+              } border-l-4 ${asset.type === 'video' ? 'border-blue-500' : 'border-orange-500'}`}
             >
-              <div style={{fontWeight: 'bold', fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>
-                {asset.name}
-              </div>
-              <div style={{fontSize: '0.8rem', color: '#999'}}>
-                {asset.type.toUpperCase()}
+              {asset.thumbnail && (
+                <img
+                  src={asset.thumbnail}
+                  alt={asset.name}
+                  className="w-12 h-12 object-cover rounded bg-black"
+                />
+              )}
+              <div className="flex-1 overflow-hidden">
+                <div className="font-bold text-sm truncate" title={asset.name}>
+                  {asset.name}
+                </div>
+                <div className="text-xs text-neutral-400">
+                  {asset.type.toUpperCase()}
+                  {asset.duration ? ` • ${Math.round(asset.duration)}s` : ''}
+                </div>
               </div>
             </li>
           ))}

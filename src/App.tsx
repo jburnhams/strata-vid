@@ -3,14 +3,18 @@ import { LibraryPanel } from './components/LibraryPanel';
 import { PreviewPanel } from './components/PreviewPanel';
 import { MetadataPanel } from './components/MetadataPanel';
 import { TimelinePanel } from './components/TimelinePanel';
+import { ProjectMenu } from './components/ProjectMenu';
+import { EditMenu } from './components/EditMenu';
 import { useProjectStore } from './store/useProjectStore';
 import { AssetType, Asset, Track } from './types';
 import { AssetLoader } from './services/AssetLoader';
 import { ExportModal } from './components/ExportModal';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { useAutoSave } from './hooks/useAutoSave';
 
 function App() {
   useKeyboardShortcuts();
+  useAutoSave();
   const [showExport, setShowExport] = React.useState(false);
   const {
     assets: assetsRecord,
@@ -98,8 +102,8 @@ function App() {
       {/* Header */}
       <div className="[grid-area:header] border-b border-neutral-700 bg-neutral-800 flex items-center px-4 gap-4">
         <span className="font-bold text-lg">Strata Vid</span>
-        <button className="px-3 py-1 text-sm hover:bg-neutral-700 rounded">File</button>
-        <button className="px-3 py-1 text-sm hover:bg-neutral-700 rounded">Edit</button>
+        <ProjectMenu />
+        <EditMenu />
         <button className="px-3 py-1 text-sm hover:bg-neutral-700 rounded">View</button>
         <button
           className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-500 rounded font-medium ml-4"

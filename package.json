@@ -43,6 +43,7 @@
     "@babel/preset-react": "^7.28.5",
     "@babel/preset-typescript": "^7.28.5",
     "@jest/globals": "^29.7.0",
+    "@napi-rs/canvas": "^0.1.82",
     "@playwright/test": "^1.56.1",
     "@tailwindcss/postcss": "^4.1.17",
     "@testing-library/jest-dom": "^6.9.1",

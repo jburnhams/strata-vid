@@ -10,6 +10,13 @@ export interface ExportProgress {
   error?: string;
 }
 
+export interface ExportSettings {
+  width: number;
+  height: number;
+  fps: number;
+  videoBitrate?: number;
+}
+
 export type ProgressCallback = (progress: ExportProgress) => void;
 
 export class ExportManager {
@@ -33,11 +40,20 @@ export class ExportManager {
         clips: Record<string, Clip>;
         trackOrder: string[];
     },
+    exportSettings: ExportSettings,
     onProgress: ProgressCallback
   ): Promise<Blob | null> {
     this.isCancelled = false;
 
-    const { width, height, fps, duration } = project.settings;
+    // Verify WebCodecs support
+    if (typeof VideoEncoder === 'undefined') {
+        const error = 'WebCodecs API is not supported in this browser. Please use Chrome, Edge, or a modern browser.';
+        onProgress({ currentFrame: 0, totalFrames: 0, percentage: 0, status: 'error', error });
+        throw new Error(error);
+    }
+
+    const { width, height, fps } = exportSettings;
+    const duration = project.settings.duration;
     const totalFrames = Math.ceil(duration * fps);
 
     // 1. Initialize Compositor
@@ -65,6 +81,7 @@ export class ExportManager {
     const videoSource = new CanvasSource(canvas as any, {
         codec: 'avc',
         frameRate: fps,
+        bitrate: exportSettings.videoBitrate || 4_000_000, // Default 4Mbps
     } as any);
 
     output.addVideoTrack(videoSource);
@@ -79,7 +96,7 @@ export class ExportManager {
           tracks: orderedTracks,
           clips: project.clips,
           assets: project.assets,
-          settings: project.settings
+          settings: project.settings // Pass original settings for reference if needed
       };
 
       for (let frame = 0; frame < totalFrames; frame++) {
@@ -98,6 +115,10 @@ export class ExportManager {
         if (videoSource.addFrame) {
              // @ts-ignore
              await videoSource.addFrame(canvas);
+        } else {
+            // Fallback for older mediabunny versions or mocked env
+             // @ts-ignore
+             await videoSource.add(frame / fps);
         }
 
         if (frame % 10 === 0) {

@@ -1,11 +1,43 @@
 import { afterEach, beforeEach } from '@jest/globals';
-import { cleanup } from '@testing-library/react';
-import '@testing-library/jest-dom';
 import { TextEncoder, TextDecoder } from 'util';
 import crypto from 'crypto';
 import React from 'react';
+import { Canvas, Image } from '@napi-rs/canvas';
 
-// Add TextEncoder/TextDecoder to global for jsdom
+const isJSDOM = typeof window !== 'undefined';
+
+// Patch napi-rs Canvas drawImage to tolerate JSDOM elements (like Video)
+// We do this BEFORE assigning to global to ensure the class is patched
+const originalGetContext = Canvas.prototype.getContext;
+Object.defineProperty(Canvas.prototype, 'getContext', {
+    value: function(type: string, options?: any) {
+        const ctx = originalGetContext.call(this, type, options);
+        if (type === '2d' && ctx) {
+            // @ts-ignore
+            const originalDrawImage = ctx.drawImage;
+            // @ts-ignore
+            ctx.drawImage = function(image: any, ...args: any[]) {
+                try {
+                    return originalDrawImage.call(this, image, ...args);
+                } catch (e) {
+                    // Ignore type errors for JSDOM elements in integration tests
+                    return;
+                }
+            };
+        }
+        return ctx;
+    },
+    configurable: true,
+    writable: true
+});
+
+// Polyfill OffscreenCanvas with @napi-rs/canvas
+// @ts-ignore
+global.OffscreenCanvas = Canvas;
+// @ts-ignore
+global.Image = Image;
+
+// Add TextEncoder/TextDecoder to global for jsdom/node
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder as any;
 
@@ -18,82 +50,86 @@ if (!global.crypto.randomUUID) {
     global.crypto.randomUUID = () => crypto.randomUUID();
 }
 
-// Mock window.matchMedia for components that use responsive design
-const installMatchMedia = () => {
-  Object.defineProperty(window, 'matchMedia', {
-    writable: true,
-    value: jest.fn().mockImplementation(query => ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addListener: jest.fn(),
-      removeListener: jest.fn(),
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-      dispatchEvent: jest.fn(),
-    })),
-  });
-};
+if (isJSDOM) {
+    // Dynamic requires for JSDOM-only modules
+    require('@testing-library/jest-dom');
+    const { cleanup } = require('@testing-library/react');
 
-installMatchMedia();
-
-// Cleanup after each test
-afterEach(() => {
-  cleanup();
-});
-
-beforeEach(() => {
-  installMatchMedia();
-});
-
-// Mock react-leaflet for component tests
-// Enhanced mock to allow inspecting props via data attributes
-jest.mock('react-leaflet', () => ({
-  MapContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="map-container">{children}</div>,
-  TileLayer: ({ url }: { url: string }) => <div data-testid="tile-layer" data-url={url} />,
-  Marker: ({ position }: { position: any }) => <div data-testid="marker" data-position={JSON.stringify(position)} />,
-  Popup: ({ children }: { children: React.ReactNode }) => <div data-testid="popup">{children}</div>,
-  GeoJSON: ({ data, style }: { data: any, style: any }) => <div data-testid="geojson" data-style={JSON.stringify(style)} />,
-  useMap: () => ({
-    setView: jest.fn(),
-    flyTo: jest.fn(),
-    fitBounds: jest.fn(),
-  }),
-}));
-
-// Mock ResizeObserver
-global.ResizeObserver = jest.fn().mockImplementation(() => ({
-  observe: jest.fn(),
-  unobserve: jest.fn(),
-  disconnect: jest.fn(),
-}));
-
-// Mock scrollTo
-Element.prototype.scrollTo = jest.fn();
-
-// Mock HTMLCanvasElement.getContext
-// @ts-ignore
-HTMLCanvasElement.prototype.getContext = jest.fn((contextId) => {
-  if (contextId === '2d') {
-    return {
-      clearRect: jest.fn(),
-      fillRect: jest.fn(),
-      strokeRect: jest.fn(),
-      fillText: jest.fn(),
-      measureText: jest.fn(() => ({ width: 0 })),
-      beginPath: jest.fn(),
-      moveTo: jest.fn(),
-      lineTo: jest.fn(),
-      stroke: jest.fn(),
-      save: jest.fn(),
-      restore: jest.fn(),
-      translate: jest.fn(),
-      scale: jest.fn(),
-      rotate: jest.fn(),
-      arc: jest.fn(),
-      fill: jest.fn(),
-      drawImage: jest.fn(),
+    // Mock window.matchMedia
+    const installMatchMedia = () => {
+      Object.defineProperty(window, 'matchMedia', {
+        writable: true,
+        value: jest.fn().mockImplementation(query => ({
+          matches: false,
+          media: query,
+          onchange: null,
+          addListener: jest.fn(),
+          removeListener: jest.fn(),
+          addEventListener: jest.fn(),
+          removeEventListener: jest.fn(),
+          dispatchEvent: jest.fn(),
+        })),
+      });
     };
-  }
-  return null;
-});
+
+    installMatchMedia();
+
+    beforeEach(() => {
+      installMatchMedia();
+    });
+
+    // Mock react-leaflet for component tests
+    // Enhanced mock to allow inspecting props via data attributes
+    jest.mock('react-leaflet', () => ({
+      MapContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="map-container">{children}</div>,
+      TileLayer: ({ url }: { url: string }) => <div data-testid="tile-layer" data-url={url} />,
+      Marker: ({ position }: { position: any }) => <div data-testid="marker" data-position={JSON.stringify(position)} />,
+      Popup: ({ children }: { children: React.ReactNode }) => <div data-testid="popup">{children}</div>,
+      GeoJSON: ({ data, style }: { data: any, style: any }) => <div data-testid="geojson" data-style={JSON.stringify(style)} />,
+      useMap: () => ({
+        setView: jest.fn(),
+        flyTo: jest.fn(),
+        fitBounds: jest.fn(),
+      }),
+    }));
+    afterEach(() => {
+      cleanup();
+    });
+
+    // Mock ResizeObserver
+    global.ResizeObserver = jest.fn().mockImplementation(() => ({
+      observe: jest.fn(),
+      unobserve: jest.fn(),
+      disconnect: jest.fn(),
+    }));
+
+    // Mock scrollTo
+    Element.prototype.scrollTo = jest.fn();
+
+    // Mock HTMLCanvasElement.getContext (JSDOM canvas)
+    // @ts-ignore
+    HTMLCanvasElement.prototype.getContext = jest.fn((contextId) => {
+      if (contextId === '2d') {
+        return {
+          clearRect: jest.fn(),
+          fillRect: jest.fn(),
+          strokeRect: jest.fn(),
+          fillText: jest.fn(),
+          measureText: jest.fn(() => ({ width: 0 })),
+          beginPath: jest.fn(),
+          moveTo: jest.fn(),
+          lineTo: jest.fn(),
+          stroke: jest.fn(),
+          save: jest.fn(),
+          restore: jest.fn(),
+          translate: jest.fn(),
+          scale: jest.fn(),
+          rotate: jest.fn(),
+          arc: jest.fn(),
+          fill: jest.fn(),
+          drawImage: jest.fn(),
+        };
+      }
+      return null;
+    });
+}

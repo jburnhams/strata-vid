@@ -40,6 +40,7 @@ export interface Asset {
   resolution?: { width: number; height: number };
   creationTime?: Date;
   creationTimeSource?: 'metadata' | 'file' | 'none';
+  thumbnail?: string; // Blob URL for thumbnail
 }
 
 export interface OverlayProperties {

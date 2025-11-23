@@ -7,29 +7,29 @@
 
 ## Tasks
 
-- [ ] **G1: Loading states** (2-3 hours)
+- [x] **G1: Loading states** (2-3 hours)
   - Spinner when loading assets
   - Skeleton UI while project loading
   - Disable buttons during operations
 
-- [ ] **G2: Error messages** (3-4 hours)
+- [x] **G2: Error messages** (3-4 hours)
   - Toast notifications for errors
   - Graceful degradation when features unsupported
   - User-friendly error messages
   - Files: `src/components/Toast.tsx` (new), `src/utils/errorHandler.ts` (new)
 
-- [ ] **G3: Tooltips and help** (2-3 hours)
+- [x] **G3: Tooltips and help** (2-3 hours)
   - Tooltip on all buttons
   - Help icon linking to docs
   - Keyboard shortcut reference (? key opens modal)
   - Files: `src/components/HelpModal.tsx` (new)
 
-- [ ] **G4: Asset thumbnails** (4-5 hours)
+- [x] **G4: Asset thumbnails** (4-5 hours)
   - Generate thumbnail for videos (first frame)
   - Show in library and timeline
   - Files: `src/services/AssetLoader.ts`, `src/components/LibraryPanel.tsx`
 
-- [ ] **G5: Improved metadata panel** (3-4 hours)
+- [x] **G5: Improved metadata panel** (3-4 hours)
   - Display all asset properties
   - For GPX: distance, elevation, duration
   - For clips: transform sliders

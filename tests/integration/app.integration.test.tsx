@@ -52,7 +52,7 @@ describe('Browser Integration Tests', () => {
     it('allows adding a video file to the library', async () => {
       render(<App />);
 
-      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const input = document.querySelector('input[accept*="video"]') as HTMLInputElement;
       const file = new File(['dummy content'], 'run_video.mp4', { type: 'video/mp4' });
 
       Object.defineProperty(input, 'files', {

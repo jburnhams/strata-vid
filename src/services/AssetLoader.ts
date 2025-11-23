@@ -24,6 +24,11 @@ export class AssetLoader {
 
     if (type === 'video') {
       await this.enrichVideoMetadata(asset, file);
+      try {
+        asset.thumbnail = await this.generateVideoThumbnail(file);
+      } catch (e) {
+        console.warn('Failed to generate thumbnail:', e);
+      }
     } else if (type === 'gpx') {
       await this.enrichGpxMetadata(asset, file);
     }
@@ -104,5 +109,58 @@ export class AssetLoader {
     } catch (e) {
         console.warn("Failed to parse GPX", e);
     }
+  }
+
+  private static async generateVideoThumbnail(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.muted = true;
+      video.playsInline = true;
+      const url = URL.createObjectURL(file);
+      video.src = url;
+
+      video.onloadeddata = () => {
+        video.currentTime = 0; // Trigger seek
+      };
+
+      video.onseeked = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          // Scale down for thumbnail
+          const scale = Math.min(1, 320 / video.videoWidth);
+          canvas.width = video.videoWidth * scale;
+          canvas.height = video.videoHeight * scale;
+
+          const ctx = canvas.getContext('2d');
+          if (!ctx) throw new Error('Could not get canvas context');
+
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+          canvas.toBlob((blob) => {
+            URL.revokeObjectURL(url);
+            if (blob) {
+              resolve(URL.createObjectURL(blob));
+            } else {
+              reject(new Error('Thumbnail blob creation failed'));
+            }
+          }, 'image/jpeg', 0.7);
+        } catch (e) {
+          URL.revokeObjectURL(url);
+          reject(e);
+        }
+      };
+
+      video.onerror = (e) => {
+        URL.revokeObjectURL(url);
+        reject(new Error('Video load failed'));
+      };
+
+      // Timeout safety
+      setTimeout(() => {
+          URL.revokeObjectURL(url);
+          reject(new Error('Thumbnail generation timed out'));
+      }, 5000);
+    });
   }
 }

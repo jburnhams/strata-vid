@@ -3,14 +3,22 @@ import { LibraryPanel } from './components/LibraryPanel';
 import { PreviewPanel } from './components/PreviewPanel';
 import { MetadataPanel } from './components/MetadataPanel';
 import { TimelinePanel } from './components/TimelinePanel';
+import { ProjectMenu } from './components/ProjectMenu';
+import { EditMenu } from './components/EditMenu';
 import { useProjectStore } from './store/useProjectStore';
 import { AssetType, Asset, Track } from './types';
 import { AssetLoader } from './services/AssetLoader';
 import { ExportModal } from './components/ExportModal';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { ToastContainer } from './components/Toast';
+import { LoadingOverlay } from './components/LoadingOverlay';
+import { handleError, showSuccess } from './utils/errorHandler';
+import { Tooltip } from './components/Tooltip';
+import { useAutoSave } from './hooks/useAutoSave';
 
 function App() {
   useKeyboardShortcuts();
+  useAutoSave();
   const [showExport, setShowExport] = React.useState(false);
   const {
     assets: assetsRecord,
@@ -20,7 +28,8 @@ function App() {
     addAsset,
     selectAsset,
     addClip,
-    addTrack
+    addTrack,
+    setLoading
   } = useProjectStore();
 
   // Convert Records to Arrays for UI consumption and logic
@@ -31,59 +40,67 @@ function App() {
   const activeAsset = assets.find(a => a.id === selectedAssetId) || null;
 
   const handleAssetAdd = async (fileList: FileList) => {
-    const newAssetsPromises = Array.from(fileList).map(async (file) => {
-      try {
-        return await AssetLoader.loadAsset(file);
-      } catch (e) {
-        console.error('Failed to load asset:', e);
-        return null;
-      }
-    });
-
-    const newAssets = (await Promise.all(newAssetsPromises)).filter((a): a is Asset => a !== null);
-
-    newAssets.forEach(asset => {
-        addAsset(asset);
-        if (asset.type === 'video') {
-             // Find or create a video track
-             let trackId = tracks.find(t => t.type === 'video')?.id;
-             if (!trackId) {
-                 trackId = Math.random().toString(36).substr(2, 9);
-                 const newTrack: Track = {
-                     id: trackId,
-                     type: 'video',
-                     label: 'Video Track 1',
-                     isMuted: false,
-                     isLocked: false,
-                     clips: []
-                 };
-                 addTrack(newTrack);
-             }
-
-             // Add clip to the track
-             addClip({
-                 id: Math.random().toString(36).substr(2, 9),
-                 assetId: asset.id,
-                 trackId: trackId,
-                 start: 0,
-                 duration: asset.duration || 10,
-                 offset: 0,
-                 type: 'video',
-                 properties: {
-                     x: 0,
-                     y: 0,
-                     width: 100,
-                     height: 100,
-                     rotation: 0,
-                     opacity: 1,
-                     zIndex: 0
-                 }
-             });
+    setLoading(true, 'Loading assets...');
+    try {
+      const newAssetsPromises = Array.from(fileList).map(async (file) => {
+        try {
+          return await AssetLoader.loadAsset(file);
+        } catch (e) {
+          handleError(e, `Failed to load ${file.name}`);
+          return null;
         }
-    });
+      });
 
-    if (newAssets.length > 0) {
-        selectAsset(newAssets[0].id);
+      const newAssets = (await Promise.all(newAssetsPromises)).filter((a): a is Asset => a !== null);
+
+      newAssets.forEach(asset => {
+          addAsset(asset);
+          if (asset.type === 'video') {
+               // Find or create a video track
+               let trackId = tracks.find(t => t.type === 'video')?.id;
+               if (!trackId) {
+                   trackId = Math.random().toString(36).substr(2, 9);
+                   const newTrack: Track = {
+                       id: trackId,
+                       type: 'video',
+                       label: 'Video Track 1',
+                       isMuted: false,
+                       isLocked: false,
+                       clips: []
+                   };
+                   addTrack(newTrack);
+               }
+
+               // Add clip to the track
+               addClip({
+                   id: Math.random().toString(36).substr(2, 9),
+                   assetId: asset.id,
+                   trackId: trackId,
+                   start: 0,
+                   duration: asset.duration || 10,
+                   offset: 0,
+                   type: 'video',
+                   properties: {
+                       x: 0,
+                       y: 0,
+                       width: 100,
+                       height: 100,
+                       rotation: 0,
+                       opacity: 1,
+                       zIndex: 0
+                   }
+               });
+          }
+      });
+
+      if (newAssets.length > 0) {
+          selectAsset(newAssets[0].id);
+          showSuccess(`Loaded ${newAssets.length} asset${newAssets.length > 1 ? 's' : ''}`);
+      }
+    } catch (e) {
+      handleError(e, 'Failed to process assets');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -98,8 +115,8 @@ function App() {
       {/* Header */}
       <div className="[grid-area:header] border-b border-neutral-700 bg-neutral-800 flex items-center px-4 gap-4">
         <span className="font-bold text-lg">Strata Vid</span>
-        <button className="px-3 py-1 text-sm hover:bg-neutral-700 rounded">File</button>
-        <button className="px-3 py-1 text-sm hover:bg-neutral-700 rounded">Edit</button>
+        <ProjectMenu />
+        <EditMenu />
         <button className="px-3 py-1 text-sm hover:bg-neutral-700 rounded">View</button>
         <button
           className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-500 rounded font-medium ml-4"
@@ -136,6 +153,8 @@ function App() {
       </div>
 
       {showExport && <ExportModal onClose={() => setShowExport(false)} />}
+      <ToastContainer />
+      <LoadingOverlay />
     </div>
   );
 }

@@ -32,6 +32,14 @@ global.OffscreenCanvas = class {
     getContext() { return { canvas: this }; }
 } as any;
 
+// Mock VideoEncoder
+global.VideoEncoder = class {
+    configure() {}
+    encode() {}
+    close() {}
+    flush() { return Promise.resolve(); }
+} as any;
+
 describe('ExportManager', () => {
   let exportManager: ExportManager;
   const mockProject = {
@@ -42,6 +50,7 @@ describe('ExportManager', () => {
       clips: {},
       trackOrder: []
   };
+  const mockExportSettings = { width: 100, height: 100, fps: 30 };
 
   beforeEach(() => {
     exportManager = new ExportManager();
@@ -49,7 +58,7 @@ describe('ExportManager', () => {
 
   it('should run export loop', async () => {
     const onProgress = jest.fn();
-    const result = await exportManager.exportProject(mockProject, onProgress);
+    const result = await exportManager.exportProject(mockProject, mockExportSettings, onProgress);
 
     expect(result).toBeInstanceOf(Blob);
     expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({ status: 'completed' }));
@@ -65,7 +74,7 @@ describe('ExportManager', () => {
     // Set duration to have enough frames
     const longProject = { ...mockProject, settings: { ...mockProject.settings, duration: 1 } }; // 30 frames
 
-    const result = await exportManager.exportProject(longProject, onProgress);
+    const result = await exportManager.exportProject(longProject, mockExportSettings, onProgress);
 
     expect(result).toBeNull();
     expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({ status: 'cancelled' }));

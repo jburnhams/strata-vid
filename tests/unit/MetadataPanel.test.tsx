@@ -6,7 +6,7 @@ import { Asset } from '../../src/types';
 describe('MetadataPanel', () => {
   it('renders empty state', () => {
     render(<MetadataPanel activeAsset={null} />);
-    expect(screen.getByText('No selection')).toBeInTheDocument();
+    expect(screen.getByText('Select an asset to view details')).toBeInTheDocument();
   });
 
   it('renders asset details', () => {

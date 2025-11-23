@@ -1,16 +1,21 @@
-import { create } from 'zustand';
+import { create, StoreApi, UseBoundStore } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { StoreState } from './types';
 import { createProjectSlice } from './slices/projectSlice';
 import { createAssetsSlice } from './slices/assetsSlice';
 import { createTimelineSlice } from './slices/timelineSlice';
 import { createPlaybackSlice } from './slices/playbackSlice';
+import { createUiSlice } from './slices/uiSlice';
+import { historyMiddleware } from './middleware/historyMiddleware';
 
 export const useProjectStore = create<StoreState>()(
-  immer((set, get, store) => ({
-    ...createProjectSlice(set, get, store),
-    ...createAssetsSlice(set, get, store),
-    ...createTimelineSlice(set, get, store),
-    ...createPlaybackSlice(set, get, store),
-  }))
-);
+  historyMiddleware(
+    immer((set, get, store) => ({
+      ...createProjectSlice(set, get, store),
+      ...createAssetsSlice(set, get, store),
+      ...createTimelineSlice(set, get, store),
+      ...createPlaybackSlice(set, get, store),
+      ...createUiSlice(set, get, store),
+    }))
+  )
+) as UseBoundStore<StoreApi<StoreState>> & { undo: () => void; redo: () => void };

@@ -20,7 +20,7 @@
 - ✅ Can display asset list
 - ✅ File upload button exists
 - ✅ Asset selection works
-- ❌ No thumbnails/previews
+- ✅ Asset thumbnails/previews
 - ❌ No asset management (delete, rename)
 
 #### Preview Panel
@@ -42,9 +42,9 @@
 - ❌ Ruler exists but may need refinement
 
 #### Metadata Panel
-- ✅ Shows basic asset info
+- ✅ Shows comprehensive asset info (thumbnails, resolution, duration)
+- ✅ GPX-specific metadata display (distance, elevation)
 - ❌ No editing capabilities
-- ❌ GPX-specific metadata display incomplete
 
 ### ❌ Not Yet Implemented
 
@@ -57,19 +57,21 @@
 - ❌ Map tile rendering in export compositor untested (Section E)
 
 #### Export Pipeline
-- ExportModal UI exists
-- Compositor and ExportManager classes scaffolded
-- Actual video encoding completely untested
-- No progress feedback working
-- Map rendering during export questionable
+- ✅ ExportModal UI with Settings (Resolution, FPS, Bitrate)
+- ✅ Compositor and ExportManager fully implemented
+- ✅ Video encoding pipeline via mediabunny (WebCodecs)
+- ✅ Progress feedback and Cancellation
+- ✅ Map rendering logic (on-the-fly tile loading)
+- ⚠️ Integration tests run in JSDOM with mocks for WebCodecs and Canvas (full E2E browser test recommended)
 
 #### User Experience
 - No project save/load
 - No undo/redo
-- No error messages or validation
-- No loading states
+- ✅ Error messages (Toast notifications)
+- ✅ Loading states (Overlay)
 - ✅ Keyboard shortcuts (Basic playback)
-- No tooltips or help
+- ✅ Tooltips
+- ❌ Help modal
 
 ## Critical Gaps for MVP
 
@@ -78,7 +80,7 @@
 3. **Basic Editing**: Must be able to trim and arrange clips
 4. **Playhead Sync**: Timeline playhead must sync with preview
 5. **Transport Controls**: Play, pause, stop, scrub must work
-6. **Export**: Must be able to generate actual MP4 file
+6. ✅ **Export**: Must be able to generate actual MP4 file (Implemented)
 
 ## Technical Debt
 

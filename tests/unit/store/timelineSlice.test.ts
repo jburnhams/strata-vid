@@ -131,4 +131,37 @@ describe('Store - Timeline Slice', () => {
     expect(state.tracks['t1'].clips).not.toContain('c1');
     expect(state.tracks['t2'].clips).toContain('c1');
   });
+
+  it('should remove all clips associated with a track when removing the track', () => {
+    const track: Track = { id: 'track-1', type: 'video', label: 'V1', isMuted: false, isLocked: false, clips: [] };
+    const clip1: Clip = { id: 'clip-1', assetId: 'a1', trackId: 'track-1', start: 0, duration: 10, offset: 0, type: 'video', properties: { x:0, y:0, width:100, height:100, rotation:0, opacity:1, zIndex:0 } };
+    const clip2: Clip = { id: 'clip-2', assetId: 'a1', trackId: 'track-1', start: 10, duration: 10, offset: 0, type: 'video', properties: { x:0, y:0, width:100, height:100, rotation:0, opacity:1, zIndex:0 } };
+
+    const store = useProjectStore.getState();
+    store.addTrack(track);
+    store.addClip(clip1);
+    store.addClip(clip2);
+
+    store.removeTrack('track-1');
+
+    const state = useProjectStore.getState();
+    expect(state.tracks['track-1']).toBeUndefined();
+    expect(state.clips['clip-1']).toBeUndefined();
+    expect(state.clips['clip-2']).toBeUndefined();
+  });
+
+  it('should resize a clip', () => {
+    const track: Track = { id: 'track-1', type: 'video', label: 'V1', isMuted: false, isLocked: false, clips: [] };
+    const clip: Clip = { id: 'clip-1', assetId: 'a1', trackId: 'track-1', start: 0, duration: 10, offset: 0, type: 'video', properties: { x:0, y:0, width:100, height:100, rotation:0, opacity:1, zIndex:0 } };
+
+    const store = useProjectStore.getState();
+    store.addTrack(track);
+    store.addClip(clip);
+
+    store.resizeClip('clip-1', 20, 5);
+
+    const state = useProjectStore.getState();
+    expect(state.clips['clip-1'].duration).toBe(20);
+    expect(state.clips['clip-1'].offset).toBe(5);
+  });
 });

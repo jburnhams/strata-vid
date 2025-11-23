@@ -28,7 +28,12 @@ describe('AssetLoader', () => {
     expect(AssetLoader.determineType(audioFile)).toBe('audio');
   });
 
-  it('should load a video asset with metadata using mediabunny', async () => {
+  it('should throw error for unsupported file type', () => {
+    const txtFile = new File([''], 'test.txt', { type: 'text/plain' });
+    expect(() => AssetLoader.determineType(txtFile)).toThrow('Unsupported file type: text/plain');
+  });
+
+  it('should load a video asset with metadata using mediabunny (computeDuration)', async () => {
     // Mock Mediabunny Input
     const mockInput = {
       computeDuration: jest.fn().mockResolvedValue(120),
@@ -49,6 +54,43 @@ describe('AssetLoader', () => {
     expect(mockInput.dispose).toHaveBeenCalled();
   });
 
+  it('should load a video asset with metadata using mediabunny (getFormat)', async () => {
+    // Mock Mediabunny Input with getFormat instead of computeDuration
+    const mockInput = {
+      // computeDuration is undefined
+      getFormat: jest.fn().mockResolvedValue({ duration: 60 }),
+      getVideoTracks: jest.fn().mockResolvedValue([{
+        width: 1280,
+        height: 720
+      }]),
+      dispose: jest.fn()
+    };
+
+    (Input as unknown as jest.Mock).mockImplementation(() => mockInput);
+
+    const asset = await AssetLoader.loadAsset(mockFile);
+
+    expect(asset.type).toBe('video');
+    expect(asset.duration).toBe(60);
+    expect(asset.resolution).toEqual({ width: 1280, height: 720 });
+    expect(mockInput.dispose).toHaveBeenCalled();
+  });
+
+  it('should handle mediabunny errors gracefully', async () => {
+      // Mock Mediabunny Input to throw
+      (Input as unknown as jest.Mock).mockImplementation(() => {
+          throw new Error('Mediabunny error');
+      });
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      const asset = await AssetLoader.loadAsset(mockFile);
+
+      expect(asset.type).toBe('video');
+      expect(asset.duration).toBeUndefined();
+      expect(consoleSpy).toHaveBeenCalledWith('Failed to extract video metadata via mediabunny', expect.any(Error));
+      consoleSpy.mockRestore();
+  });
+
   it('should load a GPX asset', async () => {
     (parseGpxFile as jest.Mock).mockResolvedValue({
       geoJson: {},
@@ -60,5 +102,17 @@ describe('AssetLoader', () => {
     expect(asset.type).toBe('gpx');
     expect(asset.stats).toBeDefined();
     expect(parseGpxFile).toHaveBeenCalledWith(mockGpxFile);
+  });
+
+  it('should handle GPX parsing errors gracefully', async () => {
+    (parseGpxFile as jest.Mock).mockRejectedValue(new Error('GPX error'));
+    const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+    const asset = await AssetLoader.loadAsset(mockGpxFile);
+
+    expect(asset.type).toBe('gpx');
+    expect(asset.stats).toBeUndefined();
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to parse GPX', expect.any(Error));
+    consoleSpy.mockRestore();
   });
 });

@@ -140,4 +140,40 @@ describe('useProjectStore', () => {
       expect(useProjectStore.getState().isPlaying).toBe(true);
       expect(useProjectStore.getState().currentTime).toBe(10);
   });
+
+  it('should clear selectedAssetId when the selected asset is removed', () => {
+    const asset: Asset = {
+      id: '1',
+      name: 'test.mp4',
+      type: 'video',
+      src: 'blob:test'
+    };
+
+    act(() => {
+      useProjectStore.getState().addAsset(asset);
+      useProjectStore.getState().selectAsset('1');
+    });
+
+    expect(useProjectStore.getState().selectedAssetId).toBe('1');
+
+    act(() => {
+      useProjectStore.getState().removeAsset('1');
+    });
+
+    expect(useProjectStore.getState().selectedAssetId).toBeNull();
+  });
+
+  it('should update project settings', () => {
+    const newSettings = { width: 1280, height: 720, fps: 60 };
+    act(() => {
+        useProjectStore.getState().setSettings(newSettings);
+    });
+
+    const state = useProjectStore.getState();
+    expect(state.settings.width).toBe(1280);
+    expect(state.settings.height).toBe(720);
+    expect(state.settings.fps).toBe(60);
+    // duration should remain unchanged if not provided
+    expect(state.settings.duration).toBe(0);
+  });
 });

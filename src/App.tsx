@@ -120,10 +120,7 @@ function App() {
 
       {/* Preview */}
       <div className="[grid-area:preview] bg-black flex items-center justify-center relative overflow-hidden">
-        <PreviewPanel
-          activeAsset={activeAsset}
-          overlayAsset={assets.find(a => a.type === 'gpx')}
-        />
+        <PreviewPanel />
       </div>
 
       {/* Metadata */}

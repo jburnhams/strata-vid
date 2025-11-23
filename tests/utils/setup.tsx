@@ -65,3 +65,30 @@ global.ResizeObserver = jest.fn().mockImplementation(() => ({
   unobserve: jest.fn(),
   disconnect: jest.fn(),
 }));
+
+// Mock HTMLCanvasElement.getContext
+// @ts-ignore
+HTMLCanvasElement.prototype.getContext = jest.fn((contextId) => {
+  if (contextId === '2d') {
+    return {
+      clearRect: jest.fn(),
+      fillRect: jest.fn(),
+      strokeRect: jest.fn(),
+      fillText: jest.fn(),
+      measureText: jest.fn(() => ({ width: 0 })),
+      beginPath: jest.fn(),
+      moveTo: jest.fn(),
+      lineTo: jest.fn(),
+      stroke: jest.fn(),
+      save: jest.fn(),
+      restore: jest.fn(),
+      translate: jest.fn(),
+      scale: jest.fn(),
+      rotate: jest.fn(),
+      arc: jest.fn(),
+      fill: jest.fn(),
+      drawImage: jest.fn(),
+    };
+  }
+  return null;
+});

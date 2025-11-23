@@ -18,13 +18,16 @@ export interface TimelineSlice {
   tracks: Record<string, Track>;
   clips: Record<string, Clip>;
   trackOrder: string[]; // Array of Track IDs to maintain order
+  selectedClipId: string | null;
   addTrack: (track: Track) => void;
   removeTrack: (id: string) => void;
   addClip: (clip: Clip) => void;
   removeClip: (id: string) => void;
+  selectClip: (id: string | null) => void;
   moveClip: (id: string, newStart: number, newTrackId?: string) => void;
   resizeClip: (id: string, newDuration: number, newOffset?: number) => void;
   updateClipSyncOffset: (id: string, syncOffset: number) => void;
+  updateClipProperties: (id: string, properties: any) => void; // Partial<OverlayProperties> but using any to avoid circular dep issues in types for now if needed, or import it.
 }
 
 export interface PlaybackSlice {

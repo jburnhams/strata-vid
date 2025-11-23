@@ -18,14 +18,6 @@ const DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// Custom marker for current position
-const CurrentPositionIcon = L.divIcon({
-  className: 'current-position-marker',
-  html: '<div style="width: 12px; height: 12px; background-color: red; border: 2px solid white; border-radius: 50%;"></div>',
-  iconSize: [16, 16],
-  iconAnchor: [8, 8],
-});
-
 interface MapPanelProps {
   center?: LatLngExpression;
   zoom?: number;
@@ -33,9 +25,36 @@ interface MapPanelProps {
   geoJson?: FeatureCollection<Geometry, GeoJsonProperties>;
   gpxPoints?: GpxPoint[];
   currentTime?: number; // Current video time in seconds
-  startTime?: Date; // Start time of the GPX track (optional, if we want absolute time sync)
-  syncOffset?: number; // Offset in seconds between video time and GPX time
+  syncOffset?: number; // Offset in ms between video time 0 and GPX time
+
+  // Styling
+  mapStyle?: 'osm' | 'mapbox' | 'satellite';
+  trackStyle?: {
+    color: string;
+    weight: number;
+    opacity: number;
+  };
+  markerStyle?: {
+    color: string;
+    type?: 'dot' | 'pin';
+  };
 }
+
+const TILE_PROVIDERS = {
+    osm: {
+        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    },
+    mapbox: {
+        // Fallback to OSM as we don't have a token, but structure is here
+        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    },
+    satellite: {
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    }
+};
 
 const FitBounds = ({ geoJson }: { geoJson: FeatureCollection<Geometry, GeoJsonProperties> | undefined }) => {
   const map = useMap();
@@ -57,52 +76,48 @@ const FitBounds = ({ geoJson }: { geoJson: FeatureCollection<Geometry, GeoJsonPr
 const CurrentPositionMarker = ({
   gpxPoints,
   currentTime,
-  syncOffset = 0
+  syncOffset = 0,
+  markerStyle
 }: {
   gpxPoints: GpxPoint[],
   currentTime: number,
-  syncOffset: number
+  syncOffset: number,
+  markerStyle?: { color: string; type?: 'dot' | 'pin' }
 }) => {
   const map = useMap();
 
   const position = useMemo(() => {
     if (!gpxPoints || gpxPoints.length === 0) return null;
 
-    // Calculate GPX time based on video time and offset
-    // Video time is relative (seconds from 0)
-    // GPX points use absolute timestamps (ms)
-
-    // We need to know the reference start time.
-    // If syncOffset is provided, it aligns video 0 with a specific GPX timestamp (or vice versa).
-    // Let's assume syncOffset = gpxTimestampAtVideoStart - videoStartTime(0).
-    // So gpxTime = videoTime * 1000 + syncOffset.
-
-    // However, if no sync is established yet, we might just want to show the first point?
-    // Or if we have a startTime prop?
-
-    // Let's interpret syncOffset as the GPX timestamp (ms) that corresponds to Video Time 0.
-    // If not provided, we use the first point's time.
-
+    // syncOffset is the GPX timestamp (ms) that corresponds to Video Time 0.
+    // If not provided, we default to the first point's time (essentially starting at the beginning).
     const baseTime = syncOffset || (gpxPoints[0].time);
     const targetTime = baseTime + (currentTime * 1000);
 
     return getCoordinateAtTime(gpxPoints, targetTime);
   }, [gpxPoints, currentTime, syncOffset]);
 
-  useEffect(() => {
-    if (position) {
-      // Optional: Auto-pan to current position?
-      // Maybe better to let user pan, unless "Follow" mode is on.
-      // For now, let's not auto-pan continuously to avoid jarring UX,
-      // or maybe do it if the point is out of bounds?
-      // Let's keep it simple for now.
-    }
-  }, [position, map]);
+  const customIcon = useMemo(() => {
+      const color = markerStyle?.color || 'red';
+      const type = markerStyle?.type || 'dot';
+
+      if (type === 'dot') {
+          return L.divIcon({
+            className: 'current-position-marker',
+            html: `<div style="width: 12px; height: 12px; background-color: ${color}; border: 2px solid white; border-radius: 50%;"></div>`,
+            iconSize: [16, 16],
+            iconAnchor: [8, 8],
+          });
+      } else {
+          // Default pin, maybe colorized filter?
+          return DefaultIcon;
+      }
+  }, [markerStyle]);
 
   if (!position) return null;
 
   return (
-    <Marker position={[position.lat, position.lon]} icon={CurrentPositionIcon} zIndexOffset={1000}>
+    <Marker position={[position.lat, position.lon]} icon={customIcon} zIndexOffset={1000}>
       <Popup>
         Current Position
       </Popup>
@@ -117,8 +132,13 @@ export const MapPanel: React.FC<MapPanelProps> = ({
   geoJson,
   gpxPoints,
   currentTime = 0,
-  syncOffset = 0
+  syncOffset = 0,
+  mapStyle = 'osm',
+  trackStyle,
+  markerStyle
 }) => {
+  const tileProvider = TILE_PROVIDERS[mapStyle] || TILE_PROVIDERS.osm;
+
   return (
     <div className={className} style={{ height: '100%', width: '100%' }}>
       <MapContainer
@@ -128,8 +148,8 @@ export const MapPanel: React.FC<MapPanelProps> = ({
         zoomControl={false}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution={tileProvider.attribution}
+          url={tileProvider.url}
         />
         {!geoJson && (
           <Marker position={center}>
@@ -140,7 +160,14 @@ export const MapPanel: React.FC<MapPanelProps> = ({
         )}
         {geoJson && (
           <>
-            <LeafletGeoJSON data={geoJson as any} style={{ color: '#007acc', weight: 4 }} />
+            <LeafletGeoJSON
+                data={geoJson as any}
+                style={{
+                    color: trackStyle?.color || '#007acc',
+                    weight: trackStyle?.weight || 4,
+                    opacity: trackStyle?.opacity || 1
+                }}
+            />
             <FitBounds geoJson={geoJson} />
           </>
         )}
@@ -149,6 +176,7 @@ export const MapPanel: React.FC<MapPanelProps> = ({
             gpxPoints={gpxPoints}
             currentTime={currentTime}
             syncOffset={syncOffset}
+            markerStyle={markerStyle}
           />
         )}
       </MapContainer>

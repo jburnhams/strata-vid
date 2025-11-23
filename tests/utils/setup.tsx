@@ -1,6 +1,7 @@
 import { afterEach, beforeEach } from '@jest/globals';
 import { TextEncoder, TextDecoder } from 'util';
 import crypto from 'crypto';
+import React from 'react';
 import { Canvas, Image } from '@napi-rs/canvas';
 
 const isJSDOM = typeof window !== 'undefined';
@@ -77,23 +78,23 @@ if (isJSDOM) {
       installMatchMedia();
     });
 
-    afterEach(() => {
-      cleanup();
-    });
-
-    // Mock react-leaflet
+    // Mock react-leaflet for component tests
+    // Enhanced mock to allow inspecting props via data attributes
     jest.mock('react-leaflet', () => ({
-      MapContainer: ({ children }: any) => (
-        <div data-testid="map-container">{children}</div>
-      ),
-      TileLayer: () => <div data-testid="tile-layer" />,
-      Marker: ({ children }: any) => <div data-testid="marker">{children}</div>,
-      Popup: ({ children }: any) => <div data-testid="popup">{children}</div>,
+      MapContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="map-container">{children}</div>,
+      TileLayer: ({ url }: { url: string }) => <div data-testid="tile-layer" data-url={url} />,
+      Marker: ({ position }: { position: any }) => <div data-testid="marker" data-position={JSON.stringify(position)} />,
+      Popup: ({ children }: { children: React.ReactNode }) => <div data-testid="popup">{children}</div>,
+      GeoJSON: ({ data, style }: { data: any, style: any }) => <div data-testid="geojson" data-style={JSON.stringify(style)} />,
       useMap: () => ({
         setView: jest.fn(),
         flyTo: jest.fn(),
+        fitBounds: jest.fn(),
       }),
     }));
+    afterEach(() => {
+      cleanup();
+    });
 
     // Mock ResizeObserver
     global.ResizeObserver = jest.fn().mockImplementation(() => ({

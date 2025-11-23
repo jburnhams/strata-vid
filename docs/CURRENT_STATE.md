@@ -49,10 +49,12 @@
 ### ❌ Not Yet Implemented
 
 #### Map Integration
-- MapPanel component exists but integration unclear
-- GPX overlay rendering not implemented
-- Time-to-coordinate synchronization incomplete
-- Map tile rendering in export compositor untested
+- ✅ MapPanel component fully implemented with Leaflet
+- ✅ GPX overlay rendering working with track lines and current position marker
+- ✅ Time-to-coordinate synchronization (D1, D3, D4) implemented with binary search
+- ✅ Auto-sync using video metadata/creation time
+- ✅ Map styling (tiles, colors, zoom) editable in Metadata Panel
+- ❌ Map tile rendering in export compositor untested (Section E)
 
 #### Export Pipeline
 - ✅ ExportModal UI with Settings (Resolution, FPS, Bitrate)

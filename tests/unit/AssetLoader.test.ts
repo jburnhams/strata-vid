@@ -76,6 +76,41 @@ describe('AssetLoader', () => {
     expect(mockInput.dispose).toHaveBeenCalled();
   });
 
+  it('should extract creation time from metadata', async () => {
+    const mockInput = {
+      getFormat: jest.fn().mockResolvedValue({
+          duration: 60,
+          tags: { creation_time: '2023-01-01T12:00:00Z' }
+      }),
+      getVideoTracks: jest.fn().mockResolvedValue([]),
+      dispose: jest.fn()
+    };
+    (Input as unknown as jest.Mock).mockImplementation(() => mockInput);
+
+    const asset = await AssetLoader.loadAsset(mockFile);
+
+    expect(asset.creationTime).toEqual(new Date('2023-01-01T12:00:00Z'));
+    expect(asset.creationTimeSource).toBe('metadata');
+  });
+
+  it('should fallback to file.lastModified if metadata missing', async () => {
+    const mockInput = {
+      getFormat: jest.fn().mockResolvedValue({ duration: 60 }), // No tags
+      getVideoTracks: jest.fn().mockResolvedValue([]),
+      dispose: jest.fn()
+    };
+    (Input as unknown as jest.Mock).mockImplementation(() => mockInput);
+
+    // Mock file with lastModified. Note: File constructor doesn't take lastModified in JSDOM usually, but let's try or use defineProperty
+    const fileWithDate = new File([''], 'test.mp4', { type: 'video/mp4' });
+    Object.defineProperty(fileWithDate, 'lastModified', { value: 1672531200000 });
+
+    const asset = await AssetLoader.loadAsset(fileWithDate);
+
+    expect(asset.creationTime).toEqual(new Date(1672531200000));
+    expect(asset.creationTimeSource).toBe('file');
+  });
+
   it('should handle mediabunny errors gracefully', async () => {
       // Mock Mediabunny Input to throw
       (Input as unknown as jest.Mock).mockImplementation(() => {
@@ -88,6 +123,10 @@ describe('AssetLoader', () => {
       expect(asset.type).toBe('video');
       expect(asset.duration).toBeUndefined();
       expect(consoleSpy).toHaveBeenCalledWith('Failed to extract video metadata via mediabunny', expect.any(Error));
+
+      // Should still fallback to file time
+      expect(asset.creationTimeSource).toBe('file');
+
       consoleSpy.mockRestore();
   });
 

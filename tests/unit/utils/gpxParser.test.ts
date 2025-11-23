@@ -132,8 +132,8 @@ describe('GPX Utils', () => {
         expect(result).toBeNull();
     });
 
-    // Test for binary search specific branch
-    it('finds point when time matches exact point in binary search', () => {
+    // Test for robust binary search
+    it('correctly finds interval in larger dataset', () => {
          const points2: GpxPoint[] = [
             { time: 100, lat: 1, lon: 1 },
             { time: 200, lat: 2, lon: 2 },
@@ -141,12 +141,24 @@ describe('GPX Utils', () => {
             { time: 400, lat: 4, lon: 4 },
             { time: 500, lat: 5, lon: 5 },
         ];
-        // Testing exact mid hit
-        expect(getCoordinateAtTime(points2, 300)).toEqual({ lat: 3, lon: 3 });
-        // Testing low side
-        expect(getCoordinateAtTime(points2, 100)).toEqual({ lat: 1, lon: 1 });
-        // Testing high side
-        expect(getCoordinateAtTime(points2, 500)).toEqual({ lat: 5, lon: 5 });
+
+        // 250 should be between 200 and 300 (indices 1 and 2)
+        expect(getCoordinateAtTime(points2, 250)).toEqual({ lat: 2.5, lon: 2.5 });
+
+        // 399 should be between 300 and 400
+        const result = getCoordinateAtTime(points2, 399);
+        expect(result?.lat).toBeCloseTo(3.99);
+        expect(result?.lon).toBeCloseTo(3.99);
+    });
+
+    it('handles zero time difference gracefully (division by zero protection)', () => {
+        const points3: GpxPoint[] = [
+            { time: 1000, lat: 10, lon: 10 },
+            { time: 1000, lat: 20, lon: 20 }, // Duplicate time, different pos?
+        ];
+        // Should return the first point's pos
+        const result = getCoordinateAtTime(points3, 1000);
+        expect(result).toEqual({ lat: 10, lon: 10 });
     });
   });
 });

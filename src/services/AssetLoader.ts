@@ -5,7 +5,7 @@ import { parseGpxFile } from '../utils/gpxParser';
 // Helper interface for Mediabunny Input to handle potential type mismatches
 interface IMediabunnyInput {
     computeDuration?: () => Promise<number>;
-    getFormat?: () => Promise<{ duration?: number }>;
+    getFormat?: () => Promise<{ duration?: number; tags?: Record<string, string> }>;
     getVideoTracks: () => Promise<any[]>;
     dispose: () => void;
 }
@@ -52,12 +52,26 @@ export class AssetLoader {
         // Cast to unknown first to bypass type check against original Input class
         input = new Input({ source, formats: ALL_FORMATS }) as unknown as IMediabunnyInput;
 
-        if (input.computeDuration) {
+        let formatData: { duration?: number; tags?: Record<string, string> } | undefined;
+
+        if (input.getFormat) {
+             formatData = await input.getFormat();
+             if (formatData?.duration) asset.duration = formatData.duration;
+
+             // Try to extract creation time from metadata
+             if (formatData?.tags && formatData.tags.creation_time) {
+                 const date = new Date(formatData.tags.creation_time);
+                 if (!isNaN(date.getTime())) {
+                     asset.creationTime = date;
+                     asset.creationTimeSource = 'metadata';
+                 }
+             }
+        }
+
+        // Use computeDuration as fallback or primary if getFormat didn't give duration
+        if (!asset.duration && input.computeDuration) {
              const duration = await input.computeDuration();
              if (typeof duration === 'number') asset.duration = duration;
-        } else if (input.getFormat) {
-             const format = await input.getFormat();
-             if (format?.duration) asset.duration = format.duration;
         }
 
         const videoTracks = await input.getVideoTracks();
@@ -77,6 +91,13 @@ export class AssetLoader {
         if (input) {
             input.dispose();
         }
+    }
+
+    // Fallback to file creation time if metadata unavailable
+    if (!asset.creationTime) {
+        // file.lastModified is reliable in browsers
+        asset.creationTime = new Date(file.lastModified);
+        asset.creationTimeSource = 'file';
     }
   }
 

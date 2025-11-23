@@ -43,7 +43,7 @@ describe('App', () => {
 
     expect(screen.getByText('Strata Vid')).toBeInTheDocument();
     expect(screen.getByText('Library')).toBeInTheDocument();
-    expect(screen.getByText('Metadata')).toBeInTheDocument();
+    expect(screen.getByText('Asset Metadata')).toBeInTheDocument();
     // Timeline Panel no longer has a static header "Timeline"
     // Instead we check for its content like "Zoom:" or "Add Track"
     expect(screen.getByText(/Zoom:/)).toBeInTheDocument();

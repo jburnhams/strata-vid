@@ -24,6 +24,7 @@ export interface TimelineSlice {
   removeClip: (id: string) => void;
   moveClip: (id: string, newStart: number, newTrackId?: string) => void;
   resizeClip: (id: string, newDuration: number, newOffset?: number) => void;
+  updateClipSyncOffset: (id: string, syncOffset: number) => void;
 }
 
 export interface PlaybackSlice {

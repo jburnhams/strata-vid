@@ -2,6 +2,13 @@ import { FeatureCollection, Geometry, GeoJsonProperties } from 'geojson';
 
 export type AssetType = 'video' | 'gpx' | 'image' | 'audio';
 
+export interface GpxPoint {
+  time: number; // timestamp in ms
+  lat: number;
+  lon: number;
+  ele?: number;
+}
+
 export interface GpxStats {
   distance: {
     total: number; // meters
@@ -27,6 +34,7 @@ export interface Asset {
   src: string; // Blob URL or source path
   file?: File; // Original file object
   geoJson?: FeatureCollection<Geometry, GeoJsonProperties>;
+  gpxPoints?: GpxPoint[];
   stats?: GpxStats;
   duration?: number; // Video/Audio duration in seconds
   resolution?: { width: number; height: number };
@@ -52,6 +60,7 @@ export interface Clip {
   properties: OverlayProperties;
   type: 'video' | 'image' | 'map' | 'text' | 'html';
   content?: string; // For text/html
+  syncOffset?: number; // For map/gpx clips: offset in ms between video time 0 and GPX time
 }
 
 export interface Track {

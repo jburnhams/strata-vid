@@ -29,9 +29,9 @@ Render the final video project into a downloadable file (e.g., MP4) entirely in 
 - **Map Tiles**: Exporting maps requires handling tile loading. *Note*: This can be slow and network-intensive.
 
 ## Tasks
-1.  [ ] **Compositor Class**: A service that handles drawing a single frame to a canvas.
-2.  [ ] **Export Manager**: Handles the loop and `mediabunny` interaction.
-3.  [ ] **UI**: Progress bar and "Cancel" button.
+1.  [x] **Compositor Class**: A service that handles drawing a single frame to a canvas.
+2.  [x] **Export Manager**: Handles the loop and `mediabunny` interaction.
+3.  [x] **UI**: Progress bar and "Cancel" button.
 
 ## Testing
 - **Visual**: Generate short 1-second clips and verify output manually.

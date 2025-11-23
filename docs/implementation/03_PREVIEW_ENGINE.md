@@ -22,10 +22,10 @@ Instead of rendering a single canvas, we will use a **Composite DOM** approach f
   3.  **Seek**: If `currentTime` crosses a clip boundary, ensure the underlying `<video>` element seeks to the correct offset (`currentTime - clip.start + clip.offset`).
 
 ## Tasks
-1.  [ ] **VideoPlayer Component**: Wrapper around HTML5 Video.
-2.  [ ] **OverlayRenderer**: Component that maps `activeClips` to React components.
-3.  [ ] **Playback Hook**: Implement the master clock and transport controls (Play/Pause/Stop).
-4.  [ ] **Sync Logic**: Ensure video stays in sync with the timer (handle drift).
+1.  [x] **VideoPlayer Component**: Wrapper around HTML5 Video.
+2.  [x] **OverlayRenderer**: Component that maps `activeClips` to React components.
+3.  [x] **Playback Hook**: Implement the master clock and transport controls (Play/Pause/Stop).
+4.  [x] **Sync Logic**: Ensure video stays in sync with the timer (handle drift).
 
 ## Testing
 - **Unit**: Test the `activeClips` selector (given time `T`, returns correct clips).

@@ -41,6 +41,10 @@ describe('ClipItem', () => {
     onResize: jest.fn(),
   };
 
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('renders correctly positioned', () => {
     render(<ClipItem {...defaultProps} />);
     const clipElement = screen.getByText('clip-1').closest('div');
@@ -77,5 +81,68 @@ describe('ClipItem', () => {
     render(<ClipItem {...defaultProps} clip={{ ...mockClip, type: 'map' }} />);
     const clipElement = screen.getByText('clip-1').closest('div');
     expect(clipElement?.className).toContain('bg-orange-600/80');
+  });
+
+  it('calls onResize when dragging right handle', () => {
+    render(<ClipItem {...defaultProps} />);
+    const clipElement = screen.getByText('clip-1').closest('div');
+    const handles = clipElement?.querySelectorAll('div.absolute');
+    const rightHandle = Array.from(handles || []).find(el => el.className.includes('cursor-e-resize'));
+
+    expect(rightHandle).toBeInTheDocument();
+
+    if (rightHandle) {
+        // Use MouseEvent for down to ensure properties are passed
+        const downEvent = new MouseEvent('pointerdown', {
+            bubbles: true,
+            clientX: 100,
+            cancelable: true,
+        });
+        fireEvent(rightHandle, downEvent);
+
+        // Move
+        const moveEvent = new MouseEvent('pointermove', {
+            bubbles: true,
+            clientX: 120,
+            cancelable: true,
+        });
+        fireEvent(window, moveEvent);
+
+        expect(defaultProps.onResize).toHaveBeenCalledWith('clip-1', 10, 7, 0);
+
+        fireEvent.pointerUp(window);
+    }
+  });
+
+  it('calls onResize when dragging left handle', () => {
+    render(<ClipItem {...defaultProps} />);
+    const clipElement = screen.getByText('clip-1').closest('div');
+    const handles = clipElement?.querySelectorAll('div.absolute');
+    const leftHandle = Array.from(handles || []).find(el => el.className.includes('cursor-w-resize'));
+
+    expect(leftHandle).toBeInTheDocument();
+
+    if (leftHandle) {
+        const downEvent = new MouseEvent('pointerdown', {
+            bubbles: true,
+            clientX: 100,
+            cancelable: true,
+        });
+        fireEvent(leftHandle, downEvent);
+
+        const moveEvent = new MouseEvent('pointermove', {
+            bubbles: true,
+            clientX: 110,
+            cancelable: true,
+        });
+        fireEvent(window, moveEvent);
+
+        // start: 10 + 1 = 11
+        // duration: 5 - 1 = 4
+        // offset: 0 + 1 = 1
+        expect(defaultProps.onResize).toHaveBeenCalledWith('clip-1', 11, 4, 1);
+
+        fireEvent.pointerUp(window);
+    }
   });
 });

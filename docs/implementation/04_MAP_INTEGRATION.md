@@ -25,10 +25,11 @@ We need a fast lookup mechanism.
 - **Current Marker**: A distinct marker updating position every frame.
 
 ## Tasks
-1.  [ ] **GPX Util**: Enhance `gpxParser` to support efficient lookups.
-2.  [ ] **Map Component**: Leaflet wrapper that accepts `center` and `zoom`.
-3.  [ ] **Sync UI**: Interface for setting the "Manual Sync" offset.
+1.  [x] **GPX Util**: Enhance `gpxParser` to support efficient lookups.
+2.  [x] **Map Component**: Leaflet wrapper that accepts `center` and `zoom`.
+3.  [x] **Sync UI**: Interface for setting the "Manual Sync" offset.
 
 ## Testing
 - **Unit**: Test `getCoordinateAtTime(gpx, time)` with edge cases (start/end of track).
 - **Unit**: Test interpolation logic.
+- **Integration**: Verify map updates with time and sync offset.

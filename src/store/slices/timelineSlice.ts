@@ -79,4 +79,11 @@ export const createTimelineSlice: StateCreator<
         clip.offset = newOffset;
       }
     }),
+  updateClipSyncOffset: (id, syncOffset) =>
+    set((state) => {
+      const clip = state.clips[id];
+      if (clip) {
+        clip.syncOffset = syncOffset;
+      }
+    }),
 });

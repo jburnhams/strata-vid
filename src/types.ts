@@ -38,6 +38,8 @@ export interface Asset {
   stats?: GpxStats;
   duration?: number; // Video/Audio duration in seconds
   resolution?: { width: number; height: number };
+  creationTime?: Date;
+  creationTimeSource?: 'metadata' | 'file' | 'none';
 }
 
 export interface OverlayProperties {
@@ -48,6 +50,18 @@ export interface OverlayProperties {
   rotation: number; // degrees
   opacity: number; // 0-1
   zIndex: number;
+  // Map specific properties
+  mapStyle?: 'osm' | 'mapbox' | 'satellite';
+  mapZoom?: number;
+  trackStyle?: {
+    color: string;
+    weight: number;
+    opacity: number;
+  };
+  markerStyle?: {
+    color: string; // hex or name
+    type?: 'dot' | 'pin';
+  };
 }
 
 export interface TextStyle {

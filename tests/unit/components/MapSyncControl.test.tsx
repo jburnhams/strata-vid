@@ -28,13 +28,28 @@ describe('MapSyncControl', () => {
     }
   };
 
+  const mockVideoClip = {
+    id: 'video-1',
+    assetId: 'video-asset-1',
+    type: 'video',
+    offset: 0
+  };
+
+  const mockVideoAsset = {
+    id: 'video-asset-1',
+    type: 'video',
+    name: 'video.mp4',
+    creationTime: new Date('2023-01-01T10:00:00Z')
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
     (useProjectStore as unknown as jest.Mock).mockImplementation((selector) => {
       const state = {
-        clips: { 'clip-1': mockClip },
-        assets: { 'asset-1': mockAsset },
+        clips: { 'clip-1': mockClip, 'video-1': mockVideoClip },
+        assets: { 'asset-1': mockAsset, 'video-asset-1': mockVideoAsset },
         updateClipSyncOffset: mockUpdateClipSyncOffset,
+        currentTime: 0,
       };
       return selector(state);
     });
@@ -42,7 +57,7 @@ describe('MapSyncControl', () => {
 
   it('renders sync control', () => {
     render(<MapSyncControl clipId="clip-1" />);
-    expect(screen.getByText('Map Sync')).toBeInTheDocument();
+    expect(screen.getByText('Synchronization')).toBeInTheDocument();
     expect(screen.getByDisplayValue('1000')).toBeInTheDocument();
   });
 
@@ -57,12 +72,13 @@ describe('MapSyncControl', () => {
     expect(mockUpdateClipSyncOffset).toHaveBeenCalledWith('clip-1', 2000);
   });
 
-  it('auto syncs using GPX start time', () => {
+  it('auto syncs using video creation time', () => {
     render(<MapSyncControl clipId="clip-1" />);
-    const autoButton = screen.getByText('Auto Sync (Use GPX Start)');
+    const autoButton = screen.getByText('Auto-Sync to Video Metadata');
     fireEvent.click(autoButton);
 
-    expect(mockUpdateClipSyncOffset).toHaveBeenCalledWith('clip-1', mockAsset.stats.time.start.getTime());
+    // Should call with video creation time (epoch)
+    expect(mockUpdateClipSyncOffset).toHaveBeenCalledWith('clip-1', mockVideoAsset.creationTime.getTime());
   });
 
   it('renders nothing if clip is not found or not map', () => {

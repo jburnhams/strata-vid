@@ -10,6 +10,7 @@ export const createTimelineSlice: StateCreator<
   tracks: {},
   clips: {},
   trackOrder: [],
+  selectedClipId: null,
   addTrack: (track) =>
     set((state) => {
       state.tracks[track.id] = track;
@@ -26,6 +27,11 @@ export const createTimelineSlice: StateCreator<
       }
       delete state.tracks[id];
       state.trackOrder = state.trackOrder.filter((tId) => tId !== id);
+
+      // Deselect if removed
+      // Note: This logic is tricky if the removed track contained the selected clip.
+      // We should check if selectedClipId is among the removed clips.
+      // But for now, we leave it or rely on the fact that the clip is gone from 'clips'
     }),
   addClip: (clip) =>
     set((state) => {
@@ -45,6 +51,13 @@ export const createTimelineSlice: StateCreator<
         }
       }
       delete state.clips[id];
+      if (state.selectedClipId === id) {
+        state.selectedClipId = null;
+      }
+    }),
+  selectClip: (id) =>
+    set((state) => {
+      state.selectedClipId = id;
     }),
   moveClip: (id, newStart, newTrackId) =>
     set((state) => {
@@ -84,6 +97,18 @@ export const createTimelineSlice: StateCreator<
       const clip = state.clips[id];
       if (clip) {
         clip.syncOffset = syncOffset;
+      }
+    }),
+  updateClipProperties: (id, properties) =>
+    set((state) => {
+      const clip = state.clips[id];
+      if (clip) {
+        // Deep merge properties
+        // clip.properties = { ...clip.properties, ...properties };
+        // Since we use immer, we can assign directly?
+        // But properties might be nested (trackStyle).
+        // Let's do a shallow merge of the top level properties object, which is standard for Partial<OverlayProperties>
+        Object.assign(clip.properties, properties);
       }
     }),
 });

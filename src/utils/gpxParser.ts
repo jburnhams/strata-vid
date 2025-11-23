@@ -89,6 +89,7 @@ export const getCoordinateAtTime = (points: GpxPoint[], time: number): { lat: nu
     return null;
   }
 
+  // Edge cases: time outside range
   if (time <= points[0].time) {
     return { lat: points[0].lat, lon: points[0].lon };
   }
@@ -97,34 +98,7 @@ export const getCoordinateAtTime = (points: GpxPoint[], time: number): { lat: nu
     return { lat: points[points.length - 1].lat, lon: points[points.length - 1].lon };
   }
 
-  // Binary search for the interval
-  let low = 0;
-  let high = points.length - 1;
-
-  while (low <= high) {
-    const mid = Math.floor((low + high) / 2);
-    if (points[mid].time === time) {
-      return { lat: points[mid].lat, lon: points[mid].lon };
-    } else if (points[mid].time < time) {
-      low = mid + 1;
-    } else {
-      high = mid - 1;
-    }
-  }
-
-  // After binary search, 'high' should be the index of the point immediately before 'time'
-  // and 'low' should be the index of the point immediately after 'time'.
-  // However, due to loop termination condition (low <= high), we need to be careful.
-  // Let's look at the state when loop terminates.
-  // If we narrow down to [p1, p2] where p1.time < time < p2.time.
-  // mid will pick p1 (if floor) or p2.
-  // if mid=p1: time > p1.time -> low = mid + 1 = index of p2. high is still index of p2?? No.
-
-  // Let's use a simpler binary search that finds the insertion index.
-  // Or just Array.prototype.findIndex (linear) is too slow for large arrays? GPX can be large.
-  // Binary search is safer.
-
-  // Re-implementing binary search to find the largest index i such that points[i].time <= time
+  // Binary search to find the largest index i such that points[i].time <= time
   let left = 0;
   let right = points.length - 1;
   let idx = -1;
@@ -139,13 +113,20 @@ export const getCoordinateAtTime = (points: GpxPoint[], time: number): { lat: nu
     }
   }
 
-  if (idx === -1) return { lat: points[0].lat, lon: points[0].lon }; // Should be covered by early return
+  // Should not happen given outer boundary checks, but safe fallback
+  if (idx === -1) return { lat: points[0].lat, lon: points[0].lon };
   if (idx === points.length - 1) return { lat: points[idx].lat, lon: points[idx].lon };
 
   const p1 = points[idx];
   const p2 = points[idx + 1];
 
-  const ratio = (time - p1.time) / (p2.time - p1.time);
+  // Prevent division by zero if two points have same time
+  const timeDiff = p2.time - p1.time;
+  if (timeDiff === 0) {
+      return { lat: p1.lat, lon: p1.lon };
+  }
+
+  const ratio = (time - p1.time) / timeDiff;
 
   return {
     lat: p1.lat + (p2.lat - p1.lat) * ratio,

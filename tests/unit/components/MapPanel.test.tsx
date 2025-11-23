@@ -8,10 +8,10 @@ import { GpxPoint } from '../../../src/types';
 // Mock react-leaflet
 jest.mock('react-leaflet', () => ({
   MapContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="map-container">{children}</div>,
-  TileLayer: () => <div data-testid="tile-layer" />,
-  Marker: ({ position, icon }: { position: any, icon: any }) => <div data-testid="marker" data-position={JSON.stringify(position)} data-icon={JSON.stringify(icon)} />,
+  TileLayer: ({ url }: { url: string }) => <div data-testid="tile-layer" data-url={url} />,
+  Marker: ({ position }: { position: any }) => <div data-testid="marker" data-position={JSON.stringify(position)} />,
   Popup: ({ children }: { children: React.ReactNode }) => <div data-testid="popup">{children}</div>,
-  GeoJSON: ({ data }: { data: any }) => <div data-testid="geojson" data-data={JSON.stringify(data)} />,
+  GeoJSON: ({ data, style }: { data: any, style: any }) => <div data-testid="geojson" data-style={JSON.stringify(style)} />,
   useMap: () => ({
     fitBounds: jest.fn(),
   }),
@@ -57,13 +57,31 @@ describe('MapPanel', () => {
     render(<MapPanel gpxPoints={points} currentTime={0} syncOffset={1000} />);
 
     const markers = screen.getAllByTestId('marker');
-    // Expect at least one marker (the current position one)
-    // Since no geoJson is provided, we might also have the default marker?
-    // The code says: !geoJson && (DefaultMarker) AND gpxPoints && (CurrentPositionMarker)
-    // So we expect 2 markers if no geoJson is provided but gpxPoints are.
     expect(markers.length).toBeGreaterThanOrEqual(1);
 
     const currentPosMarker = markers.find(m => m.getAttribute('data-position') === JSON.stringify([10, 10]));
     expect(currentPosMarker).toBeInTheDocument();
+  });
+
+  it('applies styling properties', () => {
+      const mockGeoJson = { type: 'FeatureCollection', features: [] };
+      render(<MapPanel
+          geoJson={mockGeoJson as any}
+          mapStyle="satellite"
+          trackStyle={{ color: 'red', weight: 10, opacity: 0.5 }}
+      />);
+
+      const tileLayer = screen.getByTestId('tile-layer');
+      expect(tileLayer).toHaveAttribute('data-url', expect.stringContaining('arcgisonline'));
+
+      const geoJson = screen.getByTestId('geojson');
+      const style = JSON.parse(geoJson.getAttribute('data-style') || '{}');
+      expect(style).toEqual({ color: 'red', weight: 10, opacity: 0.5 });
+  });
+
+  it('falls back to OSM if mapStyle is invalid', () => {
+      render(<MapPanel mapStyle={'invalid' as any} />);
+      const tileLayer = screen.getByTestId('tile-layer');
+      expect(tileLayer).toHaveAttribute('data-url', expect.stringContaining('openstreetmap'));
   });
 });

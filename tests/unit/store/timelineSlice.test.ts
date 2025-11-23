@@ -164,4 +164,44 @@ describe('Store - Timeline Slice', () => {
     expect(state.clips['clip-1'].duration).toBe(20);
     expect(state.clips['clip-1'].offset).toBe(5);
   });
+
+  it('should ignore moving a non-existent clip', () => {
+    const store = useProjectStore.getState();
+    store.moveClip('non-existent', 10);
+    // Should not throw and state should be unchanged
+    expect(useProjectStore.getState().clips['non-existent']).toBeUndefined();
+  });
+
+  it('should not move clip to a non-existent track', () => {
+    const track = { id: 't1', type: 'video', label: 'V1', isMuted: false, isLocked: false, clips: [] } as Track;
+    const clip = { id: 'c1', assetId: 'a1', trackId: 't1', start: 0, duration: 10, offset: 0, type: 'video', properties: { x:0, y:0, width:100, height:100, rotation:0, opacity:1, zIndex:0 } } as Clip;
+
+    const store = useProjectStore.getState();
+    store.addTrack(track);
+    store.addClip(clip);
+
+    store.moveClip('c1', 5, 'non-existent-track');
+
+    const state = useProjectStore.getState();
+    // Start time updates because the logic allows it if track change fails
+    expect(state.clips['c1'].start).toBe(5);
+    expect(state.clips['c1'].trackId).toBe('t1');
+  });
+
+  it('should not add a clip if the track does not exist', () => {
+     const clip: Clip = {
+      id: 'clip-orphaned',
+      assetId: 'asset-1',
+      trackId: 'missing-track',
+      start: 0,
+      duration: 10,
+      offset: 0,
+      type: 'video',
+      properties: { x: 0, y: 0, width: 100, height: 100, rotation: 0, opacity: 1, zIndex: 0 }
+    };
+    useProjectStore.getState().addClip(clip);
+
+    const state = useProjectStore.getState();
+    expect(state.clips['clip-orphaned']).toBeUndefined();
+  });
 });

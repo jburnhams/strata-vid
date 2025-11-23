@@ -29,9 +29,9 @@ export const createTimelineSlice: StateCreator<
     }),
   addClip: (clip) =>
     set((state) => {
-      state.clips[clip.id] = clip;
       const track = state.tracks[clip.trackId];
       if (track) {
+        state.clips[clip.id] = clip;
         track.clips.push(clip.id);
       }
     }),

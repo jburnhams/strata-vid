@@ -76,3 +76,5 @@ Uses `zustand` with `immer` middleware for immutable updates.
 - **State Normalization**: The Store uses a normalized structure (Maps/Records) for `assets`, `tracks`, and `clips`. `App.tsx` was updated to convert these to arrays for UI consumption where necessary.
 - **GPX Parsing**: Manual calculation of GPX stats is implemented in `src/utils/gpxParser.ts` to ensure accuracy.
 - **Mediabunny**: Integrated for metadata extraction; verified via tests with mocks.
+- **Robustness**: Added checks in `timelineSlice` (e.g., `addClip`) to ensure referential integrity (tracks must exist).
+- **Extended Testing**: Added edge case unit tests for timeline operations and a comprehensive full-flow integration test.

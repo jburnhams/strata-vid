@@ -16,8 +16,9 @@ jest.mock('mediabunny', () => {
     };
 });
 
-// Mock URL
+// Mock URL methods explicitly
 global.URL.createObjectURL = jest.fn(() => 'blob:test-url');
+global.URL.revokeObjectURL = jest.fn();
 
 describe('Integration Flow: Load Asset -> Store Update', () => {
     beforeEach(() => {
@@ -33,6 +34,10 @@ describe('Integration Flow: Load Asset -> Store Update', () => {
             settings: { width: 1920, height: 1080, fps: 30, duration: 0 }
         });
         jest.clearAllMocks();
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
     });
 
     it('should load a video file and add it to the store', async () => {

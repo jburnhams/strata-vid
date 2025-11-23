@@ -66,7 +66,8 @@ describe('Map Sync Integration', () => {
         render(<App />);
 
         // 3. Upload Files
-        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+        // Select the Library "Add" input which accepts video and gpx
+        const fileInput = document.querySelector('input[accept*="video"]') as HTMLInputElement;
         const videoFile = new File([''], 'run.mp4', { type: 'video/mp4' });
         const gpxFile = new File([''], 'run.gpx', { type: 'application/gpx+xml' });
 
@@ -75,7 +76,9 @@ describe('Map Sync Integration', () => {
         });
 
         // Verify Video Clip was added automatically (per App.tsx logic)
-        expect(Object.values(useProjectStore.getState().clips)).toHaveLength(1); // Video only
+        await waitFor(() => {
+             expect(Object.values(useProjectStore.getState().clips)).toHaveLength(1); // Video only
+        });
 
         // 4. Manually add Map Clip (simulating DnD)
         const mapClipId = 'map-clip-1';
@@ -125,10 +128,8 @@ describe('Map Sync Integration', () => {
         // 9. Verify MapPanel styling update
         // Change Map Style to 'Satellite'
 
-        // Find the select by role and current value 'osm'
-        const styleSelect = screen.getAllByRole('combobox').find(
-            s => (s as HTMLSelectElement).value === 'osm'
-        );
+        // Find the select by label text since we added htmlFor
+        const styleSelect = screen.getByLabelText('Map Style');
         expect(styleSelect).toBeInTheDocument();
 
         // 10. Update Styling via UI

@@ -33,6 +33,31 @@ describe('OverlayRenderer', () => {
     expect(div).toHaveStyle('opacity: 0.5');
   });
 
+  it('renders text overlay with custom styles', () => {
+    const clip: Clip = {
+      ...baseClip,
+      type: 'text',
+      content: 'Styled Text',
+      textStyle: {
+        fontFamily: 'Arial',
+        fontSize: 40,
+        fontWeight: 'bold',
+        color: '#ff0000',
+        textAlign: 'right',
+        backgroundColor: '#000000'
+      }
+    };
+    const { getByText } = render(
+      <OverlayRenderer clip={clip} currentTime={0} />
+    );
+    const textElement = getByText('Styled Text');
+
+    expect(textElement).toHaveStyle('font-family: Arial');
+    expect(textElement).toHaveStyle('font-size: 40px');
+    expect(textElement).toHaveStyle('color: #ff0000');
+    expect(textElement).toHaveStyle('text-align: right');
+  });
+
   it('renders image overlay', () => {
     const clip = { ...baseClip, type: 'image' as const };
     const asset: Asset = { id: 'a1', name: 'img.png', type: 'image', src: 'img.png' };

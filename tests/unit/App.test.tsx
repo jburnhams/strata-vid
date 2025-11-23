@@ -17,7 +17,13 @@ jest.mock('../../src/components/PreviewPanel', () => ({
 describe('App', () => {
   beforeEach(() => {
      jest.clearAllMocks();
-     useProjectStore.setState({ assets: [], timeline: [], selectedAssetId: null });
+     useProjectStore.setState({
+         assets: {},
+         tracks: {},
+         clips: {},
+         trackOrder: [],
+         selectedAssetId: null
+     });
   });
 
   it('renders the application shell with all panels', () => {
@@ -40,6 +46,7 @@ describe('App', () => {
     await user.upload(input, file);
 
     // Expect the asset to appear in the library list
+    // use findByText to wait for async state update
     const items = await screen.findAllByText('video.mp4');
     expect(items.length).toBeGreaterThan(0);
   });

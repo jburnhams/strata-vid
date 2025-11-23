@@ -2,10 +2,20 @@ import { afterEach, beforeEach } from '@jest/globals';
 import { cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { TextEncoder, TextDecoder } from 'util';
+import crypto from 'crypto';
 
 // Add TextEncoder/TextDecoder to global for jsdom
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder as any;
+
+// Mock crypto.randomUUID
+if (!global.crypto) {
+    // @ts-ignore
+    global.crypto = {};
+}
+if (!global.crypto.randomUUID) {
+    global.crypto.randomUUID = () => crypto.randomUUID();
+}
 
 // Mock window.matchMedia for components that use responsive design
 const installMatchMedia = () => {

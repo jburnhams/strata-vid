@@ -45,7 +45,7 @@ export interface UiSlice {
   isLoading: boolean;
   loadingMessage: string | null;
   toasts: Toast[];
-  setLoading: (isLoading: boolean, message?: string) => void;
+  setLoading: (isLoading: boolean, message?: string | null) => void;
   addToast: (message: string, type?: Toast['type'], duration?: number) => void;
   removeToast: (id: string) => void;
 }

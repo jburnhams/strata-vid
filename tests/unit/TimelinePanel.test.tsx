@@ -1,25 +1,42 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { TimelinePanel } from '../../src/components/TimelinePanel';
-import { Clip } from '../../src/types';
+import { useProjectStore } from '../../src/store/useProjectStore';
+
+// Mock the store
+jest.mock('../../src/store/useProjectStore', () => ({
+  useProjectStore: jest.fn(),
+}));
+
+// Mock child components to simplify test
+jest.mock('../../src/components/timeline/TimelineContainer', () => ({
+  TimelineContainer: ({ trackOrder }: { trackOrder: string[] }) => (
+    <div data-testid="timeline-container">
+      Timeline Container {trackOrder.length} tracks
+    </div>
+  ),
+}));
 
 describe('TimelinePanel', () => {
-  it('renders timeline header', () => {
-    render(<TimelinePanel clips={[]} />);
-    expect(screen.getByText('Timeline')).toBeInTheDocument();
-    expect(screen.getByText('00:00:00')).toBeInTheDocument();
+  const mockMoveClip = jest.fn();
+  const mockRemoveTrack = jest.fn();
+
+  beforeEach(() => {
+    (useProjectStore as unknown as jest.Mock).mockImplementation((selector) => {
+        const state = {
+            tracks: { 't1': { id: 't1' } },
+            clips: { 'c1': { id: 'c1' } },
+            trackOrder: ['t1'],
+            moveClip: mockMoveClip,
+            removeTrack: mockRemoveTrack,
+        };
+        return selector(state);
+    });
   });
 
-  it('renders empty placeholder', () => {
-    render(<TimelinePanel clips={[]} />);
-    expect(screen.getByText('Drag video here (Placeholder)')).toBeInTheDocument();
-  });
-
-  it('renders clips', () => {
-    const clips: Clip[] = [
-      { id: '1', assetId: 'a1', start: 0, duration: 10 }
-    ];
-    render(<TimelinePanel clips={clips} />);
-    expect(screen.getByText('Clip 1')).toBeInTheDocument();
+  it('renders timeline container', () => {
+    render(<TimelinePanel />);
+    expect(screen.getByTestId('timeline-container')).toBeInTheDocument();
+    expect(screen.getByText('Timeline Container 1 tracks')).toBeInTheDocument();
   });
 });

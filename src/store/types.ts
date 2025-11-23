@@ -34,4 +34,20 @@ export interface PlaybackSlice {
   setPlaybackState: (state: Partial<Omit<PlaybackSlice, 'setPlaybackState'>>) => void;
 }
 
-export type StoreState = ProjectSlice & AssetsSlice & TimelineSlice & PlaybackSlice;
+export interface Toast {
+  id: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  duration?: number;
+}
+
+export interface UiSlice {
+  isLoading: boolean;
+  loadingMessage: string | null;
+  toasts: Toast[];
+  setLoading: (isLoading: boolean, message?: string | null) => void;
+  addToast: (message: string, type?: Toast['type'], duration?: number) => void;
+  removeToast: (id: string) => void;
+}
+
+export type StoreState = ProjectSlice & AssetsSlice & TimelineSlice & PlaybackSlice & UiSlice;

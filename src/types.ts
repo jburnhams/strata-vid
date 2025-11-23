@@ -38,6 +38,7 @@ export interface Asset {
   stats?: GpxStats;
   duration?: number; // Video/Audio duration in seconds
   resolution?: { width: number; height: number };
+  thumbnail?: string; // Blob URL for thumbnail
 }
 
 export interface OverlayProperties {

@@ -3,6 +3,7 @@ import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ToastContainer } from '../../../src/components/Toast';
 import { useProjectStore } from '../../../src/store/useProjectStore';
+import { showInfo, showWarning, showSuccess, handleError } from '../../../src/utils/errorHandler';
 
 // Mock Lucide icons
 jest.mock('lucide-react', () => ({
@@ -19,6 +20,11 @@ describe('ToastContainer', () => {
         useProjectStore.setState({
             toasts: []
         });
+        jest.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
     });
 
     it('should render nothing when no toasts', () => {
@@ -61,5 +67,20 @@ describe('ToastContainer', () => {
         await user.click(closeButton);
 
         expect(useProjectStore.getState().toasts).toHaveLength(0);
+    });
+
+    it('should export and use helper functions', () => {
+        act(() => {
+            showInfo('Info Message');
+            showWarning('Warning Message');
+            showSuccess('Success Message');
+            handleError(new Error('Error Message'));
+        });
+
+        expect(useProjectStore.getState().toasts).toHaveLength(4);
+        expect(useProjectStore.getState().toasts.find(t => t.message === 'Info Message')?.type).toBe('info');
+        expect(useProjectStore.getState().toasts.find(t => t.message === 'Warning Message')?.type).toBe('warning');
+        expect(useProjectStore.getState().toasts.find(t => t.message === 'Success Message')?.type).toBe('success');
+        expect(useProjectStore.getState().toasts.find(t => t.message === 'Error Message')?.type).toBe('error');
     });
 });

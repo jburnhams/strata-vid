@@ -50,6 +50,11 @@ if (!global.crypto.randomUUID) {
     global.crypto.randomUUID = () => crypto.randomUUID();
 }
 
+// Mock URL.revokeObjectURL globally
+if (typeof URL.revokeObjectURL !== 'function') {
+    global.URL.revokeObjectURL = jest.fn();
+}
+
 if (isJSDOM) {
     // Dynamic requires for JSDOM-only modules
     require('@testing-library/jest-dom');
@@ -73,6 +78,67 @@ if (isJSDOM) {
     };
 
     installMatchMedia();
+
+    // Patch document.createElement to intercept video elements
+    // and add async behavior properties to the instance
+    const originalCreateElement = document.createElement;
+    // @ts-ignore
+    document.createElement = function(tagName: string, options?: any) {
+        const element = originalCreateElement.call(document, tagName, options);
+
+        if (tagName.toLowerCase() === 'video') {
+             // Patch this specific video instance
+             const video = element as HTMLVideoElement;
+
+             // Mock properties
+             Object.defineProperty(video, 'videoWidth', { get: () => 1920, configurable: true });
+             Object.defineProperty(video, 'videoHeight', { get: () => 1080, configurable: true });
+             Object.defineProperty(video, 'duration', { get: () => 10, configurable: true });
+
+             // Mock play/pause
+             video.play = () => Promise.resolve();
+             video.pause = () => {};
+             video.load = () => {};
+
+             // Intercept src to fire events
+             let _src = video.getAttribute('src') || '';
+             Object.defineProperty(video, 'src', {
+                set(value) {
+                    _src = value;
+                    this.setAttribute('src', value);
+                    setTimeout(() => {
+                       this.dispatchEvent(new Event('loadeddata'));
+                       this.dispatchEvent(new Event('canplay'));
+                       if (this.onloadeddata) this.onloadeddata(new Event('loadeddata') as any);
+                       if (this.oncanplay) this.oncanplay(new Event('canplay') as any);
+                    }, 10);
+                },
+                get() {
+                    return _src;
+                },
+                configurable: true
+            });
+
+            // Intercept currentTime to fire events
+            let _currentTime = 0;
+            Object.defineProperty(video, 'currentTime', {
+                set(value) {
+                     _currentTime = value;
+                     setTimeout(() => {
+                         this.dispatchEvent(new Event('seeked'));
+                         if (this.onseeked) this.onseeked(new Event('seeked') as any);
+                     }, 10);
+                },
+                get() {
+                    return _currentTime;
+                },
+                configurable: true
+            });
+        }
+
+        return element;
+    };
+
 
     beforeEach(() => {
       installMatchMedia();
@@ -131,5 +197,13 @@ if (isJSDOM) {
         };
       }
       return null;
+    });
+
+    // Mock HTMLCanvasElement.toBlob (JSDOM canvas)
+    // @ts-ignore
+    HTMLCanvasElement.prototype.toBlob = jest.fn((callback) => {
+        if (callback) {
+            callback(new Blob([''], { type: 'image/jpeg' }));
+        }
     });
 }

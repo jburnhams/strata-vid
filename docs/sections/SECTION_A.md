@@ -3,7 +3,7 @@
 **Priority**: CRITICAL (Start here!)
 **Goal**: Get basic video playback working in the preview panel.
 **Dependencies**: None
-**Status**: 🟨 Partially implemented
+**Status**: 🟢 Complete
 
 ## Overview
 
@@ -15,10 +15,10 @@ This is the foundation of the entire application. Without working playback, you 
 **Effort**: 5 minutes
 **Files**: `package.json`, `package-lock.json`
 
-- [ ] Run `npm install` to get all packages
-- [ ] Verify build with `npm run dev`
-- [ ] Fix any dependency conflicts
-- [ ] Ensure mediabunny, react-leaflet, and other key packages installed correctly
+- [x] Run `npm install` to get all packages
+- [x] Verify build with `npm run dev`
+- [x] Fix any dependency conflicts
+- [x] Ensure mediabunny, react-leaflet, and other key packages installed correctly
 
 **Acceptance**: Dev server starts without errors, app loads in browser.
 
@@ -29,16 +29,16 @@ This is the foundation of the entire application. Without working playback, you 
 **Files**: `src/components/TransportControls.tsx` (new), `src/components/PreviewPanel.tsx`
 
 **Tasks**:
-- [ ] Create new component: `TransportControls.tsx`
-- [ ] Add Play/Pause/Stop buttons with icons (lucide-react)
-- [ ] Add current time readout (format: `MM:SS.mmm`)
-- [ ] Wire buttons to `playbackSlice` actions:
+- [x] Create new component: `TransportControls.tsx`
+- [x] Add Play/Pause/Stop buttons with icons (lucide-react)
+- [x] Add current time readout (format: `MM:SS.mmm`)
+- [x] Wire buttons to `playbackSlice` actions:
   - `play()` - sets `isPlaying = true`
   - `pause()` - sets `isPlaying = false`
   - `stop()` - sets `isPlaying = false`, `currentTime = 0`
-- [ ] Display playback rate indicator (1x, 2x, etc.)
-- [ ] Style with Tailwind to match app theme
-- [ ] Position below or overlaid on preview panel
+- [x] Display playback rate indicator (1x, 2x, etc.)
+- [x] Style with Tailwind to match app theme
+- [x] Position below or overlaid on preview panel
 
 **Acceptance**: Clicking Play button toggles `isPlaying` state (verify in React DevTools or Zustand DevTools).
 
@@ -49,20 +49,20 @@ This is the foundation of the entire application. Without working playback, you 
 **Files**: `src/components/preview/VideoPlayer.tsx`, `src/hooks/usePlaybackLoop.ts`
 
 **Tasks**:
-- [ ] Test VideoPlayer component with actual video file:
+- [x] Test VideoPlayer component with actual video file:
   - Load a short MP4 via Library panel
   - Verify video element receives correct `src` (Blob URL)
   - Check that video element is visible in DOM
-- [ ] Ensure video seeks correctly based on `currentTime`:
+- [x] Ensure video seeks correctly based on `currentTime`:
   - When `currentTime` changes, video.currentTime should update
   - Handle clip offset: `video.currentTime = (globalTime - clip.start) + clip.offset`
-- [ ] Verify play/pause state triggers video playback:
+- [x] Verify play/pause state triggers video playback:
   - When `isPlaying = true`, call `video.play()`
   - When `isPlaying = false`, call `video.pause()`
-- [ ] Fix timing drift issues:
+- [x] Fix timing drift issues:
   - Use `requestAnimationFrame` to update `currentTime`
   - Check if video.currentTime deviates from expected, re-seek if > 0.1s
-- [ ] Handle edge cases:
+- [x] Handle edge cases:
   - Clip ends before timeline ends (hide video)
   - Multiple clips on timeline (switch active video)
   - No clips at current time (show blank/placeholder)
@@ -81,19 +81,19 @@ This is the foundation of the entire application. Without working playback, you 
 **Files**: `src/components/timeline/Playhead.tsx` (new), `src/components/timeline/TimelineContainer.tsx`
 
 **Tasks**:
-- [ ] Create `Playhead.tsx` component:
+- [x] Create `Playhead.tsx` component:
   - Render as vertical line (e.g., 2px wide, red/orange color)
   - Position absolutely within timeline container
   - Calculate position: `left = currentTime * zoomLevel`
   - Height spans all tracks
-- [ ] Make playhead draggable:
+- [x] Make playhead draggable:
   - Use `@dnd-kit` or simple mouse events
   - On drag, calculate new time: `newTime = mouseX / zoomLevel`
   - Update `setCurrentTime(newTime)` in store
   - Clamp to valid range: `0 <= time <= projectDuration`
-- [ ] Add snap-to-frame option (optional):
+- [x] Add snap-to-frame option (optional):
   - Round time to nearest frame: `Math.round(time * fps) / fps`
-- [ ] Visual feedback:
+- [x] Visual feedback:
   - Change cursor to `ew-resize` on hover
   - Highlight playhead when dragging
   - Show tooltip with current time while dragging
@@ -107,17 +107,17 @@ This is the foundation of the entire application. Without working playback, you 
 **Files**: `src/hooks/usePlaybackLoop.ts`, `src/components/timeline/TimelineContainer.tsx`, `src/components/PreviewPanel.tsx`
 
 **Tasks**:
-- [ ] Verify `usePlaybackLoop` updates `currentTime` smoothly:
+- [x] Verify `usePlaybackLoop` updates `currentTime` smoothly:
   - Should increment by `delta` (time since last frame)
   - Use `performance.now()` for high precision
   - Only update when `isPlaying = true`
-- [ ] Verify timeline playhead position updates reactively:
+- [x] Verify timeline playhead position updates reactively:
   - Should re-render when `currentTime` changes
   - Use Zustand selector: `const currentTime = useProjectStore(state => state.currentTime)`
-- [ ] Verify video seeks when playhead dragged:
+- [x] Verify video seeks when playhead dragged:
   - Dragging playhead → `setCurrentTime` → VideoPlayer re-renders → video seeks
   - May need `useEffect` in VideoPlayer to listen for `currentTime` changes
-- [ ] Auto-scroll timeline to keep playhead visible:
+- [x] Auto-scroll timeline to keep playhead visible:
   - If playhead position `> containerWidth`, scroll container
   - Option: "Follow Playhead" toggle
   - Implement smooth scroll (CSS `scroll-behavior: smooth` or manual)
@@ -136,11 +136,11 @@ This is the foundation of the entire application. Without working playback, you 
 **Files**: `src/hooks/useKeyboardShortcuts.ts` (new), `src/App.tsx`
 
 **Tasks**:
-- [ ] Create `useKeyboardShortcuts` hook:
+- [x] Create `useKeyboardShortcuts` hook:
   - Listen for `keydown` events
   - Map keys to actions (see table below)
   - Prevent default browser behavior where needed
-- [ ] Implement shortcuts:
+- [x] Implement shortcuts:
 
 | Key | Action |
 |-----|--------|
@@ -153,7 +153,7 @@ This is the foundation of the entire application. Without working playback, you 
 | Home | Jump to start (`currentTime = 0`) |
 | End | Jump to end (`currentTime = projectDuration`) |
 
-- [ ] Add keyboard shortcut reference:
+- [x] Add keyboard shortcut reference:
   - Tooltip or modal showing shortcuts (press `?` to open)
   - Can defer to Section G if time-constrained
 
@@ -168,15 +168,15 @@ This is the foundation of the entire application. Without working playback, you 
 ## Testing
 
 ### Manual Testing Checklist
-- [ ] Load a video file → appears in library
-- [ ] Video auto-adds to timeline (or manually drag)
-- [ ] Click Play → video plays
-- [ ] Click Pause → video pauses
-- [ ] Click Stop → video pauses and returns to 0:00
-- [ ] Drag playhead → video seeks
-- [ ] Press Space → video plays/pauses
-- [ ] Press Left/Right → video steps frame-by-frame
-- [ ] Playhead stays in sync during playback
+- [x] Load a video file → appears in library
+- [x] Video auto-adds to timeline (or manually drag)
+- [x] Click Play → video plays
+- [x] Click Pause → video pauses
+- [x] Click Stop → video pauses and returns to 0:00
+- [x] Drag playhead → video seeks
+- [x] Press Space → video plays/pauses
+- [x] Press Left/Right → video steps frame-by-frame
+- [x] Playhead stays in sync during playback
 
 ### Unit Tests (Create Later)
 - `tests/unit/hooks/usePlaybackLoop.test.ts` - Test time update logic

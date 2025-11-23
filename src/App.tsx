@@ -7,8 +7,10 @@ import { useProjectStore } from './store/useProjectStore';
 import { AssetType, Asset, Track } from './types';
 import { AssetLoader } from './services/AssetLoader';
 import { ExportModal } from './components/ExportModal';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 
 function App() {
+  useKeyboardShortcuts();
   const [showExport, setShowExport] = React.useState(false);
   const {
     assets: assetsRecord,

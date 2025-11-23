@@ -66,6 +66,9 @@ global.ResizeObserver = jest.fn().mockImplementation(() => ({
   disconnect: jest.fn(),
 }));
 
+// Mock scrollTo
+Element.prototype.scrollTo = jest.fn();
+
 // Mock HTMLCanvasElement.getContext
 // @ts-ignore
 HTMLCanvasElement.prototype.getContext = jest.fn((contextId) => {

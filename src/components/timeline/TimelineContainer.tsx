@@ -18,6 +18,7 @@ import { TrackLane } from './TrackLane';
 import { TrackHeader } from './TrackHeader';
 import { ClipItem } from './ClipItem';
 import { Ruler } from './Ruler';
+import { Playhead } from './Playhead';
 
 interface TimelineContainerProps {
   tracks: Record<string, Track>;
@@ -30,6 +31,8 @@ interface TimelineContainerProps {
   onRemoveTrack: (id: string) => void;
   selectedClipId?: string | null;
   onClipSelect?: (id: string) => void;
+  currentTime: number;
+  isPlaying: boolean;
 }
 
 const dropAnimation: DropAnimation = {
@@ -53,6 +56,8 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
   onRemoveTrack,
   selectedClipId,
   onClipSelect,
+  currentTime,
+  isPlaying,
 }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -80,6 +85,21 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     setScrollLeft(e.currentTarget.scrollLeft);
   };
+
+  // Auto-scroll to keep playhead in view
+  useEffect(() => {
+    if (!isPlaying || !scrollContainerRef.current) return;
+
+    const playheadPos = currentTime * zoomLevel;
+    const container = scrollContainerRef.current;
+    const width = container.clientWidth;
+    const scrollPos = container.scrollLeft;
+
+    // Scroll if playhead is near the right edge or out of view
+    if (playheadPos > scrollPos + width - 100) {
+        container.scrollTo({ left: playheadPos - 100, behavior: 'smooth' });
+    }
+  }, [currentTime, isPlaying, zoomLevel]);
 
   // Update container width on resize
   useEffect(() => {
@@ -180,7 +200,9 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
             onWheel={handleWheel}
             onScroll={handleScroll}
           >
-             <div className="min-w-full" style={{ width: 'max-content' }}>
+             <div className="min-w-full relative" style={{ width: 'max-content' }}>
+                <Playhead zoomLevel={zoomLevel} />
+
                 {/* Ruler */}
                 <div className="sticky top-0 z-10 h-[30px]">
                   <Ruler

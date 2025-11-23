@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useProjectStore } from '../store/useProjectStore';
 import { VideoPlayer } from './preview/VideoPlayer';
 import { OverlayRenderer } from './preview/OverlayRenderer';
+import { TransportControls } from './TransportControls';
 import { usePlaybackLoop } from '../hooks/usePlaybackLoop';
 import { Clip } from '../types';
 
@@ -47,7 +48,8 @@ export const PreviewPanel: React.FC = () => {
   });
 
   return (
-    <div className="relative w-full h-full bg-black flex items-center justify-center overflow-hidden">
+    <div className="flex flex-col w-full h-full bg-neutral-900">
+      <div className="relative flex-1 bg-black flex items-center justify-center overflow-hidden">
         {/* Layer 1: Background (Black container already) */}
 
         {/* Layer 2: Render active clips.
@@ -88,6 +90,8 @@ export const PreviewPanel: React.FC = () => {
                 </div>
             </div>
         )}
+      </div>
+      <TransportControls />
     </div>
   );
 };

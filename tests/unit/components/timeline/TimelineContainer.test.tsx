@@ -64,6 +64,8 @@ describe('TimelineContainer', () => {
     onRemoveTrack: jest.fn(),
     selectedClipId: null,
     onClipSelect: jest.fn(),
+    currentTime: 0,
+    isPlaying: false,
   };
 
   it('renders tracks and clips', () => {

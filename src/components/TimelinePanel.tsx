@@ -10,6 +10,8 @@ export const TimelinePanel: React.FC = () => {
   const moveClip = useProjectStore((state) => state.moveClip);
   const resizeClip = useProjectStore((state) => state.resizeClip);
   const removeTrack = useProjectStore((state) => state.removeTrack);
+  const currentTime = useProjectStore((state) => state.currentTime);
+  const isPlaying = useProjectStore((state) => state.isPlaying);
 
   // Local state for UI
   const [zoomLevel, setZoomLevel] = useState(10); // pixels per second
@@ -28,6 +30,8 @@ export const TimelinePanel: React.FC = () => {
         onRemoveTrack={removeTrack}
         selectedClipId={selectedClipId}
         onClipSelect={setSelectedClipId}
+        currentTime={currentTime}
+        isPlaying={isPlaying}
       />
     </div>
   );

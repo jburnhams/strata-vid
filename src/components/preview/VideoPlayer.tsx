@@ -32,12 +32,14 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     // Sync Time
     // If paused, we want precise seeking (scrubbing)
-    // If playing, we tolerate some drift (0.2s) to avoid stutter
+    // If playing, we tolerate some drift (0.1s) to avoid stutter
     const drift = Math.abs(video.currentTime - expectedVideoTime);
-    const isSeeking = !isPlaying || drift > 0.2;
+    const isSeeking = !isPlaying || drift > 0.1;
 
     if (isSeeking) {
          if (Number.isFinite(expectedVideoTime)) {
+             // In Chrome, setting currentTime can be async if not loaded.
+             // But we assume metadata is loaded or it will catch up.
              video.currentTime = expectedVideoTime;
          }
     }

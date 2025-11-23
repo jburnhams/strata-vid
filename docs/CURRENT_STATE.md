@@ -26,15 +26,16 @@
 #### Preview Panel
 - ✅ Container renders
 - ✅ VideoPlayer component exists
-- ✅ Can theoretically render active clips
-- ❌ Video playback not verified working
-- ❌ Transport controls not visible/tested
+- ✅ Can render active clips
+- ✅ Video playback works with sync
+- ✅ Transport controls visible and functional
 - ❌ Overlay rendering incomplete
 
 #### Timeline Panel
 - ✅ Container structure exists
 - ✅ Track lanes render
 - ✅ Basic zoom controls
+- ✅ Playhead visible and draggable
 - ❌ Drag-and-drop not fully functional
 - ❌ Clip resize handles not working
 - ❌ No snapping or collision detection
@@ -46,13 +47,6 @@
 - ❌ GPX-specific metadata display incomplete
 
 ### ❌ Not Yet Implemented
-
-#### Playback Engine
-- No visible transport controls (Play/Pause/Stop)
-- No scrubbing functionality
-- No playhead visualization on timeline
-- No keyboard shortcuts
-- Timing synchronization untested
 
 #### Map Integration
 - MapPanel component exists but integration unclear
@@ -72,7 +66,7 @@
 - No undo/redo
 - No error messages or validation
 - No loading states
-- No keyboard shortcuts
+- ✅ Keyboard shortcuts (Basic playback)
 - No tooltips or help
 
 ## Critical Gaps for MVP
@@ -86,8 +80,6 @@
 
 ## Technical Debt
 
-- Dependencies not installed (no `node_modules`)
-- Tests not runnable currently
 - Many `@ts-ignore` comments suggest type issues
 - Error handling is minimal
 - No logging or debugging infrastructure

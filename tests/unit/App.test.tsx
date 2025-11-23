@@ -2,13 +2,15 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../../src/App';
-import { parseGpxFile } from '../../src/utils/gpxParser';
 import { useProjectStore } from '../../src/store/useProjectStore';
+import { AssetLoader } from '../../src/services/AssetLoader';
 
 // Mock URL.createObjectURL
 global.URL.createObjectURL = jest.fn(() => 'mock-url');
 
 jest.mock('../../src/utils/gpxParser');
+jest.mock('../../src/services/AssetLoader');
+
 // Mock PreviewPanel to avoid Leaflet issues
 jest.mock('../../src/components/PreviewPanel', () => ({
   PreviewPanel: () => <div>Mock Preview Panel</div>
@@ -24,6 +26,16 @@ describe('App', () => {
          trackOrder: [],
          selectedAssetId: null
      });
+
+     // Default mock implementation
+     (AssetLoader.loadAsset as jest.Mock).mockImplementation(async (file) => ({
+         id: 'mock-id',
+         name: file.name,
+         type: 'video',
+         duration: 10,
+         src: 'mock-src',
+         file
+     }));
   });
 
   it('renders the application shell with all panels', () => {
@@ -49,5 +61,25 @@ describe('App', () => {
     // use findByText to wait for async state update
     const items = await screen.findAllByText('video.mp4');
     expect(items.length).toBeGreaterThan(0);
+  });
+
+  it('handles asset loading error gracefully', async () => {
+    // Mock AssetLoader to fail
+    (AssetLoader.loadAsset as jest.Mock).mockRejectedValue(new Error('Load failed'));
+    const user = userEvent.setup();
+    render(<App />);
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    // Use a valid file extension to pass 'accept' attribute check in LibraryPanel
+    const file = new File(['content'], 'video.mp4', { type: 'video/mp4' });
+
+    await user.upload(input, file);
+
+    await waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalledWith('Failed to load asset:', expect.any(Error));
+    });
+
+    consoleSpy.mockRestore();
   });
 });

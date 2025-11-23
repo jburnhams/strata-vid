@@ -1,6 +1,14 @@
 import { Asset, AssetType } from '../types';
-import { BlobSource, Input } from 'mediabunny';
+import { BlobSource, Input, ALL_FORMATS } from 'mediabunny';
 import { parseGpxFile } from '../utils/gpxParser';
+
+// Helper interface for Mediabunny Input to handle potential type mismatches
+interface IMediabunnyInput {
+    computeDuration?: () => Promise<number>;
+    getFormat?: () => Promise<{ duration?: number }>;
+    getVideoTracks: () => Promise<any[]>;
+    dispose: () => void;
+}
 
 export class AssetLoader {
   static async loadAsset(file: File): Promise<Asset> {
@@ -32,37 +40,29 @@ export class AssetLoader {
   }
 
   private static async enrichVideoMetadata(asset: Asset, file: File): Promise<void> {
-    let source: BlobSource | undefined;
-    let input: Input | undefined;
+    let input: IMediabunnyInput | undefined;
 
     try {
-        source = new BlobSource(file);
-        // @ts-ignore - Input constructor signature mismatch with types or docs
-        input = new Input(source);
+        const source = new BlobSource(file);
+        // Cast to unknown first to bypass type check against original Input class
+        input = new Input({ source, formats: ALL_FORMATS }) as unknown as IMediabunnyInput;
 
-        // @ts-ignore - computeDuration might be missing in types but present in runtime or vice versa
-        if (input && typeof input.computeDuration === 'function') {
-             // @ts-ignore
+        if (input.computeDuration) {
              const duration = await input.computeDuration();
              if (typeof duration === 'number') asset.duration = duration;
-        } else if (input && typeof input.getFormat === 'function') {
+        } else if (input.getFormat) {
              const format = await input.getFormat();
-             // @ts-ignore - duration on format
-             if (format.duration) asset.duration = format.duration;
+             if (format?.duration) asset.duration = format.duration;
         }
 
-        if (input) {
-            const videoTracks = await input.getVideoTracks();
-            if (videoTracks.length > 0) {
-                const track = videoTracks[0];
-                // @ts-ignore
-                const w = track.displayWidth || track.width;
-                // @ts-ignore
-                const h = track.displayHeight || track.height;
+        const videoTracks = await input.getVideoTracks();
+        if (videoTracks.length > 0) {
+            const track = videoTracks[0];
+            const w = track.displayWidth || track.width;
+            const h = track.displayHeight || track.height;
 
-                if (w && h) {
-                    asset.resolution = { width: w, height: h };
-                }
+            if (w && h) {
+                asset.resolution = { width: w, height: h };
             }
         }
 

@@ -5,7 +5,7 @@ import { MetadataPanel } from './components/MetadataPanel';
 import { TimelinePanel } from './components/TimelinePanel';
 import { useProjectStore } from './store/useProjectStore';
 import { AssetType, Asset, Track } from './types';
-import { parseGpxFile } from './utils/gpxParser';
+import { AssetLoader } from './services/AssetLoader';
 
 function App() {
   const {
@@ -28,33 +28,15 @@ function App() {
 
   const handleAssetAdd = async (fileList: FileList) => {
     const newAssetsPromises = Array.from(fileList).map(async (file) => {
-      const isVideo = file.type.startsWith('video/');
-      const isGpx = file.name.toLowerCase().endsWith('.gpx');
-      let type: AssetType = 'video';
-      if (isGpx) type = 'gpx';
-
-      const asset: Asset = {
-        id: Math.random().toString(36).substr(2, 9),
-        name: file.name,
-        type,
-        src: URL.createObjectURL(file),
-        file
-      };
-
-      if (isGpx) {
-        try {
-          const { geoJson, stats } = await parseGpxFile(file);
-          asset.geoJson = geoJson;
-          asset.stats = stats;
-        } catch (e) {
-          console.error('Error parsing GPX:', e);
-        }
+      try {
+        return await AssetLoader.loadAsset(file);
+      } catch (e) {
+        console.error('Failed to load asset:', e);
+        return null;
       }
-
-      return asset;
     });
 
-    const newAssets = await Promise.all(newAssetsPromises);
+    const newAssets = (await Promise.all(newAssetsPromises)).filter((a): a is Asset => a !== null);
 
     newAssets.forEach(asset => {
         addAsset(asset);

@@ -44,7 +44,7 @@ describe('Browser Integration Tests', () => {
 
       // Check panels
       expect(screen.getByText('Library')).toBeInTheDocument();
-      expect(screen.getByText('Asset Metadata')).toBeInTheDocument();
+      expect(screen.getByText(/^Metadata$/)).toBeInTheDocument();
       // Timeline panel no longer has a static "Timeline" header, checks for Zoom control
       expect(screen.getByText(/Zoom:/)).toBeInTheDocument();
     });
@@ -55,11 +55,11 @@ describe('Browser Integration Tests', () => {
       const input = document.querySelector('input[accept*="video"]') as HTMLInputElement;
       const file = new File(['dummy content'], 'run_video.mp4', { type: 'video/mp4' });
 
+      // Use fireEvent to manually trigger change, which seems more reliable in this JSDOM setup
       Object.defineProperty(input, 'files', {
         value: [file],
         writable: false,
       });
-
       fireEvent.change(input);
 
       // Verify it appears in the library (using getAllByText because it might be in Metadata too)

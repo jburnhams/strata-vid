@@ -26,16 +26,16 @@ Create the visual timeline component where users arrange clips, trim video, and 
   - **Select**: Update `selectedClipId` in store.
 
 ## Interaction Logic
-- **Snapping**: Clips should snap to adjacent clips or the playhead when dragging.
-- **Collision**: Prevent invalid overlaps on the same track (unless we decide to allow transitions later).
-- **Auto-Scroll**: Dragging to the edge should scroll the timeline.
+- **Snapping**: Clips should snap to adjacent clips or the playhead when dragging. (Pending)
+- **Collision**: Prevent invalid overlaps on the same track (unless we decide to allow transitions later). (Pending)
+- **Auto-Scroll**: Dragging to the edge should scroll the timeline. (Basic implementation via dnd-kit modifiers)
 
 ## Tasks
-1.  [ ] **Scaffold Components**: Create basic visual layout.
-2.  [ ] **Zoom Logic**: Implement zoom controls (update `pixelsPerSecond`).
-3.  [ ] **Drag & Drop**: Integrate `@dnd-kit` for moving clips between tracks.
-4.  [ ] **Resize**: Implement resize handles for trimming.
-5.  [ ] **Ruler**: Draw a time ruler at the top.
+1.  [x] **Scaffold Components**: Create basic visual layout.
+2.  [x] **Zoom Logic**: Implement zoom controls (update `pixelsPerSecond`).
+3.  [x] **Drag & Drop**: Integrate `@dnd-kit` for moving clips between tracks.
+4.  [x] **Resize**: Implement resize handles for trimming.
+5.  [x] **Ruler**: Draw a time ruler at the top.
 
 ## Testing
 - **Integration**: Use Playwright to verify drag-and-drop functionality.

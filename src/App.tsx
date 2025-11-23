@@ -133,7 +133,7 @@ function App() {
 
       {/* Timeline */}
       <div className="[grid-area:timeline] border-t border-neutral-700 bg-neutral-800 flex flex-col overflow-hidden">
-        <TimelinePanel clips={clips} />
+        <TimelinePanel />
       </div>
 
       {showExport && <ExportModal onClose={() => setShowExport(false)} />}

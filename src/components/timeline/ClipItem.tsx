@@ -27,6 +27,23 @@ export const ClipItem: React.FC<ClipItemProps> = ({
     disabled: false // We might want to disable drag when resizing
   });
 
+  const getClipColorClasses = (type: Clip['type']) => {
+    switch (type) {
+      case 'video':
+        return 'border-blue-500 bg-blue-600/80';
+      case 'audio':
+        return 'border-emerald-500 bg-emerald-600/80';
+      case 'map':
+        return 'border-orange-500 bg-orange-600/80';
+      case 'image':
+      case 'text':
+      case 'html':
+        return 'border-purple-500 bg-purple-600/80';
+      default:
+        return 'border-gray-500 bg-gray-600/80';
+    }
+  };
+
   const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
     left: `${clip.start * zoomLevel}px`,
@@ -79,7 +96,7 @@ export const ClipItem: React.FC<ClipItemProps> = ({
       ref={setNodeRef}
       style={style}
       className={`
-        rounded border border-blue-500 bg-blue-600/80 text-white text-xs
+        rounded border ${getClipColorClasses(clip.type)} text-white text-xs
         flex items-center overflow-hidden cursor-move select-none group
         ${isSelected ? 'ring-2 ring-white' : ''}
         ${isDragging ? 'opacity-50' : ''}

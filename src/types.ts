@@ -58,7 +58,7 @@ export interface Clip {
   duration: number; // Playback duration (seconds)
   offset: number; // Source media start time (trimming)
   properties: OverlayProperties;
-  type: 'video' | 'image' | 'map' | 'text' | 'html';
+  type: 'video' | 'audio' | 'image' | 'map' | 'text' | 'html';
   content?: string; // For text/html
   syncOffset?: number; // For map/gpx clips: offset in ms between video time 0 and GPX time
 }

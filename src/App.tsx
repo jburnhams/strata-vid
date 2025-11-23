@@ -6,8 +6,10 @@ import { TimelinePanel } from './components/TimelinePanel';
 import { useProjectStore } from './store/useProjectStore';
 import { AssetType, Asset, Track } from './types';
 import { AssetLoader } from './services/AssetLoader';
+import { ExportModal } from './components/ExportModal';
 
 function App() {
+  const [showExport, setShowExport] = React.useState(false);
   const {
     assets: assetsRecord,
     clips: clipsRecord,
@@ -97,6 +99,12 @@ function App() {
         <button className="px-3 py-1 text-sm hover:bg-neutral-700 rounded">File</button>
         <button className="px-3 py-1 text-sm hover:bg-neutral-700 rounded">Edit</button>
         <button className="px-3 py-1 text-sm hover:bg-neutral-700 rounded">View</button>
+        <button
+          className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-500 rounded font-medium ml-4"
+          onClick={() => setShowExport(true)}
+        >
+          Export
+        </button>
         <div className="ml-auto text-xs text-neutral-500">v0.1.0</div>
       </div>
 
@@ -122,8 +130,10 @@ function App() {
 
       {/* Timeline */}
       <div className="[grid-area:timeline] border-t border-neutral-700 bg-neutral-800 flex flex-col overflow-hidden">
-        <TimelinePanel clips={clips} />
+        <TimelinePanel />
       </div>
+
+      {showExport && <ExportModal onClose={() => setShowExport(false)} />}
     </div>
   );
 }

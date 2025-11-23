@@ -19,6 +19,12 @@ import { TrackHeader } from './TrackHeader';
 import { ClipItem } from './ClipItem';
 import { Ruler } from './Ruler';
 import { Playhead } from './Playhead';
+import {
+  checkCollision,
+  getSnapPoints,
+  findNearestSnapPoint,
+  findNearestValidTime,
+} from '../../utils/timelineUtils';
 
 interface TimelineContainerProps {
   tracks: Record<string, Track>;
@@ -29,6 +35,7 @@ interface TimelineContainerProps {
   onMoveClip: (id: string, newStart: number, newTrackId?: string) => void;
   onResizeClip: (id: string, newDuration: number, newOffset: number) => void;
   onRemoveTrack: (id: string) => void;
+  onAddTrack?: () => void;
   selectedClipId?: string | null;
   onClipSelect?: (id: string) => void;
   currentTime: number;
@@ -54,6 +61,7 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
   onMoveClip,
   onResizeClip,
   onRemoveTrack,
+  onAddTrack,
   selectedClipId,
   onClipSelect,
   currentTime,
@@ -128,12 +136,64 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
       if (!clip) return;
 
       const targetTrackId = over.id as string;
+      const targetTrack = tracks[targetTrackId];
 
       // Calculate new start time based on drag delta
       // delta.x is in pixels. We need to convert to seconds.
       const deltaSeconds = delta.x / zoomLevel;
       let newStart = clip.start + deltaSeconds;
       newStart = Math.max(0, newStart); // Prevent negative time
+
+      // Get clips on target track (excluding current clip if moving within same track)
+      const trackClips = (targetTrack?.clips || [])
+        .map((id) => clips[id])
+        .filter((c) => c && c.id !== clipId);
+
+      // 1. Snapping
+      const snapPoints = getSnapPoints(clips, currentTime);
+      // We snap the start or end of the clip to the snap points
+      const snapTolerance = 10 / zoomLevel; // 10 pixels tolerance
+
+      // Check snap for start
+      const snappedStart = findNearestSnapPoint(
+        newStart,
+        snapPoints,
+        snapTolerance
+      );
+      if (snappedStart !== null) {
+        newStart = snappedStart;
+      } else {
+        // Check snap for end
+        const newEnd = newStart + clip.duration;
+        const snappedEnd = findNearestSnapPoint(
+          newEnd,
+          snapPoints,
+          snapTolerance
+        );
+        if (snappedEnd !== null) {
+          newStart = snappedEnd - clip.duration;
+        }
+      }
+
+      // 2. Collision Check & Resolution
+      if (checkCollision(newStart, clip.duration, trackClips)) {
+        // Collision! Find nearest valid spot
+        // Use a slightly larger tolerance for "valid slot" finding to be helpful
+        const validStart = findNearestValidTime(
+          newStart,
+          clip.duration,
+          trackClips,
+          snapTolerance * 2
+        );
+
+        if (validStart !== null) {
+          newStart = validStart;
+        } else {
+          // Reject move (snap back)
+          // We just don't call onMoveClip
+          return;
+        }
+      }
 
       onMoveClip(clipId, newStart, targetTrackId);
     }
@@ -143,6 +203,20 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
     // If start changed, move first
     const clip = clips[id];
     if (!clip) return;
+
+    const track = tracks[clip.trackId];
+    if (!track) return;
+
+    // Get clips on same track excluding self
+    const trackClips = track.clips
+      .map((cId) => clips[cId])
+      .filter((c) => c && c.id !== id);
+
+    // Check collision
+    if (checkCollision(newStart, newDuration, trackClips)) {
+      // Reject resize if it causes collision
+      return;
+    }
 
     if (newStart !== clip.start) {
       onMoveClip(id, newStart);
@@ -187,10 +261,13 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
                     />
                 );
             })}
-            {/* Add Track Button Placeholder */}
-            <div className="h-16 flex items-center justify-center border-b border-gray-800 text-xs text-gray-500">
-                + Add Track
-            </div>
+            {/* Add Track Button */}
+            <button
+              className="h-16 flex items-center justify-center border-b border-gray-800 text-xs text-gray-500 hover:text-white hover:bg-gray-800 w-full transition-colors"
+              onClick={onAddTrack}
+            >
+              + Add Track
+            </button>
           </div>
 
           {/* Timeline Content (Scrollable) */}

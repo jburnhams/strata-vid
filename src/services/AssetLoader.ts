@@ -1,5 +1,5 @@
 import { Asset, AssetType } from '../types';
-import { BlobSource, Input } from 'mediabunny';
+import { BlobSource, Input, ALL_FORMATS } from 'mediabunny';
 import { parseGpxFile } from '../utils/gpxParser';
 
 // Helper interface for Mediabunny Input to handle potential type mismatches
@@ -45,7 +45,7 @@ export class AssetLoader {
     try {
         const source = new BlobSource(file);
         // Cast to unknown first to bypass type check against original Input class
-        input = new Input(source) as unknown as IMediabunnyInput;
+        input = new Input({ source, formats: ALL_FORMATS }) as unknown as IMediabunnyInput;
 
         if (input.computeDuration) {
              const duration = await input.computeDuration();

@@ -3,7 +3,7 @@
 **Priority**: CRITICAL (MVP)
 **Goal**: Make timeline fully interactive - drag, resize, and arrange clips.
 **Dependencies**: Section A (need playback working to see results)
-**Status**: 🟨 Partially implemented
+**Status**: 🟨 Partially implemented (Core B1-B5 completed)
 
 ## Overview
 
@@ -15,15 +15,15 @@ Turn the timeline from a static visualization into a full-featured editing inter
 **Effort**: 3-4 hours
 **Files**: `src/components/timeline/ClipItem.tsx`, `src/components/timeline/TrackLane.tsx`
 
-- [ ] Ensure clips appear as visual blocks on track lanes
-- [ ] Display clip name on clip block (or first N characters)
-- [ ] Show clip duration visually (width = duration × zoomLevel pixels)
-- [ ] Color-code by clip type:
+- [x] Ensure clips appear as visual blocks on track lanes
+- [x] Display clip name on clip block (or first N characters)
+- [x] Show clip duration visually (width = duration × zoomLevel pixels)
+- [x] Color-code by clip type:
   - Video: Blue
   - Audio: Green
   - Overlay: Purple
   - Map: Orange
-- [ ] Add subtle shadow/border for depth
+- [x] Add subtle shadow/border for depth
 - [ ] Show asset thumbnail if available (see Section G)
 
 **Acceptance**: Clips visible as colored rectangles on timeline with correct width.
@@ -34,20 +34,20 @@ Turn the timeline from a static visualization into a full-featured editing inter
 **Effort**: 4-6 hours
 **Files**: `src/components/timeline/TimelineContainer.tsx`, `src/components/timeline/ClipItem.tsx`
 
-- [ ] Make ClipItem draggable using `@dnd-kit`:
+- [x] Make ClipItem draggable using `@dnd-kit`:
   - Wrap in `<Draggable id={clip.id}>`
   - Set up DndContext in TimelineContainer
-- [ ] Update clip `start` time when dropped:
+- [x] Update clip `start` time when dropped:
   - Calculate new start: `mouseX / zoomLevel`
   - Call `moveClip(clipId, newStart)`
-- [ ] Support dragging to different tracks:
+- [x] Support dragging to different tracks:
   - Detect which track lane clip is over
   - Update both `start` and `trackId` if changed
   - Call `moveClip(clipId, newStart, newTrackId)`
-- [ ] Show ghost/preview while dragging:
+- [x] Show ghost/preview while dragging:
   - Use `<DragOverlay>` to show semi-transparent copy
   - Original clip fades out (opacity: 0.3)
-- [ ] Visual feedback for valid/invalid drop zones
+- [x] Visual feedback for valid/invalid drop zones
 
 **Acceptance**: Can drag clips horizontally and between tracks, changes persist.
 
@@ -57,24 +57,24 @@ Turn the timeline from a static visualization into a full-featured editing inter
 **Effort**: 5-7 hours
 **Files**: `src/components/timeline/ClipItem.tsx`
 
-- [ ] Add left and right resize handles to ClipItem:
+- [x] Add left and right resize handles to ClipItem:
   - Small divs (8px wide) on each edge
   - Different cursor: `ew-resize`
   - Distinct visual (darker color, icon optional)
-- [ ] Drag left handle (trim in-point):
+- [x] Drag left handle (trim in-point):
   - Adjust both `offset` and `start`:
     - `offset += delta`
     - `start += delta`
     - `duration -= delta`
   - Constrain: `offset >= 0`, `offset < asset.duration`
-- [ ] Drag right handle (trim out-point):
+- [x] Drag right handle (trim out-point):
   - Adjust `duration`:
     - `duration += delta`
   - Constrain: `offset + duration <= asset.duration`
 - [ ] Show tooltip with timecode while resizing:
   - Display current in/out points
   - Update in real-time during drag
-- [ ] Call `resizeClip(clipId, newDuration, newOffset)` on drag end
+- [x] Call `resizeClip(clipId, newDuration, newOffset)` on drag end
 
 **Acceptance**: Can trim clips from both ends, constraints respected, changes persist.
 
@@ -84,12 +84,12 @@ Turn the timeline from a static visualization into a full-featured editing inter
 **Effort**: 3-4 hours
 **Files**: `src/utils/timelineUtils.ts` (new), `src/components/timeline/TimelineContainer.tsx`
 
-- [ ] Implement snap-to logic:
+- [x] Implement snap-to logic:
   - Snap clip edges to other clip edges (within ± 0.1s)
   - Snap to playhead position
   - Snap to timeline start (0:00)
   - Snap to markers (if implemented in Section H)
-- [ ] Create `getSnapTarget(time, allClips, playheadTime)` utility:
+- [x] Create `getSnapTarget(time, allClips, playheadTime)` utility:
   - Returns nearest snap point if within threshold
   - Returns null if no snap
 - [ ] Visual feedback when snapping:
@@ -105,7 +105,7 @@ Turn the timeline from a static visualization into a full-featured editing inter
 **Effort**: 3-4 hours
 **Files**: `src/components/timeline/TimelineContainer.tsx`, `src/store/slices/timelineSlice.ts`
 
-- [ ] Prevent clips from overlapping on same track:
+- [x] Prevent clips from overlapping on same track:
   - Before `moveClip`, check if new position overlaps existing clip
   - If overlap detected, reject move or snap to adjacent position
 - [ ] Show invalid drop zone feedback:
@@ -124,14 +124,14 @@ Turn the timeline from a static visualization into a full-featured editing inter
 **Effort**: 4-5 hours
 **Files**: `src/components/TimelinePanel.tsx`, `src/components/timeline/TrackHeader.tsx`, `src/store/slices/timelineSlice.ts`
 
-- [ ] Add "New Track" button to timeline panel:
+- [x] Add "New Track" button to timeline panel:
   - Click → prompt for track type (video, audio, overlay)
   - Generate unique track ID
   - Call `addTrack({ id, type, label, isMuted: false, isLocked: false, clips: [] })`
-- [ ] Render tracks in correct stacking order:
+- [x] Render tracks in correct stacking order:
   - `trackOrder` array determines render order
   - Top track in UI = foreground in preview (highest z-index)
-- [ ] Delete track functionality:
+- [x] Delete track functionality:
   - Right-click track header → Delete
   - Show confirmation if track has clips
   - Call `removeTrack(trackId)`

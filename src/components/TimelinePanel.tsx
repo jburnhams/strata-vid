@@ -9,6 +9,7 @@ export const TimelinePanel: React.FC = () => {
   const trackOrder = useProjectStore((state) => state.trackOrder);
   const moveClip = useProjectStore((state) => state.moveClip);
   const resizeClip = useProjectStore((state) => state.resizeClip);
+  const addTrack = useProjectStore((state) => state.addTrack);
   const removeTrack = useProjectStore((state) => state.removeTrack);
   const currentTime = useProjectStore((state) => state.currentTime);
   const isPlaying = useProjectStore((state) => state.isPlaying);
@@ -16,6 +17,18 @@ export const TimelinePanel: React.FC = () => {
   // Local state for UI
   const [zoomLevel, setZoomLevel] = useState(10); // pixels per second
   const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
+
+  const handleAddTrack = () => {
+    const id = `track-${Date.now()}`;
+    addTrack({
+      id,
+      type: 'video',
+      label: `Track ${trackOrder.length + 1}`,
+      isMuted: false,
+      isLocked: false,
+      clips: [],
+    });
+  };
 
   return (
     <div className="h-full w-full bg-gray-900 text-white overflow-hidden">
@@ -28,6 +41,7 @@ export const TimelinePanel: React.FC = () => {
         onMoveClip={moveClip}
         onResizeClip={resizeClip}
         onRemoveTrack={removeTrack}
+        onAddTrack={handleAddTrack}
         selectedClipId={selectedClipId}
         onClipSelect={setSelectedClipId}
         currentTime={currentTime}

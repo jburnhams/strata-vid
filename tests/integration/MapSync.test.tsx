@@ -75,7 +75,9 @@ describe('Map Sync Integration', () => {
         });
 
         // Verify Video Clip was added automatically (per App.tsx logic)
-        expect(Object.values(useProjectStore.getState().clips)).toHaveLength(1); // Video only
+        await waitFor(() => {
+             expect(Object.values(useProjectStore.getState().clips)).toHaveLength(1); // Video only
+        });
 
         // 4. Manually add Map Clip (simulating DnD)
         const mapClipId = 'map-clip-1';

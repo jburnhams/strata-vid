@@ -7,7 +7,7 @@ interface MetadataPanelProps {
   activeAsset: Asset | null;
 }
 
-export const MetadataPanel: React.FC<MetadataPanelProps> = ({ activeAsset: propAsset }) => {
+export const MetadataPanel: React.FC<MetadataPanelProps> = ({ activeAsset }) => {
   const selectedClipId = useProjectStore((state) => state.selectedClipId);
   const clips = useProjectStore((state) => state.clips);
   const updateClipProperties = useProjectStore((state) => state.updateClipProperties);
@@ -16,7 +16,7 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ activeAsset: propA
 
   // Determine what to show
   // If a clip is selected, show clip metadata + sync controls
-  // If not, show asset metadata (propAsset)
+  // If not, show asset metadata (activeAsset)
 
   if (activeClip) {
       return (
@@ -135,11 +135,11 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ activeAsset: propA
                 <div className="text-xs text-neutral-400 mb-1">Type</div>
                 <div className="text-sm capitalize">{activeAsset.type}</div>
               </div>
-              {propAsset.creationTime && (
+              {activeAsset.creationTime && (
                 <div className="mb-4">
                   <div className="text-xs text-gray-500 mb-1">Created</div>
-                  <div className="text-sm">{propAsset.creationTime.toLocaleString()}</div>
-                  <div className="text-[10px] text-gray-500">Source: {propAsset.creationTimeSource}</div>
+                  <div className="text-sm">{activeAsset.creationTime.toLocaleString()}</div>
+                  <div className="text-[10px] text-gray-500">Source: {activeAsset.creationTimeSource}</div>
                 </div>
               )}
               {activeAsset.file && (

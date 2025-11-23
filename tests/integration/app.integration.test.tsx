@@ -44,7 +44,7 @@ describe('Browser Integration Tests', () => {
 
       // Check panels
       expect(screen.getByText('Library')).toBeInTheDocument();
-      expect(screen.getByText('Asset Metadata')).toBeInTheDocument();
+      expect(screen.getByText(/^Metadata$/)).toBeInTheDocument();
       // Timeline panel no longer has a static "Timeline" header, checks for Zoom control
       expect(screen.getByText(/Zoom:/)).toBeInTheDocument();
     });

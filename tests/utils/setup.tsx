@@ -74,6 +74,50 @@ if (isJSDOM) {
 
     installMatchMedia();
 
+    // Patch HTMLVideoElement to behave like a real video in JSDOM
+    const originalVideo = window.HTMLVideoElement;
+    // @ts-ignore
+    window.HTMLVideoElement = class extends originalVideo {
+        constructor() {
+            super();
+            // Use setTimeout to simulate async loading
+            Object.defineProperty(this, 'src', {
+                set(value) {
+                    this.setAttribute('src', value);
+                    setTimeout(() => {
+                       this.dispatchEvent(new Event('loadeddata'));
+                       this.dispatchEvent(new Event('canplay'));
+                       if (this.onloadeddata) this.onloadeddata(new Event('loadeddata') as any);
+                       if (this.oncanplay) this.oncanplay(new Event('canplay') as any);
+                    }, 10);
+                },
+                get() {
+                    return this.getAttribute('src') || '';
+                }
+            });
+            Object.defineProperty(this, 'currentTime', {
+                set(value) {
+                     this._currentTime = value;
+                     setTimeout(() => {
+                         this.dispatchEvent(new Event('seeked'));
+                         if (this.onseeked) this.onseeked(new Event('seeked') as any);
+                     }, 10);
+                },
+                get() {
+                    return this._currentTime || 0;
+                }
+            });
+            // Mock video properties
+            Object.defineProperty(this, 'videoWidth', { get: () => 1920 });
+            Object.defineProperty(this, 'videoHeight', { get: () => 1080 });
+            Object.defineProperty(this, 'duration', { get: () => 10 });
+        }
+        play() { return Promise.resolve(); }
+        pause() {}
+        load() {}
+    }
+
+
     beforeEach(() => {
       installMatchMedia();
     });

@@ -1,7 +1,7 @@
 import { useProjectStore } from '../store/useProjectStore';
 
 export const handleError = (error: unknown, fallbackMessage: string = 'An unexpected error occurred') => {
-  console.error(error);
+  console.error(fallbackMessage, error);
   const message = error instanceof Error ? error.message : fallbackMessage;
   useProjectStore.getState().addToast(message, 'error');
 };

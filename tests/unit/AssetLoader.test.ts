@@ -10,11 +10,81 @@ describe('AssetLoader', () => {
   const mockFile = new File([''], 'test.mp4', { type: 'video/mp4' });
   const mockGpxFile = new File(['<gpx>...</gpx>'], 'test.gpx', { type: 'application/gpx+xml' });
 
+  // Store original createElement to restore later if needed, though Jest restores mocks
+  // automatically if configured, but manual mocks on document/window might persist.
+  const originalCreateElement = document.createElement;
+
   beforeEach(() => {
     jest.clearAllMocks();
     // Mock URL.createObjectURL
     global.URL.createObjectURL = jest.fn(() => 'blob:test');
     global.URL.revokeObjectURL = jest.fn();
+
+    // Mock HTMLCanvasElement.getContext for thumbnail generation
+    // @ts-ignore
+    HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
+        drawImage: jest.fn(),
+    }));
+
+    // Mock HTMLCanvasElement.toBlob
+    // @ts-ignore
+    HTMLCanvasElement.prototype.toBlob = jest.fn((callback) => {
+        callback(new Blob([''], { type: 'image/jpeg' }));
+    });
+
+    // Mock document.createElement to intercept 'video'
+    jest.spyOn(document, 'createElement').mockImplementation((tagName) => {
+        if (tagName === 'video') {
+            const videoMock = {
+                preload: '',
+                muted: false,
+                playsInline: false,
+                src: '',
+                videoWidth: 1920,
+                videoHeight: 1080,
+                onloadeddata: null as any,
+                onseeked: null as any,
+                onerror: null as any,
+                currentTime: 0,
+                setAttribute: jest.fn(),
+                getAttribute: jest.fn(),
+            };
+
+            // Define src setter to trigger onloadeddata
+            Object.defineProperty(videoMock, 'src', {
+                set(v) {
+                    this._src = v;
+                    // Simulate async load
+                    setTimeout(() => {
+                        if (this.onloadeddata) this.onloadeddata();
+                    }, 0);
+                },
+                get() { return this._src; }
+            });
+
+            // Define currentTime setter to trigger onseeked
+            Object.defineProperty(videoMock, 'currentTime', {
+                set(v) {
+                    this._currentTime = v;
+                    // Simulate async seek
+                    setTimeout(() => {
+                        if (this.onseeked) this.onseeked();
+                    }, 0);
+                },
+                get() { return this._currentTime; }
+            });
+
+            return videoMock as unknown as HTMLElement;
+        } else if (tagName === 'canvas') {
+             // Return a real canvas (or mocked one)
+             return originalCreateElement.call(document, 'canvas');
+        }
+        return originalCreateElement.call(document, tagName);
+    });
+  });
+
+  afterEach(() => {
+      jest.restoreAllMocks();
   });
 
   it('should determine asset type correctly', () => {
@@ -52,6 +122,7 @@ describe('AssetLoader', () => {
     expect(asset.duration).toBe(120);
     expect(asset.resolution).toEqual({ width: 1920, height: 1080 });
     expect(mockInput.dispose).toHaveBeenCalled();
+    expect(asset.thumbnail).toBe('blob:test');
   });
 
   it('should load a video asset with metadata using mediabunny (getFormat)', async () => {

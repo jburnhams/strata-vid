@@ -13,6 +13,7 @@ export const createProjectSlice: StateCreator<
     height: 1080,
     fps: 30,
     duration: 0,
+    previewQuality: 'high',
   },
   setSettings: (newSettings) =>
     set((state) => {

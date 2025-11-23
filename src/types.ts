@@ -50,6 +50,15 @@ export interface OverlayProperties {
   zIndex: number;
 }
 
+export interface TextStyle {
+  fontFamily: string;
+  fontSize: number;
+  fontWeight: string;
+  color: string;
+  backgroundColor?: string;
+  textAlign: 'left' | 'center' | 'right';
+}
+
 export interface Clip {
   id: string;
   assetId: string;
@@ -58,6 +67,7 @@ export interface Clip {
   duration: number; // Playback duration (seconds)
   offset: number; // Source media start time (trimming)
   properties: OverlayProperties;
+  textStyle?: TextStyle;
   type: 'video' | 'image' | 'map' | 'text' | 'html';
   content?: string; // For text/html
   syncOffset?: number; // For map/gpx clips: offset in ms between video time 0 and GPX time
@@ -77,6 +87,7 @@ export interface ProjectSettings {
   height: number;
   fps: number;
   duration: number; // Total project duration in seconds
+  previewQuality: 'low' | 'medium' | 'high';
 }
 
 // Note: The full Project State structure including slices is defined in src/store/types.ts

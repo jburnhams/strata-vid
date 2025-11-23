@@ -7,7 +7,7 @@ interface MetadataPanelProps {
   activeAsset: Asset | null;
 }
 
-export const MetadataPanel: React.FC<MetadataPanelProps> = ({ activeAsset: propAsset }) => {
+export const MetadataPanel: React.FC<MetadataPanelProps> = ({ activeAsset }) => {
   const selectedClipId = useProjectStore((state) => state.selectedClipId);
   const clips = useProjectStore((state) => state.clips);
   const updateClipProperties = useProjectStore((state) => state.updateClipProperties);
@@ -16,7 +16,7 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ activeAsset: propA
 
   // Determine what to show
   // If a clip is selected, show clip metadata + sync controls
-  // If not, show asset metadata (propAsset)
+  // If not, show asset metadata (activeAsset)
 
   if (activeClip) {
       return (
@@ -38,8 +38,9 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ activeAsset: propA
                              <h4 className="text-sm font-bold mb-3">Map Styling</h4>
 
                              <div className="mb-3">
-                                 <label className="text-xs text-gray-500 block mb-1">Zoom Level ({activeClip.properties.mapZoom || 13})</label>
+                                 <label htmlFor="map-zoom" className="text-xs text-gray-500 block mb-1">Zoom Level ({activeClip.properties.mapZoom || 13})</label>
                                  <input
+                                    id="map-zoom"
                                     type="range"
                                     min="1" max="18"
                                     value={activeClip.properties.mapZoom || 13}
@@ -49,8 +50,9 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ activeAsset: propA
                              </div>
 
                              <div className="mb-3">
-                                 <label className="text-xs text-gray-500 block mb-1">Map Style</label>
+                                 <label htmlFor="map-style" className="text-xs text-gray-500 block mb-1">Map Style</label>
                                  <select
+                                    id="map-style"
                                     value={activeClip.properties.mapStyle || 'osm'}
                                     onChange={(e) => updateClipProperties(activeClip.id, { mapStyle: e.target.value })}
                                     className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
@@ -62,8 +64,9 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ activeAsset: propA
                              </div>
 
                              <div className="mb-3">
-                                 <label className="text-xs text-gray-500 block mb-1">Track Color</label>
+                                 <label htmlFor="track-color" className="text-xs text-gray-500 block mb-1">Track Color</label>
                                  <input
+                                    id="track-color"
                                     type="color"
                                     value={activeClip.properties.trackStyle?.color || '#007acc'}
                                     onChange={(e) => updateClipProperties(activeClip.id, {
@@ -74,8 +77,9 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ activeAsset: propA
                              </div>
 
                              <div className="mb-3">
-                                 <label className="text-xs text-gray-500 block mb-1">Track Width</label>
+                                 <label htmlFor="track-width" className="text-xs text-gray-500 block mb-1">Track Width</label>
                                  <input
+                                    id="track-width"
                                     type="range"
                                     min="1" max="10"
                                     value={activeClip.properties.trackStyle?.weight || 4}
@@ -87,8 +91,9 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ activeAsset: propA
                              </div>
 
                              <div className="mb-3">
-                                 <label className="text-xs text-gray-500 block mb-1">Marker Color</label>
+                                 <label htmlFor="marker-color" className="text-xs text-gray-500 block mb-1">Marker Color</label>
                                  <input
+                                    id="marker-color"
                                     type="color"
                                     value={activeClip.properties.markerStyle?.color || 'red'}
                                     onChange={(e) => updateClipProperties(activeClip.id, {
@@ -135,11 +140,11 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ activeAsset: propA
                 <div className="text-xs text-neutral-400 mb-1">Type</div>
                 <div className="text-sm capitalize">{activeAsset.type}</div>
               </div>
-              {propAsset.creationTime && (
+              {activeAsset.creationTime && (
                 <div className="mb-4">
                   <div className="text-xs text-gray-500 mb-1">Created</div>
-                  <div className="text-sm">{propAsset.creationTime.toLocaleString()}</div>
-                  <div className="text-[10px] text-gray-500">Source: {propAsset.creationTimeSource}</div>
+                  <div className="text-sm">{activeAsset.creationTime.toLocaleString()}</div>
+                  <div className="text-[10px] text-gray-500">Source: {activeAsset.creationTimeSource}</div>
                 </div>
               )}
               {activeAsset.file && (

@@ -29,20 +29,23 @@ describe('VideoPlayer', () => {
     playMock = jest.fn().mockResolvedValue(undefined);
     pauseMock = jest.fn();
 
-    // Mock HTMLMediaElement methods
-    Object.defineProperty(HTMLMediaElement.prototype, 'play', {
-      configurable: true,
-      value: playMock,
+    // Setup mocks on the video element instance because setup.tsx might override prototype methods
+    // by assigning to the instance directly.
+    const originalCreateElement = document.createElement;
+    jest.spyOn(document, 'createElement').mockImplementation((tagName, options) => {
+        const element = originalCreateElement.call(document, tagName, options);
+        if (tagName === 'video') {
+            // Override the instance methods with our test spies
+            (element as HTMLVideoElement).play = playMock;
+            (element as HTMLVideoElement).pause = pauseMock;
+        }
+        return element;
     });
-    Object.defineProperty(HTMLMediaElement.prototype, 'pause', {
-      configurable: true,
-      value: pauseMock,
-    });
-    // JSDOM has currentTime but doesn't really "play". We rely on our component setting it.
   });
 
   afterEach(() => {
     jest.clearAllMocks();
+    jest.restoreAllMocks(); // Restore document.createElement
   });
 
   it('renders video element with correct src', () => {

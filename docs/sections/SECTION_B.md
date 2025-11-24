@@ -148,15 +148,15 @@ Turn the timeline from a static visualization into a full-featured editing inter
 **Effort**: 4-5 hours
 **Files**: `src/components/timeline/ClipItem.tsx`, `src/components/timeline/ContextMenu.tsx` (new)
 
-- [ ] Click to select clip:
+- [x] Click to select clip:
   - Store `selectedClipId` in local state or store
   - Highlight selected clip (thicker border, glow effect)
   - Deselect on click outside
-- [ ] Right-click context menu:
+- [x] Right-click context menu:
   - Menu options: Delete, Duplicate, Split (defer to Section H)
   - Position menu at mouse cursor
   - Use library or build custom context menu
-- [ ] Delete key removes selected clip:
+- [x] Delete key removes selected clip:
   - Listen for `keydown` event
   - If `key === 'Delete'` and `selectedClipId`, call `removeClip(selectedClipId)`
 - [ ] Multi-select (optional, can defer):
@@ -172,15 +172,15 @@ Turn the timeline from a static visualization into a full-featured editing inter
 **Effort**: 3-4 hours
 **Files**: `src/components/timeline/TimelineContainer.tsx`, `src/components/timeline/ZoomControls.tsx` (new)
 
-- [ ] Zoom in/out controls:
+- [x] Zoom in/out controls:
   - + / - buttons
   - Mouse wheel zoom (Ctrl+Wheel or pinch gesture)
   - Update `zoomLevel` (pixels per second) in state
   - Constrain: 5 px/s (zoomed out) to 200 px/s (zoomed in)
-- [ ] Horizontal scrollbar for long timelines:
+- [x] Horizontal scrollbar for long timelines:
   - Use CSS `overflow-x: auto`
   - Or custom scrollbar component
-- [ ] Zoom-to-fit button:
+- [x] Zoom-to-fit button:
   - Calculate zoom level to fit all clips in viewport
   - Center on playhead or all clips
 - [ ] Zoom anchored to mouse cursor (advanced):

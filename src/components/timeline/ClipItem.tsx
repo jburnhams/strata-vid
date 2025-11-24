@@ -9,6 +9,7 @@ interface ClipItemProps {
   isSelected?: boolean;
   onSelect?: (id: string) => void;
   onResize?: (id: string, newStart: number, newDuration: number, newOffset: number) => void;
+  onContextMenu?: (e: React.MouseEvent, id: string) => void;
 }
 
 export const ClipItem: React.FC<ClipItemProps> = ({
@@ -16,7 +17,8 @@ export const ClipItem: React.FC<ClipItemProps> = ({
   zoomLevel,
   isSelected,
   onSelect,
-  onResize
+  onResize,
+  onContextMenu
 }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: clip.id,
@@ -105,6 +107,12 @@ export const ClipItem: React.FC<ClipItemProps> = ({
       onClick={(e) => {
         e.stopPropagation();
         onSelect?.(clip.id);
+      }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onSelect?.(clip.id); // Also select on right click
+        onContextMenu?.(e, clip.id);
       }}
       {...attributes}
       {...listeners}

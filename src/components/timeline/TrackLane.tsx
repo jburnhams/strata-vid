@@ -10,6 +10,7 @@ interface TrackLaneProps {
   selectedClipId?: string | null;
   onClipSelect?: (id: string) => void;
   onClipResize?: (id: string, newStart: number, newDuration: number, newOffset: number) => void;
+  onContextMenu?: (e: React.MouseEvent, id: string) => void;
 }
 
 export const TrackLane: React.FC<TrackLaneProps> = ({
@@ -18,7 +19,8 @@ export const TrackLane: React.FC<TrackLaneProps> = ({
   zoomLevel,
   selectedClipId,
   onClipSelect,
-  onClipResize
+  onClipResize,
+  onContextMenu
 }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: track.id,
@@ -48,6 +50,7 @@ export const TrackLane: React.FC<TrackLaneProps> = ({
           isSelected={selectedClipId === clip.id}
           onSelect={onClipSelect}
           onResize={onClipResize}
+          onContextMenu={onContextMenu}
         />
       ))}
     </div>

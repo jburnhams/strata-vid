@@ -3,7 +3,7 @@
 **Priority**: CRITICAL (MVP)
 **Goal**: Make timeline fully interactive - drag, resize, and arrange clips.
 **Dependencies**: Section A (need playback working to see results)
-**Status**: 🟨 Partially implemented (Core B1-B5 completed)
+**Status**: 🟢 Implemented (Core B1-B5 + UX improvements completed)
 
 ## Overview
 
@@ -71,7 +71,7 @@ Turn the timeline from a static visualization into a full-featured editing inter
   - Adjust `duration`:
     - `duration += delta`
   - Constrain: `offset + duration <= asset.duration`
-- [ ] Show tooltip with timecode while resizing:
+- [x] Show tooltip with timecode while resizing:
   - Display current in/out points
   - Update in real-time during drag
 - [x] Call `resizeClip(clipId, newDuration, newOffset)` on drag end
@@ -92,7 +92,7 @@ Turn the timeline from a static visualization into a full-featured editing inter
 - [x] Create `getSnapTarget(time, allClips, playheadTime)` utility:
   - Returns nearest snap point if within threshold
   - Returns null if no snap
-- [ ] Visual feedback when snapping:
+- [x] Visual feedback when snapping:
   - Flash vertical line at snap position
   - Or subtle "bump" animation
 - [ ] Make snapping toggle-able (hold Shift to disable?)
@@ -108,7 +108,7 @@ Turn the timeline from a static visualization into a full-featured editing inter
 - [x] Prevent clips from overlapping on same track:
   - Before `moveClip`, check if new position overlaps existing clip
   - If overlap detected, reject move or snap to adjacent position
-- [ ] Show invalid drop zone feedback:
+- [x] Show invalid drop zone feedback:
   - Red outline or "prohibited" cursor when dragging over invalid position
 - [ ] Option: Allow overlap with visual warning (for advanced users):
   - Store preference in `projectSettings.allowOverlaps`

@@ -1,7 +1,7 @@
 import { renderHook } from '@testing-library/react';
 import { useAutoSave } from '../../../src/hooks/useAutoSave';
 import { useProjectStore } from '../../../src/store/useProjectStore';
-import { serializeProject, deserializeProject, applyProjectState } from '../../../src/utils/projectSerializer';
+import { serializeProject, deserializeProject } from '../../../src/utils/projectSerializer';
 
 jest.mock('../../../src/store/useProjectStore');
 jest.mock('../../../src/utils/projectSerializer');
@@ -12,6 +12,7 @@ describe('useAutoSave', () => {
     tracks: {},
     addAsset: jest.fn(),
     setSettings: jest.fn(),
+    loadProject: jest.fn(),
   };
 
   beforeEach(() => {
@@ -48,7 +49,7 @@ describe('useAutoSave', () => {
 
     expect(window.localStorage.getItem).toHaveBeenCalledWith('strata_vid_autosave');
     expect(deserializeProject).toHaveBeenCalledWith('json-string');
-    expect(applyProjectState).toHaveBeenCalledWith(mockStore, savedState);
+    expect(mockStore.loadProject).toHaveBeenCalledWith(savedState);
   });
 
   it('should NOT restore if store has data', () => {
@@ -60,7 +61,7 @@ describe('useAutoSave', () => {
 
     renderHook(() => useAutoSave());
 
-    expect(applyProjectState).not.toHaveBeenCalled();
+    expect(mockStore.loadProject).not.toHaveBeenCalled();
   });
 
   it('should save to local storage periodically', () => {

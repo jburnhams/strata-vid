@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { useProjectStore } from '../store/useProjectStore';
-import { serializeProject, deserializeProject, applyProjectState } from '../utils/projectSerializer';
+import { serializeProject, deserializeProject } from '../utils/projectSerializer';
 
 export const ProjectMenu: React.FC = () => {
   const store = useProjectStore();
@@ -42,7 +42,7 @@ export const ProjectMenu: React.FC = () => {
           if (content) {
               const state = deserializeProject(content);
               if (state) {
-                  applyProjectState(store, state);
+                  store.loadProject(state);
               } else {
                   alert('Failed to load project: Invalid file format');
               }

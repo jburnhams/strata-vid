@@ -1,9 +1,15 @@
 import { StoreState } from '../store/types';
-import { Asset, ProjectSettings, Track, Clip } from '../types';
+import { Asset, ProjectSettings, Track, Clip, DeserializedState } from '../types';
 
+/**
+ * Serialized representation of an Asset.
+ * We deliberately strip the 'file' object and 'src' URL because:
+ * 1. 'file' objects (File API) cannot be serialized to JSON.
+ * 2. 'src' blob URLs are temporary and revoked on page reload.
+ */
 export interface SerializedAsset extends Omit<Asset, 'file' | 'src'> {
   src: null; // Explicitly null in storage
-  fileName: string; // To help identify the file needed
+  fileName: string; // To help identify the file needed for restoration
 }
 
 export interface SerializedProject {
@@ -23,12 +29,19 @@ export interface SerializedProject {
 
 const CURRENT_VERSION = 1;
 
+/**
+ * Serializes the current project state to a JSON string.
+ * This is used for saving projects to disk or auto-saving to localStorage.
+ */
 export function serializeProject(state: StoreState): string {
   const serializedAssets: Record<string, SerializedAsset> = {};
 
   Object.entries(state.assets).forEach(([id, asset]) => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { file, src, ...rest } = asset;
+
+    // We store the file name to help the user identify missing media later.
+    // In a future version, this could be used to prompt re-linking.
     serializedAssets[id] = {
       ...rest,
       src: null,
@@ -54,15 +67,10 @@ export function serializeProject(state: StoreState): string {
   return JSON.stringify(serialized, null, 2);
 }
 
-export interface DeserializedState {
-    id: string;
-    settings: ProjectSettings;
-    assets: Record<string, Asset>;
-    tracks: Record<string, Track>;
-    clips: Record<string, Clip>;
-    trackOrder: string[];
-}
-
+/**
+ * Deserializes a JSON string into a usable project state.
+ * Returns null if parsing fails or validation errors occur.
+ */
 export function deserializeProject(json: string): DeserializedState | null {
   try {
     const serialized: SerializedProject = JSON.parse(json);
@@ -77,14 +85,15 @@ export function deserializeProject(json: string): DeserializedState | null {
         console.warn(`Project file version ${serialized.version} is newer than current version ${CURRENT_VERSION}. Some features may not work.`);
     }
 
-    // Reconstruct assets (src will be empty string, file will be undefined)
+    // Reconstruct assets
+    // NOTE: The 'src' is set to empty string. The application (VideoPlayer) must handle this.
+    // Currently, there is no automatic mechanism to restore the file handles.
+    // The user would technically need to re-upload files or we need a re-linking UI.
     const assets: Record<string, Asset> = {};
     Object.entries(serialized.assets).forEach(([id, sAsset]) => {
-      // We cast to Asset because we are providing the required 'src' as a placeholder
-      // The application must handle assets with empty src (missing file)
       assets[id] = {
         ...sAsset,
-        src: '',
+        src: '', // Placeholder
         file: undefined,
       } as Asset;
     });
@@ -100,27 +109,5 @@ export function deserializeProject(json: string): DeserializedState | null {
   } catch (e) {
     console.error('Failed to parse project file', e);
     return null;
-  }
-}
-
-export function applyProjectState(store: StoreState, state: DeserializedState) {
-  // Clear existing
-  Object.keys(store.assets).forEach(id => store.removeAsset(id));
-  Object.keys(store.tracks).forEach(id => store.removeTrack(id));
-
-  store.setSettings(state.settings);
-
-  Object.values(state.assets).forEach((asset) => store.addAsset(asset));
-
-  if (state.trackOrder) {
-    state.trackOrder.forEach(trackId => {
-        const originalTrack = state.tracks[trackId];
-        if (!originalTrack) return;
-        store.addTrack({ ...originalTrack, clips: [] });
-        originalTrack.clips.forEach(clipId => {
-            const clip = state.clips[clipId];
-            if (clip) store.addClip(clip);
-        });
-    });
   }
 }

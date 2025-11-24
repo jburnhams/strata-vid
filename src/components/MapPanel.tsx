@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, GeoJSON as LeafletGeoJSON, useM
 import { LatLngExpression, GeoJSON as LGeoJSON } from 'leaflet';
 import L from 'leaflet';
 import { FeatureCollection, Geometry, GeoJsonProperties } from 'geojson';
-import { GpxPoint } from '../types';
+import { GpxPoint, TrackStyle, MarkerStyle } from '../types';
 import { getCoordinateAtTime } from '../utils/gpxParser';
 
 // Fix for default marker icon
@@ -18,26 +18,32 @@ const DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
+export interface MapTrackData {
+  geoJson?: FeatureCollection<Geometry, GeoJsonProperties>;
+  gpxPoints?: GpxPoint[];
+  syncOffset?: number;
+  trackStyle?: TrackStyle;
+  markerStyle?: MarkerStyle;
+}
+
 interface MapPanelProps {
   center?: LatLngExpression;
   zoom?: number;
   className?: string;
+  currentTime?: number; // Current video time in seconds
+
+  // Multiple tracks support
+  tracks?: MapTrackData[];
+
+  // Legacy/Single track props (mapped to first track if 'tracks' not provided)
   geoJson?: FeatureCollection<Geometry, GeoJsonProperties>;
   gpxPoints?: GpxPoint[];
-  currentTime?: number; // Current video time in seconds
   syncOffset?: number; // Offset in ms between video time 0 and GPX time
 
   // Styling
   mapStyle?: 'osm' | 'mapbox' | 'satellite';
-  trackStyle?: {
-    color: string;
-    weight: number;
-    opacity: number;
-  };
-  markerStyle?: {
-    color: string;
-    type?: 'dot' | 'pin';
-  };
+  trackStyle?: TrackStyle;
+  markerStyle?: MarkerStyle;
 }
 
 const TILE_PROVIDERS = {
@@ -82,9 +88,8 @@ const CurrentPositionMarker = ({
   gpxPoints: GpxPoint[],
   currentTime: number,
   syncOffset: number,
-  markerStyle?: { color: string; type?: 'dot' | 'pin' }
+  markerStyle?: MarkerStyle
 }) => {
-  const map = useMap();
 
   const position = useMemo(() => {
     if (!gpxPoints || gpxPoints.length === 0) return null;
@@ -129,15 +134,39 @@ export const MapPanel: React.FC<MapPanelProps> = ({
   center = [51.505, -0.09],
   zoom = 13,
   className,
+  currentTime = 0,
+  mapStyle = 'osm',
+
+  tracks,
+
+  // Legacy props
   geoJson,
   gpxPoints,
-  currentTime = 0,
   syncOffset = 0,
-  mapStyle = 'osm',
   trackStyle,
   markerStyle
 }) => {
   const tileProvider = TILE_PROVIDERS[mapStyle] || TILE_PROVIDERS.osm;
+
+  // normalize tracks
+  const effectiveTracks = useMemo(() => {
+      if (tracks && tracks.length > 0) return tracks;
+
+      // Fallback to legacy props if valid
+      if (geoJson || gpxPoints) {
+          return [{
+              geoJson,
+              gpxPoints,
+              syncOffset,
+              trackStyle,
+              markerStyle
+          }];
+      }
+      return [];
+  }, [tracks, geoJson, gpxPoints, syncOffset, trackStyle, markerStyle]);
+
+  // Determine primary track for bounds fitting (use first one)
+  const primaryTrack = effectiveTracks.length > 0 ? effectiveTracks[0] : null;
 
   return (
     <div className={className} style={{ height: '100%', width: '100%' }}>
@@ -151,34 +180,42 @@ export const MapPanel: React.FC<MapPanelProps> = ({
           attribution={tileProvider.attribution}
           url={tileProvider.url}
         />
-        {!geoJson && (
+
+        {effectiveTracks.length === 0 && (
           <Marker position={center}>
             <Popup>
               Default Marker
             </Popup>
           </Marker>
         )}
-        {geoJson && (
-          <>
-            <LeafletGeoJSON
-                data={geoJson as any}
-                style={{
-                    color: trackStyle?.color || '#007acc',
-                    weight: trackStyle?.weight || 4,
-                    opacity: trackStyle?.opacity || 1
-                }}
-            />
-            <FitBounds geoJson={geoJson} />
-          </>
+
+        {effectiveTracks.map((track, index) => (
+            <React.Fragment key={index}>
+                {track.geoJson && (
+                    <LeafletGeoJSON
+                        data={track.geoJson as any}
+                        style={{
+                            color: track.trackStyle?.color || '#007acc',
+                            weight: track.trackStyle?.weight || 4,
+                            opacity: track.trackStyle?.opacity || 1
+                        }}
+                    />
+                )}
+                {track.gpxPoints && (
+                  <CurrentPositionMarker
+                    gpxPoints={track.gpxPoints}
+                    currentTime={currentTime}
+                    syncOffset={track.syncOffset || 0}
+                    markerStyle={track.markerStyle}
+                  />
+                )}
+            </React.Fragment>
+        ))}
+
+        {primaryTrack && primaryTrack.geoJson && (
+            <FitBounds geoJson={primaryTrack.geoJson} />
         )}
-        {gpxPoints && (
-          <CurrentPositionMarker
-            gpxPoints={gpxPoints}
-            currentTime={currentTime}
-            syncOffset={syncOffset}
-            markerStyle={markerStyle}
-          />
-        )}
+
       </MapContainer>
     </div>
   );

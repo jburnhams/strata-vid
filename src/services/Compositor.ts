@@ -1,4 +1,4 @@
-import { Asset, Clip, ProjectSettings, Track, TextStyle } from '../types';
+import { Asset, Clip, ProjectSettings, Track, TextStyle, TrackStyle, MarkerStyle } from '../types';
 import { getGpxPositionAtTime, lat2tile, lon2tile, getTileUrl, TILE_SIZE } from '../utils/mapUtils';
 import { Feature, LineString } from 'geojson';
 
@@ -60,12 +60,6 @@ export class Compositor {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, width, height);
 
-    // Tracks are ordered bottom-to-top in the array passed here (assumed processed by caller)
-    // If caller passes raw store tracks array?
-    // In ExportManager: `const orderedTracks = project.trackOrder.map(id => project.tracks[id]).filter(Boolean);`
-    // This produces an array where index 0 is bottom, index N is top (based on typical store logic).
-    // So we iterate normally.
-
     for (const track of project.tracks) {
       if (track.isMuted) continue;
 
@@ -87,7 +81,7 @@ export class Compositor {
               transitionProgress = Math.max(0, Math.min(1, transitionTime / clip.transitionIn.duration));
             }
           }
-          await this.drawClip(ctx, clip, asset, time, transitionProgress);
+          await this.drawClip(ctx, clip, asset, time, transitionProgress, project.assets);
         }
       }
     }
@@ -98,7 +92,8 @@ export class Compositor {
     clip: Clip,
     asset: Asset | undefined,
     globalTime: number,
-    transitionProgress: number = 1
+    transitionProgress: number = 1,
+    allAssets?: Record<string, Asset>
   ) {
     const localTime = globalTime - clip.start + clip.offset;
 
@@ -134,7 +129,6 @@ export class Compositor {
     ctx.rotate((rotation * Math.PI) / 180);
 
     // Clip to bounding box (overflow: hidden)
-    // The drawing area is now centered at (0,0) with size (w, h)
     ctx.beginPath();
 
     // Handle Wipe Transition
@@ -156,7 +150,7 @@ export class Compositor {
         } else if (clip.type === 'text') {
             this.drawText(ctx, clip, w, h);
         } else if (clip.type === 'map' && asset && asset.type === 'gpx') {
-            await this.drawMap(ctx, clip, asset, localTime, w, h);
+            await this.drawMap(ctx, clip, asset, localTime, w, h, allAssets);
         }
     } catch (e) {
         console.error(`Error drawing clip ${clip.id}`, e);
@@ -176,28 +170,19 @@ export class Compositor {
     const video = this.videoPool.get(asset.id);
     if (!video) return;
 
-    // Seek logic
-    // We check if we need to seek. For export, frames are sequential, but time might jump if clips are non-contiguous.
-    // Use a very small threshold to ensure every frame is rendered accurately (frame time at 60fps is ~0.016s)
     if (Math.abs(video.currentTime - time) > 0.001) {
         video.currentTime = time;
-        // Wait for seeked
         await new Promise<void>((resolve) => {
             const onSeeked = () => {
                 video.removeEventListener('seeked', onSeeked);
                 resolve();
             };
-            // If it's already ready (rare in this loop but possible), resolve immediately?
-            // Safer to just wait for event.
             video.addEventListener('seeked', onSeeked, { once: true });
         });
     }
 
-    // Object Fit: Cover
-    // Calculate scaling to cover dstW, dstH
-    const srcW = video.videoWidth || 1280; // Fallback
+    const srcW = video.videoWidth || 1280;
     const srcH = video.videoHeight || 720;
-
     const { dw, dh, dx, dy } = this.calculateObjectFit(srcW, srcH, dstW, dstH, 'cover');
 
     ctx.drawImage(video, dx, dy, dw, dh);
@@ -212,9 +197,7 @@ export class Compositor {
       const img = this.imageCache.get(asset.id);
       if (!img) return;
 
-      // Object Fit: Contain
       const { dw, dh, dx, dy } = this.calculateObjectFit(img.width, img.height, dstW, dstH, 'contain');
-
       ctx.drawImage(img, dx, dy, dw, dh);
   }
 
@@ -236,15 +219,12 @@ export class Compositor {
       ctx.font = `${style.fontWeight} ${style.fontSize}px ${style.fontFamily}`;
       ctx.fillStyle = style.color;
       ctx.textAlign = style.textAlign as CanvasTextAlign;
-      ctx.textBaseline = 'middle'; // Vertical align center
+      ctx.textBaseline = 'middle';
 
-      // X Position based on alignment
       let x = 0;
       if (style.textAlign === 'left') x = -dstW / 2;
       else if (style.textAlign === 'right') x = dstW / 2;
 
-      // Simple word wrap
-      // Since we want to center vertically, we need to know total height first.
       const lineHeight = style.fontSize * 1.2;
       const words = text.split(' ');
       const lines: string[] = [];
@@ -262,7 +242,6 @@ export class Compositor {
       }
       lines.push(currentLine);
 
-      // Draw lines
       const totalTextHeight = lines.length * lineHeight;
       let startY = -totalTextHeight / 2 + lineHeight / 2;
 
@@ -278,21 +257,26 @@ export class Compositor {
     asset: Asset,
     time: number,
     dstW: number,
-    dstH: number
+    dstH: number,
+    allAssets?: Record<string, Asset>
   ) {
     if (!asset.geoJson) return;
 
-    // Use clip zoom or default
     const zoom = clip.properties.mapZoom || 13;
 
-    // 1. Get current position for center
-    const center = getGpxPositionAtTime(asset.geoJson.features[0] as Feature<LineString>, time);
-    // If no data at this time, maybe we just don't draw? Or draw last known?
+    // 1. Get current position for center (Primary) using proper sync logic
+    const props = asset.geoJson.features[0].properties;
+    const startTime = props && props.coordTimes ? new Date(props.coordTimes[0]).getTime() : 0;
+    const syncBase = clip.syncOffset !== undefined ? clip.syncOffset : startTime;
+    const targetTimestamp = syncBase + (time * 1000);
+    const offsetSeconds = (targetTimestamp - startTime) / 1000;
+
+    const center = getGpxPositionAtTime(asset.geoJson.features[0] as Feature<LineString>, offsetSeconds);
+
     if (!center) return;
 
     const [lon, lat] = center;
 
-    // Calculate view bounds in Tile Pixels (World Space at Zoom)
     const centerTx = lon2tile(lon, zoom);
     const centerTy = lat2tile(lat, zoom);
     const centerPx = centerTx * TILE_SIZE;
@@ -322,32 +306,53 @@ export class Compositor {
 
     const tiles = await Promise.all(promises);
 
-    // Draw Tiles
     for (const tile of tiles) {
         if (!tile) continue;
         const { img, x, y } = tile;
-
         const tilePx = x * TILE_SIZE;
         const tilePy = y * TILE_SIZE;
-
-        const drawX = tilePx - viewLeft - halfW; // Relative to center (0,0)
+        const drawX = tilePx - viewLeft - halfW;
         const drawY = tilePy - viewTop - halfH;
-
         ctx.drawImage(img, drawX, drawY, TILE_SIZE, TILE_SIZE);
     }
 
-    // Draw Path
-    this.drawGpxPath(ctx, clip, asset.geoJson, zoom, viewLeft, viewTop, halfW, halfH);
+    // Draw Primary Path & Marker
+    this.drawGpxPath(ctx, clip.properties.trackStyle, asset.geoJson, zoom, viewLeft, viewTop, halfW, halfH);
+    this.drawMarker(ctx, clip.properties.markerStyle, 0, 0); // 0,0 is center (since we centered on this)
 
-    // Draw Marker
-    const markerColor = clip.properties.markerStyle?.color || 'blue';
-    ctx.fillStyle = markerColor;
-    ctx.beginPath();
-    ctx.arc(0, 0, 8, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    // Draw Extra Tracks
+    if (clip.extraTrackAssets && allAssets) {
+        for (const extra of clip.extraTrackAssets) {
+            const extraAsset = allAssets[extra.assetId];
+            if (extraAsset && extraAsset.geoJson) {
+                // Calculate position for extra track
+                // It needs its own sync logic
+                const extraProps = extraAsset.geoJson.features[0].properties;
+                const extraStartTime = extraProps && extraProps.coordTimes ? new Date(extraProps.coordTimes[0]).getTime() : 0;
+                const extraSyncBase = extra.syncOffset !== undefined ? extra.syncOffset : extraStartTime;
+                const extraTargetTimestamp = extraSyncBase + (time * 1000);
+                const extraOffsetSeconds = (extraTargetTimestamp - extraStartTime) / 1000;
+
+                const extraPos = getGpxPositionAtTime(extraAsset.geoJson.features[0] as Feature<LineString>, extraOffsetSeconds);
+
+                // Draw path
+                this.drawGpxPath(ctx, extra.trackStyle, extraAsset.geoJson, zoom, viewLeft, viewTop, halfW, halfH);
+
+                // Draw Marker if we have a position
+                if (extraPos) {
+                    const [exLon, exLat] = extraPos;
+                    const exTx = lon2tile(exLon, zoom);
+                    const exTy = lat2tile(exLat, zoom);
+                    const exPx = exTx * TILE_SIZE;
+                    const exPy = exTy * TILE_SIZE;
+                    const exDrawX = exPx - viewLeft - halfW;
+                    const exDrawY = exPy - viewTop - halfH;
+
+                    this.drawMarker(ctx, extra.markerStyle, exDrawX, exDrawY);
+                }
+            }
+        }
+    }
   }
 
   private loadTile(x: number, y: number, z: number): Promise<HTMLImageElement | null> {
@@ -363,7 +368,6 @@ export class Compositor {
               resolve(img);
           };
           img.onerror = () => {
-              // Fail silently, maybe render nothing for this tile
               resolve(null);
           };
           img.src = url;
@@ -372,7 +376,7 @@ export class Compositor {
 
   private drawGpxPath(
       ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D,
-      clip: Clip,
+      style: TrackStyle | undefined,
       geoJson: any,
       zoom: number,
       viewLeft: number,
@@ -384,18 +388,15 @@ export class Compositor {
       const feature = geoJson.features[0];
       if (feature.geometry.type !== 'LineString') return;
 
-      const style = clip.properties.trackStyle;
       ctx.strokeStyle = style?.color || '#ff0000';
       ctx.lineWidth = style?.weight || 4;
+      ctx.globalAlpha = style?.opacity !== undefined ? style.opacity : 1;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.beginPath();
 
       const coords = feature.geometry.coordinates;
       let first = true;
-
-      // Optimization: Only draw segments that are visible or close to view?
-      // For now draw all (export time is less critical than runtime FPS, but still)
 
       for (const [lon, lat] of coords) {
           const tx = lon2tile(lon, zoom);
@@ -414,6 +415,34 @@ export class Compositor {
           }
       }
       ctx.stroke();
+      ctx.globalAlpha = 1; // Reset
+  }
+
+  private drawMarker(
+      ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D,
+      style: MarkerStyle | undefined,
+      x: number,
+      y: number
+  ) {
+      const color = style?.color || 'blue';
+      const type = style?.type || 'dot';
+
+      if (type === 'dot') {
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(x, y, 8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+      } else {
+           // Simple pin shape fallback
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.arc(x, y - 10, 10, 0, Math.PI * 2);
+          ctx.fill();
+      }
   }
 
   private calculateObjectFit(
@@ -434,7 +463,7 @@ export class Compositor {
           } else {
               dw = dstH * srcRatio;
           }
-      } else { // cover
+      } else {
           if (srcRatio > dstRatio) {
               dw = dstH * srcRatio;
           } else {
@@ -442,11 +471,6 @@ export class Compositor {
           }
       }
 
-      return {
-          dw,
-          dh,
-          dx: -dw / 2,
-          dy: -dh / 2
-      };
+      return { dw, dh, dx: -dw / 2, dy: -dh / 2 };
   }
 }

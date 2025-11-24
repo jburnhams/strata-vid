@@ -1,14 +1,15 @@
 import React from 'react';
 import { Clip, Asset } from '../../types';
-import { MapPanel } from '../MapPanel';
+import { MapPanel, MapTrackData } from '../MapPanel';
 
 interface OverlayRendererProps {
   clip: Clip;
   asset?: Asset;
   currentTime: number;
+  allAssets?: Record<string, Asset>;
 }
 
-export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, currentTime }) => {
+export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, currentTime, allAssets }) => {
   // Transition Logic
   let effectiveOpacity = clip.properties.opacity;
   let clipPath: string | undefined;
@@ -36,31 +37,9 @@ export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, c
     opacity: effectiveOpacity,
     zIndex: clip.properties.zIndex,
     overflow: 'hidden',
-    pointerEvents: 'none', // Allow clicks to pass through to map? No, map needs interaction?
+    pointerEvents: 'none',
     clipPath,
-    // Usually overlays block interaction. But MapPanel has MapContainer which handles events.
-    // If pointerEvents is none, Map won't be pannable.
-    // Requirement says "drag, resize clips" in Section B, but Section D implies map interaction?
-    // "Zoom level control: Option to auto-zoom ... or follow mode".
-    // "Manual sync interface ... user scrubs video".
-    // If this is preview, we might want map interaction.
-    // However, in "Editor Mode", clicks on the preview usually select the clip.
-    // For now, let's keep pointer-events: none for the container wrapper if it's just visual,
-    // but MapPanel might need pointer events if we want to zoom/pan.
-    // Let's assume for Preview purposes (passive watching), it's fine.
-    // If the user wants to interact with the map, we might need a specific mode.
-    // But wait, "Map overlay component... Zoom level control".
-    // If I leave pointer-events: none, the map is static.
-    // If I enable it, it might capture clicks meant for selecting the clip in the editor.
-    // Given the current architecture where PreviewPanel handles selection?
-    // Actually PreviewPanel doesn't seem to have selection logic on the overlay itself yet (Section B).
-    // I'll leave pointerEvents: 'none' for consistency with other overlays for now,
-    // but maybe MapPanel needs to override it?
-    // If I set pointerEvents: 'auto' on the MapPanel div, it should work.
   };
-
-  // Override pointer-events for map if interaction is desired?
-  // For now let's keep it consistent.
 
   if (clip.type === 'text') {
     const textStyle: React.CSSProperties = clip.textStyle
@@ -108,18 +87,42 @@ export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, c
   }
 
   if (clip.type === 'map' && asset && asset.geoJson) {
+      const tracks: MapTrackData[] = [];
+
+      // Primary track
+      tracks.push({
+          geoJson: asset.geoJson,
+          gpxPoints: asset.gpxPoints,
+          syncOffset: clip.syncOffset,
+          trackStyle: clip.properties.trackStyle,
+          markerStyle: clip.properties.markerStyle
+      });
+
+      // Extra tracks
+      if (clip.extraTrackAssets && allAssets) {
+          clip.extraTrackAssets.forEach(extra => {
+              const extraAsset = allAssets[extra.assetId];
+              if (extraAsset && extraAsset.geoJson) {
+                  tracks.push({
+                      geoJson: extraAsset.geoJson,
+                      gpxPoints: extraAsset.gpxPoints,
+                      syncOffset: extra.syncOffset,
+                      trackStyle: extra.trackStyle,
+                      markerStyle: extra.markerStyle
+                  });
+              }
+          });
+      }
+
       return (
-          <div style={{...style, pointerEvents: 'auto'}}> {/* Enable interaction for map */}
+          <div style={{...style, pointerEvents: 'auto'}}>
               <MapPanel
                 className="w-full h-full"
-                geoJson={asset.geoJson}
-                gpxPoints={asset.gpxPoints}
+                tracks={tracks}
                 currentTime={currentTime}
-                syncOffset={clip.syncOffset}
+                // View settings come from the primary clip properties
                 mapStyle={clip.properties.mapStyle}
                 zoom={clip.properties.mapZoom}
-                trackStyle={clip.properties.trackStyle}
-                markerStyle={clip.properties.markerStyle}
               />
           </div>
       );

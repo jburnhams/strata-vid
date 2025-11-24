@@ -131,6 +131,7 @@ export const PreviewPanel: React.FC = () => {
                                 clip={clip}
                                 asset={asset}
                                 currentTime={currentTime}
+                                allAssets={assets}
                             />
                         );
                     }

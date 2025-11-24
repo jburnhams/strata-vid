@@ -3,14 +3,14 @@
 **Priority**: Low (enhanced visualizations)
 **Goal**: Enhanced map visualizations, multiple tracks, elevation profiles.
 **Dependencies**: Section D (basic map integration)
-**Status**: 🔴 Not implemented
+**Status**: 🟡 In Progress
 
 ## Tasks
 
-- [ ] **K1: Multiple GPX tracks** (4-5 hours)
-  - Support multiple GPX overlays
+- [x] **K1: Multiple GPX tracks** (4-5 hours)
+  - Support multiple GPX overlays via `extraTrackAssets` in Clip
   - Different colors for each
-  - Files: `src/components/preview/MapOverlay.tsx`
+  - Files: `src/components/MapPanel.tsx`, `src/types.ts`, `src/services/Compositor.ts`
 
 - [ ] **K2: Elevation profile** (6-8 hours)
   - Display elevation graph below map

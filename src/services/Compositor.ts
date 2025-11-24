@@ -69,18 +69,25 @@ export class Compositor {
     for (const track of project.tracks) {
       if (track.isMuted) continue;
 
-      // Find active clip
-      const activeClipId = track.clips.find((id) => {
-        const clip = project.clips[id];
-        return clip && time >= clip.start && time < clip.start + clip.duration;
-      });
+      // Find all active clips (handling overlapping transitions)
+      const activeClips = track.clips
+        .map((id) => project.clips[id])
+        .filter((clip) => clip && time >= clip.start && time < clip.start + clip.duration)
+        .sort((a, b) => a.start - b.start);
 
-      if (activeClipId) {
-        const clip = project.clips[activeClipId];
+      for (const clip of activeClips) {
         const asset = project.assets[clip.assetId];
         // Text clips might not have an asset, but others must
         if (clip.type === 'text' || asset) {
-          await this.drawClip(ctx, clip, asset, time);
+          // Calculate transition progress
+          let transitionProgress = 1;
+          if (clip.transitionIn) {
+            const transitionTime = time - clip.start;
+            if (transitionTime < clip.transitionIn.duration) {
+              transitionProgress = Math.max(0, Math.min(1, transitionTime / clip.transitionIn.duration));
+            }
+          }
+          await this.drawClip(ctx, clip, asset, time, transitionProgress);
         }
       }
     }
@@ -90,7 +97,8 @@ export class Compositor {
     ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D,
     clip: Clip,
     asset: Asset | undefined,
-    globalTime: number
+    globalTime: number,
+    transitionProgress: number = 1
   ) {
     const localTime = globalTime - clip.start + clip.offset;
 
@@ -109,8 +117,14 @@ export class Compositor {
     const px = (x / 100) * cw;
     const py = (y / 100) * ch;
 
-    // Apply Opacity
-    ctx.globalAlpha = opacity;
+    // Apply Opacity (Transition)
+    let effectiveOpacity = opacity;
+    if (clip.transitionIn) {
+      if (clip.transitionIn.type === 'crossfade' || clip.transitionIn.type === 'fade') {
+        effectiveOpacity = opacity * transitionProgress;
+      }
+    }
+    ctx.globalAlpha = effectiveOpacity;
 
     // Apply Transform: Translate to center of clip, then rotate
     const centerX = px + w / 2;
@@ -122,7 +136,16 @@ export class Compositor {
     // Clip to bounding box (overflow: hidden)
     // The drawing area is now centered at (0,0) with size (w, h)
     ctx.beginPath();
-    ctx.rect(-w / 2, -h / 2, w, h);
+
+    // Handle Wipe Transition
+    if (clip.transitionIn && clip.transitionIn.type === 'wipe') {
+      const visibleWidth = w * transitionProgress;
+      // Wipe left to right
+      ctx.rect(-w / 2, -h / 2, visibleWidth, h);
+    } else {
+      ctx.rect(-w / 2, -h / 2, w, h);
+    }
+
     ctx.clip();
 
     try {

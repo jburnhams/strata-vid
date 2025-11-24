@@ -20,7 +20,7 @@
   - Delete clip and shift subsequent clips left
   - Files: `src/store/slices/timelineSlice.ts`
 
-- [ ] **H4: Crossfade transitions** (8-10 hours)
+- [x] **H4: Crossfade transitions** (8-10 hours)
   - Add transition between clips
   - Types: Fade, Dissolve, Wipe
   - Render in preview and export

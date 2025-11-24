@@ -9,6 +9,23 @@ interface OverlayRendererProps {
 }
 
 export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, currentTime }) => {
+  // Transition Logic
+  let effectiveOpacity = clip.properties.opacity;
+  let clipPath: string | undefined;
+
+  if (clip.transitionIn) {
+    const t = currentTime - clip.start;
+    if (t >= 0 && t < clip.transitionIn.duration) {
+      const progress = t / clip.transitionIn.duration;
+      if (clip.transitionIn.type === 'crossfade' || clip.transitionIn.type === 'fade') {
+        effectiveOpacity *= progress;
+      } else if (clip.transitionIn.type === 'wipe') {
+        const p = progress * 100;
+        clipPath = `polygon(0 0, ${p}% 0, ${p}% 100%, 0 100%)`;
+      }
+    }
+  }
+
   const style: React.CSSProperties = {
     position: 'absolute',
     left: `${clip.properties.x}%`,
@@ -16,10 +33,11 @@ export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, c
     width: `${clip.properties.width}%`,
     height: `${clip.properties.height}%`,
     transform: `rotate(${clip.properties.rotation}deg)`,
-    opacity: clip.properties.opacity,
+    opacity: effectiveOpacity,
     zIndex: clip.properties.zIndex,
     overflow: 'hidden',
     pointerEvents: 'none', // Allow clicks to pass through to map? No, map needs interaction?
+    clipPath,
     // Usually overlays block interaction. But MapPanel has MapContainer which handles events.
     // If pointerEvents is none, Map won't be pannable.
     // Requirement says "drag, resize clips" in Section B, but Section D implies map interaction?

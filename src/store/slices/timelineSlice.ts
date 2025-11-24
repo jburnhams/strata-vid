@@ -199,6 +199,59 @@ export const createTimelineSlice: StateCreator<
         });
       }
     }),
+  addTransition: (id, transition) =>
+    set((state) => {
+      const clip = state.clips[id];
+      if (!clip) return;
+
+      const track = state.tracks[clip.trackId];
+      if (!track) return;
+
+      // Get clips on track sorted by start time
+      const trackClips = track.clips
+        .map((cId) => state.clips[cId])
+        .filter(Boolean) as Clip[];
+
+      trackClips.sort((a, b) => a.start - b.start);
+
+      const clipIndex = trackClips.findIndex((c) => c.id === id);
+      if (clipIndex <= 0) return; // No previous clip
+
+      const prevClip = trackClips[clipIndex - 1];
+      const prevEnd = prevClip.start + prevClip.duration;
+
+      // Ensure contiguous (allow small gap)
+      if (Math.abs(clip.start - prevEnd) > 0.1) return;
+
+      const shiftAmount = transition.duration;
+      const newStart = clip.start - shiftAmount;
+
+      if (newStart < 0) return;
+
+      const newEnd = newStart + clip.duration;
+
+      // Check collision with other clips (excluding self and prevClip)
+      const hasCollision = trackClips.some((c) => {
+        if (c.id === id || c.id === prevClip.id) return false;
+        // Check overlap: start < cEnd && end > cStart
+        const cEnd = c.start + c.duration;
+        return newStart < cEnd && newEnd > c.start;
+      });
+
+      if (hasCollision) return;
+
+      // Apply transition and shift
+      clip.transitionIn = transition;
+      clip.start = newStart;
+
+      // Shift subsequent clips
+      for (let i = clipIndex + 1; i < trackClips.length; i++) {
+        const nextClip = state.clips[trackClips[i].id];
+        if (nextClip) {
+          nextClip.start -= shiftAmount;
+        }
+      }
+    }),
   updateClipSyncOffset: (id, syncOffset) =>
     set((state) => {
       const clip = state.clips[id];

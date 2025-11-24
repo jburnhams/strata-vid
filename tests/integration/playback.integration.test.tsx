@@ -68,18 +68,19 @@ describe('Playback Integration', () => {
     render(<App />);
 
     // 1. Check Initial State
-    expect(screen.getByTitle('Play (Space)')).toBeInTheDocument();
+    // Using accessible queries now
+    expect(screen.getByLabelText('Play')).toBeInTheDocument();
     expect(useProjectStore.getState().isPlaying).toBe(false);
 
     // 2. Start Playback
     jest.useFakeTimers();
 
     await act(async () => {
-        fireEvent.click(screen.getByTitle('Play (Space)'));
+        fireEvent.click(screen.getByLabelText('Play'));
     });
 
     expect(useProjectStore.getState().isPlaying).toBe(true);
-    expect(screen.getByTitle('Pause (Space)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Pause')).toBeInTheDocument();
 
     // 3. Advance Time
     // We need to advance timers to trigger requestAnimationFrame
@@ -96,7 +97,7 @@ describe('Playback Integration', () => {
 
     // 4. Pause
     await act(async () => {
-        fireEvent.click(screen.getByTitle('Pause (Space)'));
+        fireEvent.click(screen.getByLabelText('Pause'));
     });
     expect(useProjectStore.getState().isPlaying).toBe(false);
 
@@ -153,7 +154,7 @@ describe('Playback Integration', () => {
     });
 
     await act(async () => {
-        fireEvent.click(screen.getByTitle('Stop (Home)'));
+        fireEvent.click(screen.getByLabelText('Stop'));
     });
 
     expect(useProjectStore.getState().isPlaying).toBe(false);

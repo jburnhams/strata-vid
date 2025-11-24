@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useProjectStore } from '../store/useProjectStore';
 
-export const useKeyboardShortcuts = () => {
+export const useKeyboardShortcuts = (onToggleHelp?: () => void) => {
   const setPlaybackState = useProjectStore((state) => state.setPlaybackState);
   const removeClip = useProjectStore((state) => state.removeClip);
 
@@ -17,6 +17,30 @@ export const useKeyboardShortcuts = () => {
       const fps = state.settings.fps || 30;
       const frameTime = 1 / fps;
       const duration = state.settings.duration;
+
+      // Handle modifiers
+      const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+
+      // Undo / Redo
+      if (isCtrlOrCmd) {
+          if (e.code === 'KeyZ') {
+              e.preventDefault();
+              (useProjectStore as any).undo();
+              return;
+          }
+          if (e.code === 'KeyY') {
+              e.preventDefault();
+              (useProjectStore as any).redo();
+              return;
+          }
+      }
+
+      // Help
+      if (e.key === '?' && onToggleHelp) {
+          e.preventDefault();
+          onToggleHelp();
+          return;
+      }
 
       switch (e.code) {
         case 'Space':
@@ -62,5 +86,5 @@ export const useKeyboardShortcuts = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [setPlaybackState, removeClip]);
+  }, [setPlaybackState, removeClip, onToggleHelp]);
 };

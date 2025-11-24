@@ -48,12 +48,12 @@ describe('Project Management Integration', () => {
 
     const { container } = render(<App />);
 
-    // 2. Add Asset
-    const libraryInput = container.querySelector('.library input[type="file"]');
+    // 2. Add Asset - Updated selector to match new accessibility structure
+    const libraryInput = screen.getByLabelText('Add Asset');
     expect(libraryInput).toBeInTheDocument();
 
     const videoFile = new File(['dummy'], 'video.mp4', { type: 'video/mp4' });
-    await user.upload(libraryInput as HTMLElement, videoFile);
+    await user.upload(libraryInput, videoFile);
 
     // Verify asset added
     await waitFor(() => {
@@ -98,7 +98,7 @@ describe('Project Management Integration', () => {
 
     // Verify cleared
     await waitFor(() => {
-        expect(screen.getByText('No assets loaded')).toBeInTheDocument();
+        expect(screen.getByText(/No assets loaded/i)).toBeInTheDocument();
         expect(screen.queryByText('video.mp4')).not.toBeInTheDocument();
     });
 

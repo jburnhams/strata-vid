@@ -48,20 +48,12 @@ describe('Undo/Redo Integration', () => {
 
     render(<App />);
 
-    // 2. Add Asset
-    const libraryInput = document.querySelector('.library input[type="file"]');
-    if (!libraryInput) throw new Error('Library input not found');
-
-    const videoFile = new File(['dummy'], 'video.mp4', { type: 'video/mp4' });
-    await user.upload(libraryInput as HTMLElement, videoFile);
+    // 2. Add Asset - Using accessible selector
+    const libraryInput = screen.getByLabelText('Add Asset');
+    await user.upload(libraryInput, new File(['dummy'], 'video.mp4', { type: 'video/mp4' }));
 
     // Verify clip added to timeline
     await waitFor(() => {
-        // Look for the clip in the timeline (it usually renders the name)
-        // Since ClipItem might not render name depending on zoom, let's assume it does or find by testid
-        // We can verify "video.mp4" exists in the document (Library has it too)
-        // Let's check for the clip element specifically.
-        // ClipItem usually has data-testid="clip-item-{id}"
         const clips = document.querySelectorAll('[data-testid^="clip-item"]');
         expect(clips.length).toBe(1);
     });

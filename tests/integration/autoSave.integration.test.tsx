@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../../src/App';
 import { AssetLoader } from '../../src/services/AssetLoader';
@@ -61,12 +61,10 @@ describe('AutoSave Integration', () => {
 
     render(<App />);
 
-    // 2. Add Asset to trigger state change
-    const libraryInput = document.querySelector('.library input[type="file"]');
-    if (!libraryInput) throw new Error('Library input not found');
-
+    // 2. Add Asset to trigger state change - use accessible selector
+    const libraryInput = screen.getByLabelText('Add Asset');
     const videoFile = new File(['dummy'], 'autosave_video.mp4', { type: 'video/mp4' });
-    await user.upload(libraryInput as HTMLElement, videoFile);
+    await user.upload(libraryInput, videoFile);
 
     // Verify asset loaded
     await waitFor(() => {

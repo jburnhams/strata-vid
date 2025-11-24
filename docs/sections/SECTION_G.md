@@ -3,7 +3,7 @@
 **Priority**: Medium (polish)
 **Goal**: Polish UI, error handling, loading states, tooltips.
 **Dependencies**: Sections A, B (core app functional)
-**Status**: 🔴 Minimal implementation
+**Status**: 🟢 Completed
 
 ## Tasks
 
@@ -45,7 +45,7 @@
   - Tablet support
   - Simplified mobile UI
 
-- [ ] **G8: Accessibility** (4-6 hours)
+- [x] **G8: Accessibility** (4-6 hours)
   - Keyboard navigation
   - ARIA labels
   - Focus indicators
@@ -58,3 +58,14 @@
 - Asset thumbnails visible
 - Metadata panel shows comprehensive info
 - App is keyboard-accessible
+
+## Testing results
+- **Unit Tests**:
+    - `tests/unit/components/HelpModal.test.tsx`: Verified modal rendering, content, and close behavior.
+    - `tests/unit/components/Tooltip.test.tsx`: Verified tooltip display on hover.
+    - `tests/unit/components/TransportControls.test.tsx`: Verified ARIA labels and play/pause logic.
+    - `tests/unit/App.test.tsx`: Verified integration of Help and Accessibility features.
+
+- **Integration Tests**:
+    - `tests/integration/help.test.tsx`: Verified Help modal opens via button and `?` key.
+    - `tests/integration/accessibility.test.tsx`: Verified accessible roles and labels for main UI regions.

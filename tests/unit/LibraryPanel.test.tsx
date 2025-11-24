@@ -21,7 +21,7 @@ describe('LibraryPanel', () => {
         onAssetSelect={mockOnSelect}
       />
     );
-    expect(screen.getByText('No assets loaded')).toBeInTheDocument();
+    expect(screen.getByText(/No assets loaded/i)).toBeInTheDocument();
   });
 
   it('renders list of assets', () => {

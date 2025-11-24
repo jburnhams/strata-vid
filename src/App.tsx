@@ -6,20 +6,26 @@ import { TimelinePanel } from './components/TimelinePanel';
 import { ProjectMenu } from './components/ProjectMenu';
 import { EditMenu } from './components/EditMenu';
 import { useProjectStore } from './store/useProjectStore';
-import { AssetType, Asset, Track } from './types';
+import { Asset, Track } from './types';
 import { AssetLoader } from './services/AssetLoader';
 import { ExportModal } from './components/ExportModal';
+import { HelpModal } from './components/HelpModal';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { ToastContainer } from './components/Toast';
 import { LoadingOverlay } from './components/LoadingOverlay';
 import { handleError, showSuccess } from './utils/errorHandler';
 import { Tooltip } from './components/Tooltip';
 import { useAutoSave } from './hooks/useAutoSave';
+import { HelpCircle } from 'lucide-react';
 
 function App() {
-  useKeyboardShortcuts();
-  useAutoSave();
   const [showExport, setShowExport] = React.useState(false);
+  const [showHelp, setShowHelp] = React.useState(false);
+
+  const toggleHelp = () => setShowHelp(prev => !prev);
+  useKeyboardShortcuts(toggleHelp);
+  useAutoSave();
+
   const {
     assets: assetsRecord,
     clips: clipsRecord,
@@ -34,6 +40,7 @@ function App() {
 
   // Convert Records to Arrays for UI consumption and logic
   const assets = Object.values(assetsRecord || {});
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const clips = Object.values(clipsRecord || {});
   const tracks = Object.values(tracksRecord || {});
 
@@ -117,14 +124,40 @@ function App() {
         <span className="font-bold text-lg">Strata Vid</span>
         <ProjectMenu />
         <EditMenu />
-        <button className="px-3 py-1 text-sm hover:bg-neutral-700 rounded">View</button>
-        <button
-          className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-500 rounded font-medium ml-4"
-          onClick={() => setShowExport(true)}
-        >
-          Export
-        </button>
-        <div className="ml-auto text-xs text-neutral-500">v0.1.0</div>
+
+        {/* Help Button */}
+        <div className="ml-auto flex items-center gap-4">
+          <Tooltip content="Keyboard Shortcuts (?)">
+            <button
+              onClick={toggleHelp}
+              className="text-neutral-400 hover:text-white p-1 rounded hover:bg-neutral-700"
+              aria-label="Help"
+            >
+              <HelpCircle size={20} />
+            </button>
+          </Tooltip>
+
+          <Tooltip content="View Settings">
+            <button
+              className="px-3 py-1 text-sm hover:bg-neutral-700 rounded"
+              aria-label="View Settings"
+            >
+              View
+            </button>
+          </Tooltip>
+
+          <Tooltip content="Export Video">
+            <button
+              className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-500 rounded font-medium"
+              onClick={() => setShowExport(true)}
+              aria-label="Export Project"
+            >
+              Export
+            </button>
+          </Tooltip>
+        </div>
+
+        <div className="text-xs text-neutral-500 border-l border-neutral-700 pl-4">v0.1.0</div>
       </div>
 
       {/* Library */}
@@ -153,6 +186,7 @@ function App() {
       </div>
 
       {showExport && <ExportModal onClose={() => setShowExport(false)} />}
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
       <ToastContainer />
       <LoadingOverlay />
     </div>

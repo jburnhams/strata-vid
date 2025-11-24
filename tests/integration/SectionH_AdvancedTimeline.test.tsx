@@ -66,60 +66,161 @@ describe('Section H: Advanced Timeline Features', () => {
 
         // 1. Add Marker at 0s
         const addMarkerBtn = screen.getByText('+ Marker');
-        fireEvent.click(addMarkerBtn);
+        await act(async () => {
+           fireEvent.click(addMarkerBtn);
+        });
 
         // Verify marker rendered
-        // Marker component has title="Label (Time)"
-        // Label is 'M'
         let markerEl = await screen.findByTitle('M (0.00s)');
         expect(markerEl).toBeInTheDocument();
 
         // 2. Add Marker at 5s
-        // Mock store update for time (as playback loop is mocked/not running automatically)
         await act(async () => {
             useProjectStore.getState().setPlaybackState({ currentTime: 5 });
         });
-        fireEvent.click(addMarkerBtn);
+        await act(async () => {
+           fireEvent.click(addMarkerBtn);
+        });
 
         markerEl = await screen.findByTitle('M (5.00s)');
         expect(markerEl).toBeInTheDocument();
 
         // 3. Jump to marker
-        // Move time away
-        useProjectStore.getState().setPlaybackState({ currentTime: 2 });
+        await act(async () => {
+           useProjectStore.getState().setPlaybackState({ currentTime: 2 });
+        });
 
-        // Click first marker (0s)
         const marker0 = screen.getByTitle('M (0.00s)');
-        fireEvent.click(marker0);
+        await act(async () => {
+           fireEvent.click(marker0);
+        });
 
-        // Verify time jumped
         expect(useProjectStore.getState().currentTime).toBe(0);
     });
 
     it('Filters: render in Preview', async () => {
-        // Update clip filter via store
         useProjectStore.getState().updateClipProperties('c1', { filter: 'grayscale(1)' });
-
         render(<App />);
-
-        // Find video element
         const videoEl = document.querySelector('video');
         expect(videoEl).toBeInTheDocument();
         expect(videoEl?.style.filter).toBe('grayscale(1)');
     });
 
     it('Speed: affects VideoPlayer playbackRate', async () => {
-        // Change speed via store
         useProjectStore.getState().updateClipPlaybackRate('c1', 2);
+        render(<App />);
+        const videoEl = document.querySelector('video') as HTMLVideoElement;
+        await new Promise(r => setTimeout(r, 10)); // clear tick
+        expect(videoEl.playbackRate).toBe(2);
+    });
+
+    it('Duplicate Clip: duplicates clip via Context Menu', async () => {
+        render(<App />);
+
+        const clipEl = screen.getByTestId('clip-item-c1');
+        fireEvent.contextMenu(clipEl);
+
+        const duplicateOption = screen.getByText('Duplicate Clip');
+        await act(async () => {
+            fireEvent.click(duplicateOption);
+        });
+
+        // Should have 2 clips now. One at 0-10, one at 10-20.
+        const clips = useProjectStore.getState().clips;
+        expect(Object.keys(clips).length).toBe(2);
+
+        // Find the new clip
+        const newClip = Object.values(clips).find(c => c.id !== 'c1');
+        expect(newClip).toBeDefined();
+        expect(newClip?.start).toBe(10);
+    });
+
+    it('Split Clip: splits clip via Context Menu', async () => {
+        render(<App />);
+
+        // Move playhead to 5s
+        await act(async () => {
+            useProjectStore.getState().setPlaybackState({ currentTime: 5 });
+        });
+
+        const clipEl = screen.getByTestId('clip-item-c1');
+        fireEvent.contextMenu(clipEl);
+
+        const splitOption = screen.getByText('Split Clip');
+        // Option should be enabled
+        expect(splitOption).not.toBeDisabled();
+
+        await act(async () => {
+            fireEvent.click(splitOption);
+        });
+
+        // Should have 2 clips: c1 (0-5), new (5-10)
+        const clips = useProjectStore.getState().clips;
+        expect(Object.keys(clips).length).toBe(2);
+        expect(clips['c1'].duration).toBe(5);
+
+        const newClip = Object.values(clips).find(c => c.id !== 'c1');
+        expect(newClip?.start).toBe(5);
+        expect(newClip?.duration).toBe(5);
+    });
+
+    it('Ripple Delete: removes clip and shifts subsequent clips', async () => {
+        // Setup: c1 (0-5), c2 (5-10)
+        const c2: Clip = {
+            id: 'c2', assetId: 'a1', trackId: 't1',
+            start: 5, duration: 5, offset: 0,
+            type: 'video',
+            properties: { x:0, y:0, width:100, height:100, rotation:0, opacity:1, zIndex:0 }
+        };
+        useProjectStore.setState(state => {
+            if (state.clips['c1']) state.clips['c1'].duration = 5;
+            state.clips['c2'] = c2;
+            state.tracks['t1'].clips = ['c1', 'c2'];
+            return state;
+        });
 
         render(<App />);
 
-        const videoEl = document.querySelector('video') as HTMLVideoElement;
+        const clip1El = screen.getByTestId('clip-item-c1');
+        fireEvent.contextMenu(clip1El);
 
-        // Wait for useEffect
-        await new Promise(r => setTimeout(r, 10)); // clear tick
+        const rippleDeleteOption = screen.getByText('Ripple Delete');
+        await act(async () => {
+            fireEvent.click(rippleDeleteOption);
+        });
 
-        // Note: VideoPlayer uses global playbackRate * clipRate. Global default is 1.
-        expect(videoEl.playbackRate).toBe(2);
+        const state = useProjectStore.getState();
+        expect(state.clips['c1']).toBeUndefined();
+        expect(state.clips['c2'].start).toBe(0); // Shifted from 5 to 0
+    });
+
+    it('Transitions: adds crossfade via Context Menu', async () => {
+         // Setup: c1 (0-10), c2 (10-20)
+        const c2: Clip = {
+            id: 'c2', assetId: 'a1', trackId: 't1',
+            start: 10, duration: 10, offset: 0,
+            type: 'video',
+            properties: { x:0, y:0, width:100, height:100, rotation:0, opacity:1, zIndex:0 }
+        };
+        useProjectStore.setState(state => {
+            state.clips['c2'] = c2;
+            state.tracks['t1'].clips = ['c1', 'c2'];
+            return state;
+        });
+
+        render(<App />);
+
+        const clip2El = screen.getByTestId('clip-item-c2');
+        fireEvent.contextMenu(clip2El);
+
+        const fadeOption = screen.getByText('Add Crossfade (1s)');
+        await act(async () => {
+            fireEvent.click(fadeOption);
+        });
+
+        const state = useProjectStore.getState();
+        // c2 should have transitionIn and start at 9
+        expect(state.clips['c2'].transitionIn).toEqual({ type: 'crossfade', duration: 1 });
+        expect(state.clips['c2'].start).toBe(9);
     });
 });

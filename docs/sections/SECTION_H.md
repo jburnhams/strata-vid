@@ -3,7 +3,7 @@
 **Priority**: Low (power user features)
 **Goal**: Transitions, effects, speed ramping, markers.
 **Dependencies**: Sections A, B, C (basic editing working)
-**Status**: 🔴 Not implemented
+**Status**: 🟢 Completed (Core Features) / 🟨 Keyframes (Partial)
 
 ## Tasks
 
@@ -44,8 +44,9 @@
 
 - [ ] **H8: Keyframe animation** (15-20 hours, HARD)
   - Animate clip properties over time
-  - Keyframe editor UI
-  - Easing functions
+  - [x] Data Model (Store & Types)
+  - [ ] Keyframe editor UI
+  - [ ] Interpolation Logic (Rendering)
   - Files: `src/components/KeyframeEditor.tsx` (new)
 
 ## Success Criteria

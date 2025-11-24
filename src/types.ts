@@ -90,6 +90,13 @@ export interface Marker {
   color: string;
 }
 
+export interface Keyframe {
+  id: string;
+  time: number; // relative to clip start
+  value: number;
+  easing: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
+}
+
 export interface Clip {
   id: string;
   assetId: string;
@@ -104,6 +111,7 @@ export interface Clip {
   syncOffset?: number; // For map/gpx clips: offset in ms between video time 0 and GPX time
   transitionIn?: Transition;
   playbackRate?: number;
+  keyframes?: Record<string, Keyframe[]>;
 }
 
 export interface Track {

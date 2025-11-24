@@ -12,6 +12,11 @@ jest.mock('../../src/services/AssetLoader', () => ({
   },
 }));
 
+// Mock PreviewPanel to avoid Leaflet issues
+jest.mock('../../src/components/PreviewPanel', () => ({
+  PreviewPanel: () => <div data-testid="preview-panel">Preview</div>
+}));
+
 describe('UX Integration Flow', () => {
     beforeEach(() => {
         // Reset store state completely
@@ -53,7 +58,8 @@ describe('UX Integration Flow', () => {
         render(<App />);
 
         // The input is hidden inside the label. We find the input associated with the label text "+ Add"
-        const fileInput = screen.getByLabelText('+ Add');
+        // Wait for it to be ready
+        const fileInput = await screen.findByLabelText('Add Asset');
 
         await user.upload(fileInput, file);
 
@@ -71,7 +77,9 @@ describe('UX Integration Flow', () => {
         // Check asset is in library and thumbnail is shown
         const libraryItem = screen.getAllByText('video.mp4')[0];
         expect(libraryItem).toBeInTheDocument();
-        const thumb = screen.getByAltText('video.mp4');
+
+        // Updated expectation for alt text
+        const thumb = screen.getByAltText('Thumbnail for video.mp4');
         expect(thumb).toHaveAttribute('src', 'blob:thumb');
     });
 
@@ -83,19 +91,12 @@ describe('UX Integration Flow', () => {
 
         render(<App />);
 
-        const fileInput = screen.getByLabelText('+ Add');
+        const fileInput = screen.getByLabelText('Add Asset');
 
         await user.upload(fileInput, file);
 
-        // Wait for error toast - handleError uses error.message if available
+        // Wait for error toast
+        // handleError prefers error.message ("Corrupt file") over fallback ("Failed to load...")
         expect(await screen.findByText('Corrupt file')).toBeInTheDocument();
-
-        // Also check generic error (App.tsx catches overall process error?)
-        // In App.tsx:
-        // catch (e) { handleError(e, 'Failed to process assets'); }
-        // But the individual promise catches and returns null.
-        // So the outer catch block is not reached unless Promise.all fails?
-        // Promise.all waits for all promises to resolve (even if they return null).
-        // So the outer catch block might NOT be reached.
     });
 });

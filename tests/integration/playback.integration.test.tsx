@@ -146,6 +146,19 @@ describe('Playback Integration', () => {
         fireEvent.pointerUp(playhead, { pointerId: 1, bubbles: true });
     });
 
+    // 7. Stop Button
+    // Advance time a bit to make sure we are not at 0
+    await act(async () => {
+        useProjectStore.setState({ isPlaying: true, currentTime: 10 });
+    });
+
+    await act(async () => {
+        fireEvent.click(screen.getByTitle('Stop (Home)'));
+    });
+
+    expect(useProjectStore.getState().isPlaying).toBe(false);
+    expect(useProjectStore.getState().currentTime).toBe(0);
+
     jest.useRealTimers();
   });
 });

@@ -67,6 +67,31 @@ describe('usePlaybackLoop', () => {
     perfSpy.mockRestore();
   });
 
+  it('should respect playbackRate', () => {
+    renderHook(() => usePlaybackLoop());
+
+    act(() => {
+        useProjectStore.setState({ isPlaying: true, playbackRate: 2 });
+    });
+
+    const initialTime = performance.now();
+    const perfSpy = jest.spyOn(performance, 'now');
+    perfSpy.mockReturnValue(initialTime);
+
+    // Advance 1 second real time
+    act(() => {
+        perfSpy.mockReturnValue(initialTime + 1000);
+        jest.advanceTimersByTime(1000);
+    });
+
+    // Should have advanced ~2 seconds (1s * 2x)
+    // Note: The loop runs multiple times. First run delta is small.
+    // Ideally we check if it is roughly 2.
+    expect(useProjectStore.getState().currentTime).toBeCloseTo(2, 0.1);
+
+    perfSpy.mockRestore();
+  });
+
   it('should stop at end of duration', () => {
       renderHook(() => usePlaybackLoop());
 

@@ -178,13 +178,15 @@ This is the foundation of the entire application. Without working playback, you 
 - [x] Press Left/Right → video steps frame-by-frame
 - [x] Playhead stays in sync during playback
 
-### Unit Tests (Create Later)
-- `tests/unit/hooks/usePlaybackLoop.test.ts` - Test time update logic
-- `tests/unit/hooks/useKeyboardShortcuts.test.ts` - Test key mappings
-- `tests/unit/components/TransportControls.test.tsx` - Test button clicks
+### Unit Tests (Complete)
+- [x] `tests/unit/hooks/usePlaybackLoop.test.ts` - Test time update logic
+- [x] `tests/unit/hooks/useKeyboardShortcuts.test.ts` - Test key mappings
+- [x] `tests/unit/components/TransportControls.test.tsx` - Test button clicks
+- [x] `tests/unit/components/preview/VideoPlayer.test.tsx` - Test playback sync
+- [x] `tests/unit/components/timeline/Playhead.test.tsx` - Test drag interaction
 
-### Integration Tests (Create Later)
-- Load video, play, pause, scrub - full flow test
+### Integration Tests (Complete)
+- [x] `tests/integration/playback.integration.test.tsx` - Load video, play, pause, scrub full flow
 
 ---
 

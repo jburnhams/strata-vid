@@ -6,12 +6,13 @@ jest.mock('mediabunny', () => ({
     addVideoTrack: jest.fn(),
     start: jest.fn(),
     finalize: jest.fn(),
-    target: { buffer: new ArrayBuffer(0) }
+    target: { buffer: new ArrayBuffer(10) }
   })),
   Mp4OutputFormat: jest.fn(),
   BufferTarget: jest.fn(),
   CanvasSource: jest.fn().mockImplementation(() => ({
-      addFrame: jest.fn()
+      addFrame: jest.fn(),
+      add: jest.fn(), // legacy
   })),
 }));
 
@@ -29,7 +30,14 @@ global.OffscreenCanvas = class {
     width: number;
     height: number;
     constructor(w: number, h: number) { this.width = w; this.height = h; }
-    getContext() { return { canvas: this }; }
+    getContext() {
+        return {
+            canvas: this,
+            clearRect: jest.fn(),
+            fillStyle: '',
+            fillRect: jest.fn()
+        };
+    }
 } as any;
 
 // Mock VideoEncoder
@@ -54,9 +62,10 @@ describe('ExportManager', () => {
 
   beforeEach(() => {
     exportManager = new ExportManager();
+    jest.clearAllMocks();
   });
 
-  it('should run export loop', async () => {
+  it('should run export loop successfully', async () => {
     const onProgress = jest.fn();
     const result = await exportManager.exportProject(mockProject, mockExportSettings, onProgress);
 
@@ -64,19 +73,35 @@ describe('ExportManager', () => {
     expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({ status: 'completed' }));
   });
 
-  it('should handle cancellation', async () => {
+  it('should handle cancellation mid-export', async () => {
     const onProgress = jest.fn((p) => {
-        if (p.currentFrame > 5) {
+        if (p.status === 'rendering' && p.currentFrame > 5) {
             exportManager.cancel();
         }
     });
 
-    // Set duration to have enough frames
-    const longProject = { ...mockProject, settings: { ...mockProject.settings, duration: 1 } }; // 30 frames
+    // Set duration to have enough frames (30fps * 1s = 30 frames)
+    const longProject = { ...mockProject, settings: { ...mockProject.settings, duration: 1 } };
 
     const result = await exportManager.exportProject(longProject, mockExportSettings, onProgress);
 
     expect(result).toBeNull();
     expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({ status: 'cancelled' }));
+  });
+
+  it('should fail gracefully if canvas creation fails', async () => {
+      const originalOffscreenCanvas = global.OffscreenCanvas;
+      global.OffscreenCanvas = class {
+          constructor() {}
+          getContext() { return null; }
+      } as any;
+
+      const onProgress = jest.fn();
+      const result = await exportManager.exportProject(mockProject, mockExportSettings, onProgress);
+
+      expect(result).toBeNull();
+      expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({ status: 'error' }));
+
+      global.OffscreenCanvas = originalOffscreenCanvas;
   });
 });

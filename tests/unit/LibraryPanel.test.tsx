@@ -6,7 +6,8 @@ import { Asset } from '../../src/types';
 describe('LibraryPanel', () => {
   const mockAssets: Asset[] = [
     { id: '1', name: 'run1.mp4', type: 'video', src: 'blob:1' },
-    { id: '2', name: 'track.gpx', type: 'gpx', src: 'blob:2' }
+    { id: '2', name: 'track.gpx', type: 'gpx', src: 'blob:2' },
+    { id: '3', name: 'music.mp3', type: 'audio', src: 'blob:3', duration: 120 }
   ];
 
   const mockOnAdd = jest.fn();
@@ -35,6 +36,8 @@ describe('LibraryPanel', () => {
     );
     expect(screen.getByText('run1.mp4')).toBeInTheDocument();
     expect(screen.getByText('track.gpx')).toBeInTheDocument();
+    expect(screen.getByText('music.mp3')).toBeInTheDocument();
+    expect(screen.getAllByText(/Audio/)[0]).toBeInTheDocument();
   });
 
   it('calls onAssetSelect when clicking an item', () => {

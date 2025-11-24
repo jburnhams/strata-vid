@@ -7,16 +7,16 @@
 
 ## Tasks
 
-- [ ] **H1: Split clip** (2-3 hours)
+- [x] **H1: Split clip** (2-3 hours)
   - Right-click → Split at playhead
   - Creates two clips from one
   - Files: `src/store/slices/timelineSlice.ts`
 
-- [ ] **H2: Duplicate clip** (1-2 hours)
+- [x] **H2: Duplicate clip** (1-2 hours)
   - Copy clip with all properties
   - Files: `src/store/slices/timelineSlice.ts`
 
-- [ ] **H3: Ripple delete** (2-3 hours)
+- [x] **H3: Ripple delete** (2-3 hours)
   - Delete clip and shift subsequent clips left
   - Files: `src/store/slices/timelineSlice.ts`
 

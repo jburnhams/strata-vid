@@ -152,4 +152,100 @@ describe('Timeline Editing Integration', () => {
         expect(newClip.start).toBe(15);
         expect(newClip.trackId).toBe('track-1');
     });
+
+    it('can split a clip', async () => {
+        render(<TimelinePanel />);
+
+        // Setup: Set currentTime to 12s (middle of clip-1 which is 10-15s)
+        act(() => {
+            useProjectStore.setState({ currentTime: 12 });
+        });
+
+        // Find clip
+        const clipElement = screen.getByText('clip-1').closest('div');
+
+        // Right click
+        fireEvent.contextMenu(clipElement!);
+
+        // Split
+        const splitOption = screen.getByText('Split Clip');
+        // Check enabled (disabled attribute absent?)
+        expect(splitOption).not.toBeDisabled();
+
+        fireEvent.click(splitOption);
+
+        // Verify split
+        const clips = useProjectStore.getState().clips;
+        expect(Object.keys(clips).length).toBe(2);
+
+        const c1 = clips['clip-1'];
+        expect(c1.duration).toBe(2); // 12 - 10 = 2
+
+        const newClipId = Object.keys(clips).find(id => id !== 'clip-1');
+        const newClip = clips[newClipId!];
+
+        expect(newClip.start).toBe(12);
+        expect(newClip.duration).toBe(3); // 5 - 2 = 3
+    });
+
+    it('disables split clip when playhead is outside clip', async () => {
+        render(<TimelinePanel />);
+
+        // Setup: Set currentTime to 20s (outside clip-1 which is 10-15s)
+        act(() => {
+            useProjectStore.setState({ currentTime: 20 });
+        });
+
+        // Find clip
+        const clipElement = screen.getByText('clip-1').closest('div');
+
+        // Right click
+        fireEvent.contextMenu(clipElement!);
+
+        // Split option should be disabled
+        const splitOption = screen.getByText('Split Clip');
+        expect(splitOption).toBeDisabled();
+    });
+
+    it('can ripple delete a clip', async () => {
+        // Setup with 3 clips
+        const c1 = { id: 'c1', assetId: 'asset-1', trackId: 'track-1', start: 0, duration: 5, offset: 0, type: 'video', properties: {} };
+        const c2 = { id: 'c2', assetId: 'asset-1', trackId: 'track-1', start: 5, duration: 5, offset: 0, type: 'video', properties: {} };
+        const c3 = { id: 'c3', assetId: 'asset-1', trackId: 'track-1', start: 12, duration: 5, offset: 0, type: 'video', properties: {} };
+
+        act(() => {
+            useProjectStore.setState({
+                clips: { 'c1': c1, 'c2': c2, 'c3': c3 } as any,
+                tracks: {
+                    'track-1': {
+                        id: 'track-1',
+                        type: 'video',
+                        label: 'Video Track 1',
+                        isMuted: false,
+                        isLocked: false,
+                        clips: ['c1', 'c2', 'c3']
+                    }
+                }
+            });
+        });
+
+        render(<TimelinePanel />);
+
+        // Find c2
+        const clipElement = screen.getByText('c2').closest('div');
+
+        // Right click
+        fireEvent.contextMenu(clipElement!);
+
+        // Ripple Delete
+        const rippleOption = screen.getByText('Ripple Delete');
+        fireEvent.click(rippleOption);
+
+        // Verify c2 gone
+        const clips = useProjectStore.getState().clips;
+        expect(clips['c2']).toBeUndefined();
+
+        // Verify c3 shifted
+        expect(clips['c3'].start).toBe(7); // 12 - 5
+    });
 });

@@ -104,6 +104,7 @@ export const Ruler: React.FC<RulerProps> = ({
     <canvas
       ref={canvasRef}
       className="block bg-gray-900 border-b border-gray-700 sticky left-0"
+      data-testid="ruler-canvas"
     />
   );
 };

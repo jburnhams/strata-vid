@@ -13,6 +13,8 @@ export const TimelinePanel: React.FC = () => {
   const moveClip = useProjectStore((state) => state.moveClip);
   const resizeClip = useProjectStore((state) => state.resizeClip);
   const duplicateClip = useProjectStore((state) => state.duplicateClip);
+  const splitClip = useProjectStore((state) => state.splitClip);
+  const rippleDeleteClip = useProjectStore((state) => state.rippleDeleteClip);
   const removeClip = useProjectStore((state) => state.removeClip);
   const addTrack = useProjectStore((state) => state.addTrack);
   const removeTrack = useProjectStore((state) => state.removeTrack);
@@ -55,6 +57,8 @@ export const TimelinePanel: React.FC = () => {
         onMoveClip={moveClip}
         onResizeClip={resizeClip}
         onDuplicateClip={duplicateClip}
+        onSplitClip={splitClip}
+        onRippleDeleteClip={rippleDeleteClip}
         onRemoveClip={removeClip}
         onRemoveTrack={removeTrack}
         onAddTrack={handleAddTrack}

@@ -204,4 +204,141 @@ describe('Store - Timeline Slice', () => {
     const state = useProjectStore.getState();
     expect(state.clips['clip-orphaned']).toBeUndefined();
   });
+
+  it('should duplicate a clip', () => {
+    const track: Track = { id: 't1', type: 'video', label: 'V1', isMuted: false, isLocked: false, clips: [] };
+    const clip: Clip = { id: 'c1', assetId: 'a1', trackId: 't1', start: 0, duration: 10, offset: 0, type: 'video', properties: { x:0, y:0, width:100, height:100, rotation:0, opacity:1, zIndex:0 } };
+
+    const store = useProjectStore.getState();
+    store.addTrack(track);
+    store.addClip(clip);
+
+    store.duplicateClip('c1');
+
+    const state = useProjectStore.getState();
+    const clips = Object.values(state.clips);
+    expect(clips.length).toBe(2);
+
+    const newClip = clips.find(c => c.id !== 'c1');
+    expect(newClip).toBeDefined();
+    expect(newClip?.start).toBe(10); // 0 + 10
+    expect(newClip?.trackId).toBe('t1');
+  });
+
+  it('should duplicate a clip to the end of track if collision occurs', () => {
+    const track: Track = { id: 't1', type: 'video', label: 'V1', isMuted: false, isLocked: false, clips: [] };
+    const clip1: Clip = { id: 'c1', assetId: 'a1', trackId: 't1', start: 0, duration: 10, offset: 0, type: 'video', properties: { x:0, y:0, width:100, height:100, rotation:0, opacity:1, zIndex:0 } };
+    const clip2: Clip = { id: 'c2', assetId: 'a1', trackId: 't1', start: 15, duration: 10, offset: 0, type: 'video', properties: { x:0, y:0, width:100, height:100, rotation:0, opacity:1, zIndex:0 } };
+
+    const store = useProjectStore.getState();
+    store.addTrack(track);
+    store.addClip(clip1);
+    store.addClip(clip2);
+
+    store.duplicateClip('c1');
+
+    const state = useProjectStore.getState();
+    const clips = Object.values(state.clips);
+    expect(clips.length).toBe(3);
+
+    const newClip = clips.find(c => c.id !== 'c1' && c.id !== 'c2');
+    expect(newClip).toBeDefined();
+
+    // Max end is 25 (c2 end). So new clip starts at 25.
+    expect(newClip?.start).toBe(25);
+  });
+
+  it('should split a clip', () => {
+    const track: Track = { id: 't1', type: 'video', label: 'V1', isMuted: false, isLocked: false, clips: [] };
+    const clip: Clip = { id: 'c1', assetId: 'a1', trackId: 't1', start: 0, duration: 10, offset: 0, type: 'video', properties: { x:0, y:0, width:100, height:100, rotation:0, opacity:1, zIndex:0 } };
+
+    const store = useProjectStore.getState();
+    store.addTrack(track);
+    store.addClip(clip);
+
+    // Split at 4s
+    store.splitClip('c1', 4);
+
+    const state = useProjectStore.getState();
+
+    // Check original clip
+    const c1 = state.clips['c1'];
+    expect(c1.duration).toBe(4); // 0 to 4
+    expect(c1.offset).toBe(0);
+
+    // Check new clip
+    // We don't know the ID, but there should be 2 clips on the track
+    expect(state.tracks['t1'].clips.length).toBe(2);
+    const newClipId = state.tracks['t1'].clips.find(id => id !== 'c1');
+    expect(newClipId).toBeDefined();
+
+    const newClip = state.clips[newClipId!];
+    expect(newClip.start).toBe(4);
+    expect(newClip.duration).toBe(6); // 10 - 4
+    expect(newClip.offset).toBe(4); // 0 + 4
+    expect(newClip.trackId).toBe('t1');
+  });
+
+  it('should not split a clip if time is out of bounds', () => {
+    const track: Track = { id: 't1', type: 'video', label: 'V1', isMuted: false, isLocked: false, clips: [] };
+    const clip: Clip = { id: 'c1', assetId: 'a1', trackId: 't1', start: 0, duration: 10, offset: 0, type: 'video', properties: { x:0, y:0, width:100, height:100, rotation:0, opacity:1, zIndex:0 } };
+
+    const store = useProjectStore.getState();
+    store.addTrack(track);
+    store.addClip(clip);
+
+    // Try split at 12 (outside 0-10)
+    store.splitClip('c1', 12);
+    expect(useProjectStore.getState().tracks['t1'].clips.length).toBe(1);
+
+    // Try split at 0 (start)
+    store.splitClip('c1', 0);
+    expect(useProjectStore.getState().tracks['t1'].clips.length).toBe(1);
+
+    // Try split at 10 (end)
+    store.splitClip('c1', 10);
+    expect(useProjectStore.getState().tracks['t1'].clips.length).toBe(1);
+  });
+
+  it('should ripple delete a clip', () => {
+    const track: Track = { id: 't1', type: 'video', label: 'V1', isMuted: false, isLocked: false, clips: [] };
+    const clip1: Clip = { id: 'c1', assetId: 'a1', trackId: 't1', start: 0, duration: 5, offset: 0, type: 'video', properties: { x:0, y:0, width:100, height:100, rotation:0, opacity:1, zIndex:0 } };
+    const clip2: Clip = { id: 'c2', assetId: 'a1', trackId: 't1', start: 5, duration: 5, offset: 0, type: 'video', properties: { x:0, y:0, width:100, height:100, rotation:0, opacity:1, zIndex:0 } };
+    const clip3: Clip = { id: 'c3', assetId: 'a1', trackId: 't1', start: 12, duration: 5, offset: 0, type: 'video', properties: { x:0, y:0, width:100, height:100, rotation:0, opacity:1, zIndex:0 } };
+
+    const store = useProjectStore.getState();
+    store.addTrack(track);
+    store.addClip(clip1);
+    store.addClip(clip2);
+    store.addClip(clip3);
+
+    // Delete c2 (5-10). c3 (12-17) should move left by 5s -> 7-12
+    store.rippleDeleteClip('c2');
+
+    const state = useProjectStore.getState();
+    expect(state.clips['c2']).toBeUndefined();
+    expect(state.clips['c1'].start).toBe(0); // Unaffected
+    expect(state.clips['c3'].start).toBe(7); // 12 - 5
+    expect(state.tracks['t1'].clips).not.toContain('c2');
+  });
+
+  it('should ripple delete only on the same track', () => {
+    const t1: Track = { id: 't1', type: 'video', label: 'V1', isMuted: false, isLocked: false, clips: [] };
+    const t2: Track = { id: 't2', type: 'video', label: 'V2', isMuted: false, isLocked: false, clips: [] };
+
+    const c1: Clip = { id: 'c1', assetId: 'a1', trackId: 't1', start: 5, duration: 5, offset: 0, type: 'video', properties: { x:0, y:0, width:100, height:100, rotation:0, opacity:1, zIndex:0 } };
+    const c2: Clip = { id: 'c2', assetId: 'a1', trackId: 't2', start: 10, duration: 5, offset: 0, type: 'video', properties: { x:0, y:0, width:100, height:100, rotation:0, opacity:1, zIndex:0 } };
+
+    const store = useProjectStore.getState();
+    store.addTrack(t1);
+    store.addTrack(t2);
+    store.addClip(c1);
+    store.addClip(c2);
+
+    store.rippleDeleteClip('c1');
+
+    const state = useProjectStore.getState();
+    expect(state.clips['c1']).toBeUndefined();
+    expect(state.clips['c2'].start).toBe(10); // Unaffected (different track)
+  });
 });

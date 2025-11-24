@@ -135,6 +135,70 @@ export const createTimelineSlice: StateCreator<
       // Select the new clip
       state.selectedClipId = newId;
     }),
+  splitClip: (id, time) =>
+    set((state) => {
+      const clip = state.clips[id];
+      if (!clip) return;
+
+      // Validate time is within clip bounds (exclusive)
+      if (time <= clip.start || time >= clip.start + clip.duration) return;
+
+      const splitOffset = time - clip.start;
+      const newDuration = clip.duration - splitOffset;
+      const newStart = time;
+      const newOffset = clip.offset + splitOffset;
+
+      // Update original clip
+      clip.duration = splitOffset;
+
+      // Create new clip
+      const newId = `clip-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const newClip: Clip = {
+        ...clip,
+        id: newId,
+        start: newStart,
+        duration: newDuration,
+        offset: newOffset,
+      };
+
+      state.clips[newId] = newClip;
+
+      const track = state.tracks[clip.trackId];
+      if (track) {
+        track.clips.push(newId);
+      }
+
+      // Select the new clip
+      state.selectedClipId = newId;
+    }),
+  rippleDeleteClip: (id) =>
+    set((state) => {
+      const clip = state.clips[id];
+      if (!clip) return;
+
+      const trackId = clip.trackId;
+      const duration = clip.duration;
+      const start = clip.start;
+
+      // Remove the clip
+      delete state.clips[id];
+      if (state.selectedClipId === id) {
+        state.selectedClipId = null;
+      }
+
+      const track = state.tracks[trackId];
+      if (track) {
+        track.clips = track.clips.filter((cId) => cId !== id);
+
+        // Shift subsequent clips on the same track
+        track.clips.forEach((cId) => {
+          const c = state.clips[cId];
+          if (c && c.start > start) {
+            c.start -= duration;
+          }
+        });
+      }
+    }),
   updateClipSyncOffset: (id, syncOffset) =>
     set((state) => {
       const clip = state.clips[id];

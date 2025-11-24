@@ -41,6 +41,8 @@ interface TimelineContainerProps {
   onRemoveTrack: (id: string) => void;
   onRemoveClip: (id: string) => void;
   onDuplicateClip: (id: string) => void;
+  onSplitClip: (id: string, time: number) => void;
+  onRippleDeleteClip: (id: string) => void;
   onAddTrack?: () => void;
   selectedClipId?: string | null;
   onClipSelect?: (id: string | null) => void;
@@ -73,6 +75,8 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
   onRemoveTrack,
   onRemoveClip,
   onDuplicateClip,
+  onSplitClip,
+  onRippleDeleteClip,
   onAddTrack,
   selectedClipId,
   onClipSelect,
@@ -502,8 +506,23 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
           onClose={() => setContextMenu(null)}
           options={[
             {
+              label: 'Split Clip',
+              onClick: () => onSplitClip(contextMenu.clipId, currentTime),
+              disabled: (() => {
+                const clip = clips[contextMenu.clipId];
+                if (!clip) return true;
+                // Only allow split if playhead is strictly inside the clip
+                return currentTime <= clip.start || currentTime >= clip.start + clip.duration;
+              })(),
+            },
+            {
               label: 'Duplicate Clip',
               onClick: () => onDuplicateClip(contextMenu.clipId),
+            },
+            {
+              label: 'Ripple Delete',
+              onClick: () => onRippleDeleteClip(contextMenu.clipId),
+              danger: true,
             },
             {
               label: 'Delete Clip',

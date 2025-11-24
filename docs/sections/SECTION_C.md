@@ -77,6 +77,7 @@ Extend the preview panel to handle multiple simultaneous clips with proper layer
 - [ ] Warn user about security risks
 
 **Acceptance**: HTML overlays render safely (or skip if not needed for MVP).
+**Note**: Deferred to avoid extra dependency (`dompurify`) at this stage.
 
 ---
 
@@ -121,6 +122,10 @@ Extend the preview panel to handle multiple simultaneous clips with proper layer
 
 ### Unit Tests
 - [x] `tests/unit/components/preview/OverlayRenderer.test.tsx` - Test clip type rendering
+
+### Integration Tests
+- [x] `tests/integration/PreviewRendering.test.tsx` - Basic composition
+- [x] `tests/integration/PreviewAdvanced.test.tsx` - Advanced transforms, clip types (image/video), and safe areas
 
 ---
 

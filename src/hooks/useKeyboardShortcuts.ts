@@ -3,6 +3,7 @@ import { useProjectStore } from '../store/useProjectStore';
 
 export const useKeyboardShortcuts = () => {
   const setPlaybackState = useProjectStore((state) => state.setPlaybackState);
+  const removeClip = useProjectStore((state) => state.removeClip);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -29,9 +30,6 @@ export const useKeyboardShortcuts = () => {
            break;
         case 'KeyL':
            // Forward 1 second
-           // Note: duration might be 0 if empty project, but we can usually go forward?
-           // Only clamp if duration is set, or maybe allow infinite scrubbing?
-           // Timeline usually has a limit.
            setPlaybackState({ currentTime: Math.min(duration, state.currentTime + 1) });
            break;
         case 'ArrowLeft':
@@ -51,10 +49,18 @@ export const useKeyboardShortcuts = () => {
             e.preventDefault();
             setPlaybackState({ currentTime: duration });
             break;
+        case 'Delete':
+        case 'Backspace':
+            // Only remove if a clip is selected and we are not editing text
+            if (state.selectedClipId) {
+                e.preventDefault();
+                removeClip(state.selectedClipId);
+            }
+            break;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [setPlaybackState]);
+  }, [setPlaybackState, removeClip]);
 };

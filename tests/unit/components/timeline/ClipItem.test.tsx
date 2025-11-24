@@ -184,4 +184,23 @@ describe('ClipItem', () => {
         expect(screen.queryByTestId('resize-tooltip')).not.toBeInTheDocument();
     }
   });
+
+  it('renders waveform for audio clips', () => {
+    const audioAsset = {
+        ...mockAsset,
+        type: 'audio',
+        waveform: [0.1, 0.5, 0.9, 0.5, 0.1]
+    } as Asset;
+    const audioClip = { ...mockClip, type: 'audio' } as Clip;
+
+    render(<ClipItem {...defaultProps} clip={audioClip} asset={audioAsset} />);
+
+    const waveform = screen.getByTestId('audio-waveform');
+    expect(waveform).toBeInTheDocument();
+
+    // Check if lines are rendered
+    const svg = waveform.querySelector('svg');
+    expect(svg).toBeInTheDocument();
+    expect(svg?.querySelectorAll('line')).toHaveLength(5);
+  });
 });

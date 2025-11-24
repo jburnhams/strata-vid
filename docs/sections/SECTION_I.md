@@ -12,7 +12,7 @@
   - Extract duration and waveform data
   - Files: `src/services/AssetLoader.ts`
 
-- [ ] **I2: Audio waveform visualization** (6-8 hours)
+- [x] **I2: Audio waveform visualization** (6-8 hours)
   - Display waveform on audio clips
   - Generate from audio data (Web Audio API)
   - Files: `src/components/timeline/ClipItem.tsx`, `src/utils/audioUtils.ts` (new)

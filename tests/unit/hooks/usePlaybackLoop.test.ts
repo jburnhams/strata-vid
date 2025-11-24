@@ -13,17 +13,14 @@ describe('usePlaybackLoop', () => {
             isPlaying: false,
             currentTime: 0,
             playbackRate: 1,
-            settings: { duration: 10, fps: 30, width: 1920, height: 1080 }
+            settings: { duration: 10, fps: 30, width: 1920, height: 1080 },
+            addToast: jest.fn(), // Mock addToast
         });
     });
-
-    // NOTE: We do NOT manually mock requestAnimationFrame here because Jest's fake timers
-    // already handle it. Overriding it with setTimeout causes issues with cancelAnimationFrame
-    // because Sinon (used by Jest) tracks timer IDs differently for timeouts vs rAF.
   });
 
   afterEach(() => {
-    jest.clearAllMocks(); // Clear usage data, but don't restore if we didn't spy
+    jest.clearAllMocks();
   });
 
   it('should not update time when paused', () => {
@@ -43,21 +40,13 @@ describe('usePlaybackLoop', () => {
         useProjectStore.setState({ isPlaying: true });
     });
 
-    // We also need to advance performance.now() if the loop relies on it.
-    // Jest's fake timers usually mock Date, but performance.now might need help or is mocked.
-    // Let's mock performance.now to ensure deterministic delta calculation.
-    // Note: In JSDOM, performance.now() usually starts at 0.
-
     const initialTime = performance.now();
-    // Spy on performance.now. Note: If Jest mocks it, this might layer on top.
     const perfSpy = jest.spyOn(performance, 'now');
 
-    // Initial call
     perfSpy.mockReturnValue(initialTime);
 
     // Advance time
     act(() => {
-        // We simulate 1 second passing
         perfSpy.mockReturnValue(initialTime + 1000);
         jest.advanceTimersByTime(1000);
     });
@@ -84,9 +73,6 @@ describe('usePlaybackLoop', () => {
         jest.advanceTimersByTime(1000);
     });
 
-    // Should have advanced ~2 seconds (1s * 2x)
-    // Note: The loop runs multiple times. First run delta is small.
-    // Ideally we check if it is roughly 2.
     expect(useProjectStore.getState().currentTime).toBeCloseTo(2, 0.1);
 
     perfSpy.mockRestore();
@@ -116,5 +102,41 @@ describe('usePlaybackLoop', () => {
       expect(useProjectStore.getState().currentTime).toBe(10);
 
       perfSpy.mockRestore();
+  });
+
+  it('should trigger performance warning on lag', () => {
+    const addToastMock = jest.fn();
+    act(() => {
+        useProjectStore.setState({
+            isPlaying: true,
+            addToast: addToastMock
+        });
+    });
+
+    renderHook(() => usePlaybackLoop());
+
+    const initialTime = performance.now();
+    const perfSpy = jest.spyOn(performance, 'now');
+    perfSpy.mockReturnValue(initialTime);
+
+    let currentTime = initialTime;
+
+    // Simulate 65 laggy frames
+    act(() => {
+        for (let i = 0; i < 65; i++) {
+             // Advance 100ms per frame (lag)
+             currentTime += 100;
+             perfSpy.mockReturnValue(currentTime);
+
+             // Only advance timer enough to trigger one rAF (approx 16ms)
+             // This ensures we don't trigger multiple rAF calls with the same "laggy" timestamp
+             // resulting in delta=0 which would reset the counter.
+             jest.advanceTimersByTime(20);
+        }
+    });
+
+    expect(addToastMock).toHaveBeenCalledWith(expect.stringContaining('Low performance'), 'warning');
+
+    perfSpy.mockRestore();
   });
 });

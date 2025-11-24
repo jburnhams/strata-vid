@@ -1,5 +1,5 @@
-import { Asset, Clip, ProjectSettings, Track } from '../types';
-import { getGpxPositionAtTime, lat2tile, lon2tile, getTileUrl, TILE_SIZE, tile2lon, tile2lat } from '../utils/mapUtils';
+import { Asset, Clip, ProjectSettings, Track, TextStyle } from '../types';
+import { getGpxPositionAtTime, lat2tile, lon2tile, getTileUrl, TILE_SIZE } from '../utils/mapUtils';
 import { Feature, LineString } from 'geojson';
 
 export class Compositor {
@@ -10,7 +10,7 @@ export class Compositor {
   constructor() {}
 
   public async initialize(assets: Asset[]) {
-    // Pre-load video elements
+    // Pre-load video elements and images
     for (const asset of assets) {
       if (asset.type === 'video' && !this.videoPool.has(asset.id)) {
         const video = document.createElement('video');
@@ -18,10 +18,22 @@ export class Compositor {
         video.crossOrigin = 'anonymous';
         video.muted = true;
         video.playsInline = true;
-        // Wait for metadata to ensure duration etc (optional but good)
-        // We don't await here to avoid blocking, but for export we might need to.
-        // For now, just create.
+        // Trigger load
+        video.load();
         this.videoPool.set(asset.id, video);
+      } else if (asset.type === 'image' && !this.imageCache.has(asset.id)) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        // Wait for load to ensure dimensions are available
+        await new Promise<void>((resolve) => {
+          img.onload = () => resolve();
+          img.onerror = () => {
+            console.warn(`Failed to load image asset ${asset.id}`);
+            resolve();
+          };
+          img.src = asset.src;
+        });
+        this.imageCache.set(asset.id, img);
       }
     }
   }
@@ -33,7 +45,6 @@ export class Compositor {
     });
     this.videoPool.clear();
     this.imageCache.clear();
-    // Tile cache could be large, strictly we should clear it.
     this.tileCache.clear();
   }
 
@@ -49,19 +60,14 @@ export class Compositor {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, width, height);
 
-    // Sort tracks by order (if needed, usually array order is bottom-to-top or top-to-bottom)
-    // Assuming tracks array is ordered bottom-to-top (first drawn first)
-    // If not, we might need to reverse. Usually UI stack: Top track is on top.
-    // So we iterate tracks in reverse order? Or standard order?
-    // In typical timeline, Track 1 is top. Track N is bottom.
-    // If tracks[0] is top, we should draw tracks[N] first.
-    // Let's assume tracks[0] is the top-most visual layer. So we draw in reverse.
-    const tracksToDraw = [...project.tracks].reverse();
+    // Tracks are ordered bottom-to-top in the array passed here (assumed processed by caller)
+    // If caller passes raw store tracks array?
+    // In ExportManager: `const orderedTracks = project.trackOrder.map(id => project.tracks[id]).filter(Boolean);`
+    // This produces an array where index 0 is bottom, index N is top (based on typical store logic).
+    // So we iterate normally.
 
-    for (const track of tracksToDraw) {
-      if (track.isMuted) continue; // Muted tracks (visual?) usually "Mute" means audio. "Hide" is visual.
-      // Assuming isMuted only affects audio for now. But if it implies "Disabled", we skip.
-      // Let's assume we draw everything unless hidden. There is no isHidden in Track type.
+    for (const track of project.tracks) {
+      if (track.isMuted) continue;
 
       // Find active clip
       const activeClipId = track.clips.find((id) => {
@@ -72,7 +78,8 @@ export class Compositor {
       if (activeClipId) {
         const clip = project.clips[activeClipId];
         const asset = project.assets[clip.assetId];
-        if (asset) {
+        // Text clips might not have an asset, but others must
+        if (clip.type === 'text' || asset) {
           await this.drawClip(ctx, clip, asset, time);
         }
       }
@@ -82,224 +89,267 @@ export class Compositor {
   private async drawClip(
     ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D,
     clip: Clip,
-    asset: Asset,
+    asset: Asset | undefined,
     globalTime: number
   ) {
     const localTime = globalTime - clip.start + clip.offset;
 
-    if (clip.type === 'video' && asset.type === 'video') {
-      await this.drawVideo(ctx, clip, asset, localTime);
-    } else if (clip.type === 'map' && asset.type === 'gpx') {
-      await this.drawMap(ctx, clip, asset, localTime);
+    // Save context state
+    ctx.save();
+
+    // 1. Calculate dimensions and transform
+    const cw = ctx.canvas.width;
+    const ch = ctx.canvas.height;
+
+    const { x, y, width, height, rotation, opacity } = clip.properties;
+
+    // Convert % to pixels
+    const w = (width / 100) * cw;
+    const h = (height / 100) * ch;
+    const px = (x / 100) * cw;
+    const py = (y / 100) * ch;
+
+    // Apply Opacity
+    ctx.globalAlpha = opacity;
+
+    // Apply Transform: Translate to center of clip, then rotate
+    const centerX = px + w / 2;
+    const centerY = py + h / 2;
+
+    ctx.translate(centerX, centerY);
+    ctx.rotate((rotation * Math.PI) / 180);
+
+    // Clip to bounding box (overflow: hidden)
+    // The drawing area is now centered at (0,0) with size (w, h)
+    ctx.beginPath();
+    ctx.rect(-w / 2, -h / 2, w, h);
+    ctx.clip();
+
+    try {
+        if (clip.type === 'video' && asset && asset.type === 'video') {
+            await this.drawVideo(ctx, clip, asset, localTime, w, h);
+        } else if (clip.type === 'image' && asset && asset.type === 'image') {
+            this.drawImage(ctx, asset, w, h);
+        } else if (clip.type === 'text') {
+            this.drawText(ctx, clip, w, h);
+        } else if (clip.type === 'map' && asset && asset.type === 'gpx') {
+            await this.drawMap(ctx, clip, asset, localTime, w, h);
+        }
+    } catch (e) {
+        console.error(`Error drawing clip ${clip.id}`, e);
     }
-    // TODO: Handle image, text, html
+
+    ctx.restore();
   }
 
   private async drawVideo(
     ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D,
     clip: Clip,
     asset: Asset,
-    time: number
+    time: number,
+    dstW: number,
+    dstH: number
   ) {
     const video = this.videoPool.get(asset.id);
     if (!video) return;
 
-    // Seek
-    // We need to handle the case where time is same as last frame to avoid unnecessary seek?
-    // But for export, we assume sequential access.
-    // Seek tolerance is tricky.
-
-    if (Math.abs(video.currentTime - time) > 0.05) {
+    // Seek logic
+    // We check if we need to seek. For export, frames are sequential, but time might jump if clips are non-contiguous.
+    // Use a very small threshold to ensure every frame is rendered accurately (frame time at 60fps is ~0.016s)
+    if (Math.abs(video.currentTime - time) > 0.001) {
         video.currentTime = time;
+        // Wait for seeked
         await new Promise<void>((resolve) => {
             const onSeeked = () => {
                 video.removeEventListener('seeked', onSeeked);
                 resolve();
             };
+            // If it's already ready (rare in this loop but possible), resolve immediately?
+            // Safer to just wait for event.
             video.addEventListener('seeked', onSeeked, { once: true });
         });
     }
 
-    // Transform
-    this.applyTransform(ctx, clip);
+    // Object Fit: Cover
+    // Calculate scaling to cover dstW, dstH
+    const srcW = video.videoWidth || 1280; // Fallback
+    const srcH = video.videoHeight || 720;
 
-    // Draw
-    // By default draw full video to canvas? Or respect clip dimensions?
-    // Usually "fit" or "fill". Assuming fill or using clip properties.
-    // Clip properties has width/height in %?
-    // "width: number; // % of screen width"
-    // We need to convert % to pixels.
-    const { width: pW, height: pH } = clip.properties;
-    const canvasWidth = ctx.canvas.width;
-    const canvasHeight = ctx.canvas.height;
+    const { dw, dh, dx, dy } = this.calculateObjectFit(srcW, srcH, dstW, dstH, 'cover');
 
-    const w = (pW / 100) * canvasWidth;
-    const h = (pH / 100) * canvasHeight;
-
-    // Default video draw: drawImage(video, 0, 0, videoWidth, videoHeight, x, y, w, h)
-    // We assume 0,0 is origin after transform?
-    // No, applyTransform usually translates to x,y.
-
-    ctx.drawImage(video, -w/2, -h/2, w, h); // Draw centered at origin (handled by transform)
-
-    // Restore
-    ctx.resetTransform();
+    ctx.drawImage(video, dx, dy, dw, dh);
   }
 
-  private applyTransform(
+  private drawImage(
     ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D,
-    clip: Clip
+    asset: Asset,
+    dstW: number,
+    dstH: number
   ) {
-    const { x, y, rotation, width, height } = clip.properties;
-    const cw = ctx.canvas.width;
-    const ch = ctx.canvas.height;
+      const img = this.imageCache.get(asset.id);
+      if (!img) return;
 
-    const px = (x / 100) * cw;
-    const py = (y / 100) * ch;
+      // Object Fit: Contain
+      const { dw, dh, dx, dy } = this.calculateObjectFit(img.width, img.height, dstW, dstH, 'contain');
 
-    // Translate to center of clip
-    // Actually properties x,y usually define top-left or center?
-    // Let's assume center for rotation.
-    // If x,y is top-left, we need to offset.
-    // Let's assume x,y is center position.
+      ctx.drawImage(img, dx, dy, dw, dh);
+  }
 
-    // Wait, OverlayProperties: "x: number; // % of screen width".
-    // If standard CSS, it's top-left.
-    // But for rotation, we want to rotate around center.
-    // Let's translate to x + w/2, y + h/2
-    const w = (width / 100) * cw;
-    const h = (height / 100) * ch;
+  private drawText(
+      ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D,
+      clip: Clip,
+      dstW: number,
+      dstH: number
+  ) {
+      const text = clip.content || '';
+      const style = clip.textStyle || {
+          fontFamily: 'Arial',
+          fontSize: 24,
+          fontWeight: 'bold',
+          color: '#ffffff',
+          textAlign: 'center'
+      };
 
-    const centerX = px + w / 2;
-    const centerY = py + h / 2;
+      ctx.font = `${style.fontWeight} ${style.fontSize}px ${style.fontFamily}`;
+      ctx.fillStyle = style.color;
+      ctx.textAlign = style.textAlign as CanvasTextAlign;
+      ctx.textBaseline = 'middle'; // Vertical align center
 
-    ctx.translate(centerX, centerY);
-    ctx.rotate((rotation * Math.PI) / 180);
+      // X Position based on alignment
+      let x = 0;
+      if (style.textAlign === 'left') x = -dstW / 2;
+      else if (style.textAlign === 'right') x = dstW / 2;
+
+      // Simple word wrap
+      // Since we want to center vertically, we need to know total height first.
+      const lineHeight = style.fontSize * 1.2;
+      const words = text.split(' ');
+      const lines: string[] = [];
+      let currentLine = words[0];
+
+      for (let i = 1; i < words.length; i++) {
+          const word = words[i];
+          const width = ctx.measureText(currentLine + ' ' + word).width;
+          if (width < dstW) {
+              currentLine += ' ' + word;
+          } else {
+              lines.push(currentLine);
+              currentLine = word;
+          }
+      }
+      lines.push(currentLine);
+
+      // Draw lines
+      const totalTextHeight = lines.length * lineHeight;
+      let startY = -totalTextHeight / 2 + lineHeight / 2;
+
+      for (const line of lines) {
+          ctx.fillText(line, x, startY);
+          startY += lineHeight;
+      }
   }
 
   private async drawMap(
     ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D,
     clip: Clip,
     asset: Asset,
-    time: number
+    time: number,
+    dstW: number,
+    dstH: number
   ) {
     if (!asset.geoJson) return;
 
-    // 1. Get current position
-    // Map overlay logic:
-    // Usually shows the path and a marker at current position.
-    // Center map at current position.
+    // Use clip zoom or default
+    const zoom = clip.properties.mapZoom || 13;
 
-    // Map rendering requires projecting standard web mercator tiles.
-    const zoom = 13; // Fixed zoom for now
-
-    // Find center
-    // We assume the map is centered on the current GPX point.
-    // time is local time in seconds.
+    // 1. Get current position for center
     const center = getGpxPositionAtTime(asset.geoJson.features[0] as Feature<LineString>, time);
-    if (!center) return; // Should allow fallback?
+    // If no data at this time, maybe we just don't draw? Or draw last known?
+    if (!center) return;
 
     const [lon, lat] = center;
 
-    // Calculate bounds in Tile Space
-    const cw = ctx.canvas.width;
-    const ch = ctx.canvas.height;
-
-    // Clip dimensions
-    const w = (clip.properties.width / 100) * cw;
-    const h = (clip.properties.height / 100) * ch;
-
-    this.applyTransform(ctx, clip);
-
-    // Now we are at center of clip area.
-    // We want to draw the map into [-w/2, -h/2, w, h] rectangle.
-    // Create a clipping region?
-    ctx.beginPath();
-    ctx.rect(-w/2, -h/2, w, h);
-    ctx.clip();
-
-    // Draw background (or tiles)
-    // Calculate tile coordinates for the center
+    // Calculate view bounds in Tile Pixels (World Space at Zoom)
     const centerTx = lon2tile(lon, zoom);
     const centerTy = lat2tile(lat, zoom);
-
-    // Pixel coordinates of center in "World Pixel Space" (at this zoom)
     const centerPx = centerTx * TILE_SIZE;
     const centerPy = centerTy * TILE_SIZE;
 
-    // Viewport relative to World Pixel Space
-    const halfW = w / 2;
-    const halfH = h / 2;
+    const halfW = dstW / 2;
+    const halfH = dstH / 2;
 
     const viewLeft = centerPx - halfW;
     const viewTop = centerPy - halfH;
     const viewRight = centerPx + halfW;
     const viewBottom = centerPy + halfH;
 
-    // Determine tile range
+    // Determine tiles to load
     const minTx = Math.floor(viewLeft / TILE_SIZE);
     const maxTx = Math.floor(viewRight / TILE_SIZE);
     const minTy = Math.floor(viewTop / TILE_SIZE);
     const maxTy = Math.floor(viewBottom / TILE_SIZE);
 
-    const tilesToLoad: Promise<{ img: HTMLImageElement; x: number; y: number }>[] = [];
+    const promises: Promise<{ img: HTMLImageElement; x: number; y: number } | null>[] = [];
 
     for (let tx = minTx; tx <= maxTx; tx++) {
-      for (let ty = minTy; ty <= maxTy; ty++) {
-         tilesToLoad.push(this.loadTile(tx, ty, zoom).then(img => ({ img, x: tx, y: ty })));
-      }
+        for (let ty = minTy; ty <= maxTy; ty++) {
+            promises.push(this.loadTile(tx, ty, zoom).then(img => img ? { img, x: tx, y: ty } : null));
+        }
     }
 
-    const tiles = await Promise.all(tilesToLoad);
+    const tiles = await Promise.all(promises);
 
     // Draw Tiles
-    for (const { img, x, y } of tiles) {
-       // Position of tile in World Pixels
-       const tilePx = x * TILE_SIZE;
-       const tilePy = y * TILE_SIZE;
+    for (const tile of tiles) {
+        if (!tile) continue;
+        const { img, x, y } = tile;
 
-       // Position relative to Viewport Top-Left
-       const drawX = tilePx - viewLeft - halfW; // -halfW because we are drawing relative to center (0,0) in canvas context
-       const drawY = tilePy - viewTop - halfH;
+        const tilePx = x * TILE_SIZE;
+        const tilePy = y * TILE_SIZE;
 
-       ctx.drawImage(img, drawX, drawY, TILE_SIZE, TILE_SIZE);
+        const drawX = tilePx - viewLeft - halfW; // Relative to center (0,0)
+        const drawY = tilePy - viewTop - halfH;
+
+        ctx.drawImage(img, drawX, drawY, TILE_SIZE, TILE_SIZE);
     }
 
     // Draw Path
-    await this.drawGpxPath(ctx, asset.geoJson, zoom, viewLeft, viewTop, halfW, halfH);
+    this.drawGpxPath(ctx, clip, asset.geoJson, zoom, viewLeft, viewTop, halfW, halfH);
 
     // Draw Marker
-    ctx.fillStyle = 'blue';
+    const markerColor = clip.properties.markerStyle?.color || 'blue';
+    ctx.fillStyle = markerColor;
     ctx.beginPath();
-    ctx.arc(0, 0, 5, 0, Math.PI * 2); // Center is 0,0 because we centered the view there
+    ctx.arc(0, 0, 8, 0, Math.PI * 2);
     ctx.fill();
-
-    ctx.resetTransform();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
   }
 
-  private loadTile(x: number, y: number, z: number): Promise<HTMLImageElement> {
-    const url = getTileUrl(x, y, z);
-    if (this.tileCache.has(url)) {
-        return Promise.resolve(this.tileCache.get(url)!);
-    }
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
-            this.tileCache.set(url, img);
-            resolve(img);
-        };
-        img.onerror = () => {
-            // Return empty image or placeholder?
-            // Resolve with empty to avoid crashing render
-            resolve(img);
-        };
-        img.src = url;
-    });
+  private loadTile(x: number, y: number, z: number): Promise<HTMLImageElement | null> {
+      const url = getTileUrl(x, y, z);
+      if (this.tileCache.has(url)) {
+          return Promise.resolve(this.tileCache.get(url)!);
+      }
+      return new Promise((resolve) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+              this.tileCache.set(url, img);
+              resolve(img);
+          };
+          img.onerror = () => {
+              // Fail silently, maybe render nothing for this tile
+              resolve(null);
+          };
+          img.src = url;
+      });
   }
 
-  private async drawGpxPath(
+  private drawGpxPath(
       ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D,
+      clip: Clip,
       geoJson: any,
       zoom: number,
       viewLeft: number,
@@ -308,33 +358,72 @@ export class Compositor {
       halfH: number
   ) {
       if (!geoJson || !geoJson.features) return;
+      const feature = geoJson.features[0];
+      if (feature.geometry.type !== 'LineString') return;
 
-      ctx.strokeStyle = '#ff0000';
-      ctx.lineWidth = 3;
+      const style = clip.properties.trackStyle;
+      ctx.strokeStyle = style?.color || '#ff0000';
+      ctx.lineWidth = style?.weight || 4;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
       ctx.beginPath();
 
-      const feature = geoJson.features[0]; // Assuming one track
-      if (feature.geometry.type === 'LineString') {
-          const coords = feature.geometry.coordinates;
-          let first = true;
-          for (const [lon, lat] of coords) {
-              const tx = lon2tile(lon, zoom);
-              const ty = lat2tile(lat, zoom);
+      const coords = feature.geometry.coordinates;
+      let first = true;
 
-              const px = tx * TILE_SIZE;
-              const py = ty * TILE_SIZE;
+      // Optimization: Only draw segments that are visible or close to view?
+      // For now draw all (export time is less critical than runtime FPS, but still)
 
-              const drawX = px - viewLeft - halfW;
-              const drawY = py - viewTop - halfH;
+      for (const [lon, lat] of coords) {
+          const tx = lon2tile(lon, zoom);
+          const ty = lat2tile(lat, zoom);
+          const px = tx * TILE_SIZE;
+          const py = ty * TILE_SIZE;
 
-              if (first) {
-                  ctx.moveTo(drawX, drawY);
-                  first = false;
-              } else {
-                  ctx.lineTo(drawX, drawY);
-              }
+          const drawX = px - viewLeft - halfW;
+          const drawY = py - viewTop - halfH;
+
+          if (first) {
+              ctx.moveTo(drawX, drawY);
+              first = false;
+          } else {
+              ctx.lineTo(drawX, drawY);
           }
       }
       ctx.stroke();
+  }
+
+  private calculateObjectFit(
+      srcW: number,
+      srcH: number,
+      dstW: number,
+      dstH: number,
+      mode: 'contain' | 'cover'
+  ) {
+      const srcRatio = srcW / srcH;
+      const dstRatio = dstW / dstH;
+      let dw = dstW;
+      let dh = dstH;
+
+      if (mode === 'contain') {
+          if (srcRatio > dstRatio) {
+              dh = dstW / srcRatio;
+          } else {
+              dw = dstH * srcRatio;
+          }
+      } else { // cover
+          if (srcRatio > dstRatio) {
+              dw = dstH * srcRatio;
+          } else {
+              dh = dstW / srcRatio;
+          }
+      }
+
+      return {
+          dw,
+          dh,
+          dx: -dw / 2,
+          dy: -dh / 2
+      };
   }
 }

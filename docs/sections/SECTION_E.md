@@ -147,11 +147,11 @@ Export is where everything comes together. This section is critical but also the
 - [ ] Manual verify in browser (pending user session).
 
 ### Unit Tests
-- [x] `tests/unit/services/ExportManager.test.ts` - Export flow, mocked mediabunny
-- [x] `tests/unit/services/Compositor.test.ts` - Frame rendering logic
+- [x] `tests/unit/services/ExportManager.test.ts` - Robust tests for export flow, settings, and error handling.
+- [x] `tests/unit/services/Compositor.test.ts` - Comprehensive tests for rendering Video (cover), Image (contain), Text, and Map layers with transforms.
 
 ### Integration Tests
-- [x] `tests/integration/export.integration.test.tsx` - Full UI + Manager flow.
+- [x] `tests/integration/export.integration.test.tsx` - Full UI + Manager flow verified.
 
 ---
 

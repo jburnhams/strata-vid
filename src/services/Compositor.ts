@@ -1,6 +1,7 @@
-import { Asset, Clip, ProjectSettings, Track, TextStyle } from '../types';
+import { Asset, Clip, ProjectSettings, Track, TextStyle, OverlayProperties } from '../types';
 import { getGpxPositionAtTime, lat2tile, lon2tile, getTileUrl, TILE_SIZE } from '../utils/mapUtils';
 import { Feature, LineString } from 'geojson';
+import { interpolateValue } from '../utils/animationUtils';
 
 export class Compositor {
   private videoPool: Map<string, HTMLVideoElement> = new Map();
@@ -110,7 +111,20 @@ export class Compositor {
     const cw = ctx.canvas.width;
     const ch = ctx.canvas.height;
 
-    const { x, y, width, height, rotation, opacity } = clip.properties;
+    const getValue = (prop: keyof OverlayProperties, defaultValue: any) => {
+        if (typeof defaultValue === 'number' && clip.keyframes && clip.keyframes[prop]) {
+             return interpolateValue(clip.keyframes[prop], globalTime - clip.start, defaultValue);
+        }
+        return defaultValue;
+    };
+
+    const x = getValue('x', clip.properties.x);
+    const y = getValue('y', clip.properties.y);
+    const width = getValue('width', clip.properties.width);
+    const height = getValue('height', clip.properties.height);
+    const rotation = getValue('rotation', clip.properties.rotation);
+    const opacity = getValue('opacity', clip.properties.opacity);
+    const mapZoom = getValue('mapZoom', clip.properties.mapZoom);
 
     // Convert % to pixels
     const w = (width / 100) * cw;
@@ -162,7 +176,7 @@ export class Compositor {
         } else if (clip.type === 'text') {
             this.drawText(ctx, clip, w, h);
         } else if (clip.type === 'map' && asset && asset.type === 'gpx') {
-            await this.drawMap(ctx, clip, asset, localTime, w, h);
+            await this.drawMap(ctx, clip, asset, localTime, w, h, mapZoom);
         }
     } catch (e) {
         console.error(`Error drawing clip ${clip.id}`, e);
@@ -284,12 +298,13 @@ export class Compositor {
     asset: Asset,
     time: number,
     dstW: number,
-    dstH: number
+    dstH: number,
+    zoomOverride?: number
   ) {
     if (!asset.geoJson) return;
 
     // Use clip zoom or default
-    const zoom = clip.properties.mapZoom || 13;
+    const zoom = zoomOverride !== undefined ? zoomOverride : (clip.properties.mapZoom || 13);
 
     // 1. Get current position for center
     const center = getGpxPositionAtTime(asset.geoJson.features[0] as Feature<LineString>, time);

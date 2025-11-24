@@ -1,6 +1,7 @@
 import React from 'react';
-import { Clip, Asset } from '../../types';
+import { Clip, Asset, OverlayProperties } from '../../types';
 import { MapPanel } from '../MapPanel';
+import { interpolateValue } from '../../utils/animationUtils';
 
 interface OverlayRendererProps {
   clip: Clip;
@@ -9,8 +10,24 @@ interface OverlayRendererProps {
 }
 
 export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, currentTime }) => {
+  // Helper to get animated value
+  const getValue = (prop: keyof OverlayProperties, defaultValue: any) => {
+    if (typeof defaultValue === 'number' && clip.keyframes && clip.keyframes[prop]) {
+      return interpolateValue(clip.keyframes[prop], currentTime - clip.start, defaultValue);
+    }
+    return defaultValue;
+  };
+
+  const x = getValue('x', clip.properties.x);
+  const y = getValue('y', clip.properties.y);
+  const width = getValue('width', clip.properties.width);
+  const height = getValue('height', clip.properties.height);
+  const rotation = getValue('rotation', clip.properties.rotation);
+  const opacity = getValue('opacity', clip.properties.opacity);
+  const mapZoom = getValue('mapZoom', clip.properties.mapZoom);
+
   // Transition Logic
-  let effectiveOpacity = clip.properties.opacity;
+  let effectiveOpacity = opacity;
   let clipPath: string | undefined;
 
   if (clip.transitionIn) {
@@ -28,11 +45,11 @@ export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, c
 
   const style: React.CSSProperties = {
     position: 'absolute',
-    left: `${clip.properties.x}%`,
-    top: `${clip.properties.y}%`,
-    width: `${clip.properties.width}%`,
-    height: `${clip.properties.height}%`,
-    transform: `rotate(${clip.properties.rotation}deg)`,
+    left: `${x}%`,
+    top: `${y}%`,
+    width: `${width}%`,
+    height: `${height}%`,
+    transform: `rotate(${rotation}deg)`,
     opacity: effectiveOpacity,
     zIndex: clip.properties.zIndex,
     overflow: 'hidden',
@@ -118,7 +135,7 @@ export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, c
                 currentTime={currentTime}
                 syncOffset={clip.syncOffset}
                 mapStyle={clip.properties.mapStyle}
-                zoom={clip.properties.mapZoom}
+                zoom={mapZoom}
                 trackStyle={clip.properties.trackStyle}
                 markerStyle={clip.properties.markerStyle}
               />

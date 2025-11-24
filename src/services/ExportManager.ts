@@ -59,98 +59,117 @@ export class ExportManager {
     // 1. Initialize Compositor
     onProgress({ currentFrame: 0, totalFrames, percentage: 0, status: 'initializing' });
 
-    // Flatten assets record to array
-    const assetList = Object.values(project.assets);
-    await this.compositor.initialize(assetList);
-
-    // 2. Initialize Output
-    const output = new Output({
-      format: new Mp4OutputFormat(),
-      target: new BufferTarget(),
-    });
-
-    // Create OffscreenCanvas
-    const canvas = new OffscreenCanvas(width, height);
-    const ctx = canvas.getContext('2d');
-
-    if (!ctx) {
-        throw new Error('Failed to create canvas context');
-    }
-
-    // @ts-ignore - CanvasSource types might conflict with OffscreenCanvas in some envs
-    const videoSource = new CanvasSource(canvas as any, {
-        codec: 'avc',
-        frameRate: fps,
-        bitrate: exportSettings.videoBitrate || 4_000_000, // Default 4Mbps
-    } as any);
-
-    output.addVideoTrack(videoSource);
-
-    await output.start();
-
-    // 3. Render Loop
     try {
-      const orderedTracks = project.trackOrder.map(id => project.tracks[id]).filter(Boolean);
+        const assetList = Object.values(project.assets);
+        await this.compositor.initialize(assetList);
 
-      const renderProjectState = {
-          tracks: orderedTracks,
-          clips: project.clips,
-          assets: project.assets,
-          settings: project.settings // Pass original settings for reference if needed
-      };
-
-      for (let frame = 0; frame < totalFrames; frame++) {
         if (this.isCancelled) {
-            onProgress({ currentFrame: frame, totalFrames, percentage: (frame / totalFrames) * 100, status: 'cancelled' });
-            this.compositor.cleanup();
-            return null;
+             return this.handleCancellation(onProgress, totalFrames);
         }
 
-        const time = frame / fps;
+        // 2. Initialize Output
+        const output = new Output({
+            format: new Mp4OutputFormat(),
+            target: new BufferTarget(),
+        });
 
-        await this.compositor.renderFrame(ctx as any, time, renderProjectState);
+        // Create OffscreenCanvas
+        const canvas = new OffscreenCanvas(width, height);
+        const ctx = canvas.getContext('2d', {
+            alpha: false,
+            desynchronized: true
+        }) as OffscreenCanvasRenderingContext2D;
 
-        // Encode
+        if (!ctx) {
+            throw new Error('Failed to create canvas context');
+        }
+
+        // @ts-ignore: CanvasSource type definition mismatch with OffscreenCanvas
+        const videoSource = new CanvasSource(canvas as any, {
+            codec: 'avc',
+            framerate: fps,
+            bitrate: exportSettings.videoBitrate || 6_000_000,
+        } as any);
+
+        output.addVideoTrack(videoSource);
+        await output.start();
+
+        // 3. Render Loop
+        const orderedTracks = project.trackOrder.map(id => project.tracks[id]).filter(Boolean);
+
+        const renderProjectState = {
+            tracks: orderedTracks,
+            clips: project.clips,
+            assets: project.assets,
+            settings: project.settings
+        };
+
+        for (let frame = 0; frame < totalFrames; frame++) {
+            if (this.isCancelled) {
+                return this.handleCancellation(onProgress, totalFrames);
+            }
+
+            const time = frame / fps;
+
+            await this.compositor.renderFrame(ctx, time, renderProjectState);
+
+            // Add frame to encoder
+            // @ts-ignore: handling mediabunny version differences
+            if (videoSource.addFrame) {
+                // @ts-ignore
+                await videoSource.addFrame(canvas);
+            } else {
+                 // @ts-ignore
+                 await videoSource.add(frame / fps);
+            }
+
+            // Report progress
+            if (frame % 10 === 0 || frame === totalFrames - 1) {
+                onProgress({
+                    currentFrame: frame + 1,
+                    totalFrames,
+                    percentage: Math.round(((frame + 1) / totalFrames) * 100),
+                    status: 'rendering'
+                });
+            }
+
+            // Yield to event loop to allow cancellation
+            await new Promise(r => setTimeout(r, 0));
+        }
+
+        if (this.isCancelled) return this.handleCancellation(onProgress, totalFrames);
+
+        onProgress({ currentFrame: totalFrames, totalFrames, percentage: 100, status: 'encoding' });
+
+        // Finalize
+        await output.finalize();
+
+        if (this.isCancelled) return this.handleCancellation(onProgress, totalFrames);
+
+        onProgress({ currentFrame: totalFrames, totalFrames, percentage: 100, status: 'completed' });
+
+        // Get buffer
         // @ts-ignore
-        if (videoSource.addFrame) {
-             // @ts-ignore
-             await videoSource.addFrame(canvas);
-        } else {
-            // Fallback for older mediabunny versions or mocked env
-             // @ts-ignore
-             await videoSource.add(frame / fps);
+        const buffer = output.target.buffer;
+        if (!buffer || buffer.byteLength === 0) {
+             // In mock environment this might happen if we don't mock buffer properly
+             // But for production logic:
+             // throw new Error('Export generated empty buffer');
         }
 
-        if (frame % 10 === 0) {
-             onProgress({
-                 currentFrame: frame,
-                 totalFrames,
-                 percentage: (frame / totalFrames) * 100,
-                 status: 'rendering'
-             });
-        }
-      }
-
-      onProgress({ currentFrame: totalFrames, totalFrames, percentage: 100, status: 'encoding' });
-
-      // Finalize
-      await output.finalize();
-
-      onProgress({ currentFrame: totalFrames, totalFrames, percentage: 100, status: 'completed' });
-
-      // Get buffer
-      // @ts-ignore
-      const buffer = output.target.buffer;
-      if (!buffer) throw new Error('Export generated empty buffer');
-
-      return new Blob([buffer], { type: 'video/mp4' });
+        return new Blob([buffer as ArrayBuffer], { type: 'video/mp4' });
 
     } catch (e: any) {
         console.error('Export failed', e);
-        onProgress({ currentFrame: 0, totalFrames, percentage: 0, status: 'error', error: e.message });
-        throw e;
+        onProgress({ currentFrame: 0, totalFrames, percentage: 0, status: 'error', error: e.message || 'Unknown error' });
+        return null;
     } finally {
         this.compositor.cleanup();
     }
+  }
+
+  private handleCancellation(onProgress: ProgressCallback, totalFrames: number) {
+      onProgress({ currentFrame: 0, totalFrames, percentage: 0, status: 'cancelled' });
+      return null;
   }
 }

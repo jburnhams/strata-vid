@@ -103,6 +103,8 @@ export interface ProjectSettings {
   fps: number;
   duration: number; // Total project duration in seconds
   previewQuality: 'low' | 'medium' | 'high';
+  snapToGrid: boolean;
+  allowOverlaps: boolean;
 }
 
 // Note: The full Project State structure including slices is defined in src/store/types.ts

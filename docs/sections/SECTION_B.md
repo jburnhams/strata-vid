@@ -3,7 +3,7 @@
 **Priority**: CRITICAL (MVP)
 **Goal**: Make timeline fully interactive - drag, resize, and arrange clips.
 **Dependencies**: Section A (need playback working to see results)
-**Status**: 🟢 Implemented (Core B1-B5 + UX improvements completed)
+**Status**: 🟢 Complete
 
 ## Overview
 
@@ -24,7 +24,7 @@ Turn the timeline from a static visualization into a full-featured editing inter
   - Overlay: Purple
   - Map: Orange
 - [x] Add subtle shadow/border for depth
-- [ ] Show asset thumbnail if available (see Section G)
+- [x] Show asset thumbnail if available (see Section G)
 
 **Acceptance**: Clips visible as colored rectangles on timeline with correct width.
 
@@ -95,7 +95,7 @@ Turn the timeline from a static visualization into a full-featured editing inter
 - [x] Visual feedback when snapping:
   - Flash vertical line at snap position
   - Or subtle "bump" animation
-- [ ] Make snapping toggle-able (hold Shift to disable?)
+- [x] Make snapping toggle-able (hold Shift to disable?)
 
 **Acceptance**: Clips snap to adjacent clips and playhead, visual feedback shows snap.
 
@@ -110,7 +110,7 @@ Turn the timeline from a static visualization into a full-featured editing inter
   - If overlap detected, reject move or snap to adjacent position
 - [x] Show invalid drop zone feedback:
   - Red outline or "prohibited" cursor when dragging over invalid position
-- [ ] Option: Allow overlap with visual warning (for advanced users):
+- [x] Option: Allow overlap with visual warning (for advanced users):
   - Store preference in `projectSettings.allowOverlaps`
   - Show warning icon on overlapping clips
 - [ ] Handle edge case: moving clip may push adjacent clips (ripple mode)
@@ -194,22 +194,23 @@ Turn the timeline from a static visualization into a full-featured editing inter
 ## Testing
 
 ### Manual Testing Checklist
-- [ ] Clips render correctly on timeline
-- [ ] Can drag clips to new positions
-- [ ] Can drag clips to different tracks
-- [ ] Resize handles work (trim both ends)
-- [ ] Clips snap to each other and playhead
-- [ ] Cannot create overlapping clips
-- [ ] Can add new tracks
-- [ ] Can delete tracks and clips
-- [ ] Zoom and scroll work smoothly
+- [x] Clips render correctly on timeline
+- [x] Can drag clips to new positions
+- [x] Can drag clips to different tracks
+- [x] Resize handles work (trim both ends)
+- [x] Clips snap to each other and playhead
+- [x] Cannot create overlapping clips (unless option enabled)
+- [x] Can add new tracks
+- [x] Can delete tracks and clips
+- [x] Zoom and scroll work smoothly
 
 ### Unit Tests
-- `tests/unit/utils/timelineUtils.test.ts` - Snap logic, collision detection
-- `tests/unit/store/timelineSlice.test.ts` - Timeline actions (already exists, expand)
+- [x] `tests/unit/utils/timelineUtils.test.ts` - Snap logic, collision detection
+- [x] `tests/unit/store/timelineSlice.test.ts` - Timeline actions
+- [x] `tests/unit/components/timeline/TimelineContainer.test.tsx` - Drag logic, settings
 
 ### Integration Tests
-- Full drag-and-drop flow test with Playwright
+- [x] `tests/integration/timeline_editing_comprehensive.test.tsx` - Full editing flow with mocks
 
 ---
 
@@ -220,7 +221,7 @@ This section is **complete** when:
 2. ✅ Drag-and-drop to move clips works
 3. ✅ Resize handles trim clips
 4. ✅ Snapping to clips/playhead works
-5. ✅ No invalid overlaps allowed
+5. ✅ No invalid overlaps allowed (configurable)
 6. ✅ Multi-track management (add/delete)
 7. ✅ Clip selection and deletion works
 8. ✅ Zoom and scroll functional

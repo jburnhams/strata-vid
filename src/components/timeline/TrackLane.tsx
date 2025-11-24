@@ -1,11 +1,12 @@
 import React from 'react';
-import { Track, Clip } from '../../types';
+import { Track, Clip, Asset } from '../../types';
 import { useDroppable } from '@dnd-kit/core';
 import { ClipItem } from './ClipItem';
 
 interface TrackLaneProps {
   track: Track;
   clips: Clip[];
+  assets: Record<string, Asset>;
   zoomLevel: number;
   selectedClipId?: string | null;
   onClipSelect?: (id: string) => void;
@@ -16,6 +17,7 @@ interface TrackLaneProps {
 export const TrackLane: React.FC<TrackLaneProps> = ({
   track,
   clips,
+  assets,
   zoomLevel,
   selectedClipId,
   onClipSelect,
@@ -33,6 +35,7 @@ export const TrackLane: React.FC<TrackLaneProps> = ({
   return (
     <div
       ref={setNodeRef}
+      data-testid="track-lane"
       className={`
         relative h-16 border-b border-gray-700 transition-colors
         ${isOver ? 'bg-gray-800/50' : 'bg-gray-900'}
@@ -46,6 +49,7 @@ export const TrackLane: React.FC<TrackLaneProps> = ({
         <ClipItem
           key={clip.id}
           clip={clip}
+          asset={assets[clip.assetId]}
           zoomLevel={zoomLevel}
           isSelected={selectedClipId === clip.id}
           onSelect={onClipSelect}

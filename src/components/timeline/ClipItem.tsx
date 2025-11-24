@@ -1,11 +1,12 @@
 import React, { useCallback, useState } from 'react';
-import { Clip } from '../../types';
+import { Clip, Asset } from '../../types';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { formatTime } from '../../utils/timeUtils';
 
 interface ClipItemProps {
   clip: Clip;
+  asset?: Asset;
   zoomLevel: number;
   isSelected?: boolean;
   onSelect?: (id: string) => void;
@@ -15,6 +16,7 @@ interface ClipItemProps {
 
 export const ClipItem: React.FC<ClipItemProps> = ({
   clip,
+  asset,
   zoomLevel,
   isSelected,
   onSelect,
@@ -108,7 +110,7 @@ export const ClipItem: React.FC<ClipItemProps> = ({
         flex items-center overflow-hidden cursor-move select-none group transition-shadow duration-100
         ${isSelected ? 'ring-2 ring-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.3)] z-10' : ''}
         ${isDragging ? 'opacity-50' : ''}
-        hover:brightness-110
+        hover:brightness-110 relative
       `}
       onClick={(e) => {
         e.stopPropagation();
@@ -123,7 +125,20 @@ export const ClipItem: React.FC<ClipItemProps> = ({
       {...attributes}
       {...listeners}
     >
-      <span className="px-2 truncate">
+      {/* Thumbnail Background */}
+      {asset?.thumbnail && (
+        <div
+          className="absolute inset-0 z-0 opacity-40 pointer-events-none"
+          style={{
+             backgroundImage: `url(${asset.thumbnail})`,
+             backgroundSize: 'auto 100%',
+             backgroundRepeat: 'repeat-x'
+          }}
+          data-testid="clip-thumbnail"
+        />
+      )}
+
+      <span className="px-2 truncate z-10 font-medium drop-shadow-md">
         {clip.id}
       </span>
 
@@ -143,11 +158,11 @@ export const ClipItem: React.FC<ClipItemProps> = ({
 
       {/* Resize Handles */}
       <div
-        className="absolute left-0 w-2 h-full cursor-w-resize hover:bg-white/20 z-10"
+        className="absolute left-0 w-2 h-full cursor-w-resize hover:bg-white/20 z-20"
         onPointerDown={(e) => handleResizeStart(e, 'left')}
       />
       <div
-        className="absolute right-0 w-2 h-full cursor-e-resize hover:bg-white/20 z-10"
+        className="absolute right-0 w-2 h-full cursor-e-resize hover:bg-white/20 z-20"
         onPointerDown={(e) => handleResizeStart(e, 'right')}
       />
     </div>

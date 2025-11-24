@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ClipItem } from '../../../../src/components/timeline/ClipItem';
-import { Clip } from '../../../../src/types';
+import { Clip, Asset } from '../../../../src/types';
 
 // Mock dnd-kit
 jest.mock('@dnd-kit/core', () => ({
@@ -33,9 +33,18 @@ const mockClip: Clip = {
   type: 'video',
 };
 
+const mockAsset: Asset = {
+    id: 'asset-1',
+    name: 'video.mp4',
+    type: 'video',
+    src: 'mock-url',
+    duration: 100,
+};
+
 describe('ClipItem', () => {
   const defaultProps = {
     clip: mockClip,
+    asset: mockAsset,
     zoomLevel: 10,
     onSelect: jest.fn(),
     onResize: jest.fn(),
@@ -52,6 +61,14 @@ describe('ClipItem', () => {
       left: '100px', // 10 * 10
       width: '50px', // 5 * 10
     });
+  });
+
+  it('renders thumbnail if present', () => {
+    const assetWithThumb = { ...mockAsset, thumbnail: 'blob:thumb-url' };
+    render(<ClipItem {...defaultProps} asset={assetWithThumb} />);
+    const thumb = screen.getByTestId('clip-thumbnail');
+    expect(thumb).toBeInTheDocument();
+    expect(thumb).toHaveStyle({ backgroundImage: 'url(blob:thumb-url)' });
   });
 
   it('calls onSelect when clicked', () => {

@@ -19,15 +19,17 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Calculate where the video should be in its own timeline
-  const expectedVideoTime = Math.max(0, currentTime - clip.start + clip.offset);
+  const clipRate = clip.playbackRate || 1;
+  const expectedVideoTime = Math.max(0, (currentTime - clip.start) * clipRate + clip.offset);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     // Sync Playback Rate
-    if (Math.abs(video.playbackRate - playbackRate) > 0.01) {
-      video.playbackRate = playbackRate;
+    const effectiveRate = playbackRate * clipRate;
+    if (Math.abs(video.playbackRate - effectiveRate) > 0.01) {
+      video.playbackRate = effectiveRate;
     }
 
     // Sync Time
@@ -84,6 +86,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     objectFit: 'cover',
     pointerEvents: 'none',
     clipPath,
+    filter: clip.properties.filter,
   };
 
   return (

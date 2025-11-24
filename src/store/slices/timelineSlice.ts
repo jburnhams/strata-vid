@@ -299,4 +299,33 @@ export const createTimelineSlice: StateCreator<
         Object.assign(clip.properties, properties);
       }
     }),
+  addKeyframe: (clipId, property, keyframe) =>
+    set((state) => {
+      const clip = state.clips[clipId];
+      if (!clip) return;
+      if (!clip.keyframes) clip.keyframes = {};
+      if (!clip.keyframes[property]) clip.keyframes[property] = [];
+      clip.keyframes[property].push(keyframe);
+      // Sort by time
+      clip.keyframes[property].sort((a, b) => a.time - b.time);
+    }),
+  removeKeyframe: (clipId, property, keyframeId) =>
+    set((state) => {
+      const clip = state.clips[clipId];
+      if (!clip || !clip.keyframes || !clip.keyframes[property]) return;
+      clip.keyframes[property] = clip.keyframes[property].filter((k) => k.id !== keyframeId);
+    }),
+  updateKeyframe: (clipId, property, keyframeId, update) =>
+    set((state) => {
+      const clip = state.clips[clipId];
+      if (!clip || !clip.keyframes || !clip.keyframes[property]) return;
+      const index = clip.keyframes[property].findIndex((k) => k.id === keyframeId);
+      if (index !== -1) {
+        Object.assign(clip.keyframes[property][index], update);
+        // Resort if time changed
+        if (update.time !== undefined) {
+          clip.keyframes[property].sort((a, b) => a.time - b.time);
+        }
+      }
+    }),
 });

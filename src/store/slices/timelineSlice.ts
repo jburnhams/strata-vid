@@ -1,5 +1,7 @@
 import { StateCreator } from 'zustand';
 import { TimelineSlice, StoreState } from '../types';
+import { Clip } from '../../types';
+import { checkCollision } from '../../utils/timelineUtils';
 
 export const createTimelineSlice: StateCreator<
   StoreState,
@@ -91,6 +93,47 @@ export const createTimelineSlice: StateCreator<
       if (newOffset !== undefined) {
         clip.offset = newOffset;
       }
+    }),
+  duplicateClip: (id) =>
+    set((state) => {
+      const clip = state.clips[id];
+      if (!clip) return;
+
+      const track = state.tracks[clip.trackId];
+      if (!track) return;
+
+      const newId = `clip-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+      // Try to place immediately after
+      let newStart = clip.start + clip.duration;
+
+      // Get all clips on this track
+      // We need to cast Object.values to Clip[] because state.clips is a Record
+      // But actually, track.clips contains IDs.
+      const trackClips = track.clips.map((cId) => state.clips[cId]).filter(Boolean) as Clip[];
+
+      // Check collision
+      if (checkCollision(newStart, clip.duration, trackClips)) {
+        // If collision, push to the end of the track
+        let maxEnd = 0;
+        trackClips.forEach((c) => {
+          const end = c.start + c.duration;
+          if (end > maxEnd) maxEnd = end;
+        });
+        newStart = maxEnd;
+      }
+
+      const newClip: Clip = {
+        ...clip,
+        id: newId,
+        start: newStart,
+      };
+
+      state.clips[newId] = newClip;
+      track.clips.push(newId);
+
+      // Select the new clip
+      state.selectedClipId = newId;
     }),
   updateClipSyncOffset: (id, syncOffset) =>
     set((state) => {

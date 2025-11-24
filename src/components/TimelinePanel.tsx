@@ -9,6 +9,8 @@ export const TimelinePanel: React.FC = () => {
   const trackOrder = useProjectStore((state) => state.trackOrder);
   const moveClip = useProjectStore((state) => state.moveClip);
   const resizeClip = useProjectStore((state) => state.resizeClip);
+  const duplicateClip = useProjectStore((state) => state.duplicateClip);
+  const removeClip = useProjectStore((state) => state.removeClip);
   const addTrack = useProjectStore((state) => state.addTrack);
   const removeTrack = useProjectStore((state) => state.removeTrack);
   const currentTime = useProjectStore((state) => state.currentTime);
@@ -41,6 +43,8 @@ export const TimelinePanel: React.FC = () => {
         setZoomLevel={setZoomLevel}
         onMoveClip={moveClip}
         onResizeClip={resizeClip}
+        onDuplicateClip={duplicateClip}
+        onRemoveClip={removeClip}
         onRemoveTrack={removeTrack}
         onAddTrack={handleAddTrack}
         selectedClipId={selectedClipId}

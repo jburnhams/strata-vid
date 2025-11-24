@@ -20,6 +20,7 @@ import { ClipItem } from './ClipItem';
 import { Ruler } from './Ruler';
 import { Playhead } from './Playhead';
 import { ZoomControls } from './ZoomControls';
+import { ContextMenu } from './ContextMenu';
 import {
   checkCollision,
   getSnapPoints,
@@ -36,9 +37,11 @@ interface TimelineContainerProps {
   onMoveClip: (id: string, newStart: number, newTrackId?: string) => void;
   onResizeClip: (id: string, newDuration: number, newOffset: number) => void;
   onRemoveTrack: (id: string) => void;
+  onRemoveClip: (id: string) => void;
+  onDuplicateClip: (id: string) => void;
   onAddTrack?: () => void;
   selectedClipId?: string | null;
-  onClipSelect?: (id: string) => void;
+  onClipSelect?: (id: string | null) => void;
   currentTime: number;
   isPlaying: boolean;
 }
@@ -62,6 +65,8 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
   onMoveClip,
   onResizeClip,
   onRemoveTrack,
+  onRemoveClip,
+  onDuplicateClip,
   onAddTrack,
   selectedClipId,
   onClipSelect,
@@ -229,6 +234,46 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
     }
   };
 
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; clipId: string } | null>(null);
+
+  const handleContextMenu = (e: React.MouseEvent, clipId: string) => {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY, clipId });
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (selectedClipId && (e.key === 'Delete' || e.key === 'Backspace')) {
+        const target = e.target as HTMLElement;
+        if (['INPUT', 'TEXTAREA'].includes(target.tagName) || target.isContentEditable) return;
+
+        e.preventDefault();
+        onRemoveClip(selectedClipId);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedClipId, onRemoveClip]);
+
+  const handleZoomToFit = () => {
+    if (!scrollContainerRef.current) return;
+
+    let maxTime = 0;
+    const clipList = Object.values(clips);
+    if (clipList.length === 0) return;
+
+    clipList.forEach((clip) => {
+      const end = clip.start + clip.duration;
+      if (end > maxTime) maxTime = end;
+    });
+
+    maxTime = Math.max(maxTime * 1.1, 10); // Add buffer
+
+    const width = scrollContainerRef.current.clientWidth;
+    const newZoom = width / maxTime;
+    setZoomLevel(Math.min(Math.max(newZoom, 0.1), 500));
+  };
+
   const activeClip = activeId ? clips[activeId] : null;
 
   return (
@@ -246,6 +291,7 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
              setZoomLevel={setZoomLevel}
              min={1}
              max={200}
+             onZoomToFit={handleZoomToFit}
            />
         </div>
 
@@ -278,6 +324,7 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
             className="flex-1 overflow-auto relative"
             onWheel={handleWheel}
             onScroll={handleScroll}
+            onClick={() => onClipSelect?.(null)}
           >
              <div className="min-w-full relative" style={{ width: 'max-content' }}>
                 <Playhead zoomLevel={zoomLevel} />
@@ -309,6 +356,7 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
                             selectedClipId={selectedClipId}
                             onClipSelect={onClipSelect}
                             onClipResize={handleResize}
+                            onContextMenu={handleContextMenu}
                         />
                     );
                 })}
@@ -332,6 +380,25 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
           </div>
         ) : null}
       </DragOverlay>
+
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu(null)}
+          options={[
+            {
+              label: 'Duplicate Clip',
+              onClick: () => onDuplicateClip(contextMenu.clipId),
+            },
+            {
+              label: 'Delete Clip',
+              onClick: () => onRemoveClip(contextMenu.clipId),
+              danger: true,
+            },
+          ]}
+        />
+      )}
     </DndContext>
   );
 };

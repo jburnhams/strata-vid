@@ -29,16 +29,23 @@ jest.mock('@dnd-kit/core', () => ({
 
 // Mock TrackLane to simulate resize events from children
 jest.mock('../../../../src/components/timeline/TrackLane', () => ({
-  TrackLane: ({ onClipResize, clips }: any) => (
+  TrackLane: ({ onClipResize, onContextMenu, clips }: any) => (
     <div data-testid="track-lane">
       {clips.map((clip: any) => (
-        <button
-          key={clip.id}
-          data-testid={`resize-btn-${clip.id}`}
-          onClick={() => onClipResize(clip.id, 20, 10, 5)}
-        >
-          Resize {clip.id}
-        </button>
+        <div key={clip.id}>
+            <button
+            data-testid={`resize-btn-${clip.id}`}
+            onClick={() => onClipResize(clip.id, 20, 10, 5)}
+            >
+            Resize {clip.id}
+            </button>
+            <button
+            data-testid={`context-btn-${clip.id}`}
+            onClick={(e) => onContextMenu(e, clip.id)}
+            >
+            Context {clip.id}
+            </button>
+        </div>
       ))}
     </div>
   ),
@@ -88,6 +95,8 @@ describe('TimelineContainer', () => {
     onMoveClip: jest.fn(),
     onResizeClip: jest.fn(),
     onRemoveTrack: jest.fn(),
+    onRemoveClip: jest.fn(),
+    onDuplicateClip: jest.fn(),
     onAddTrack: jest.fn(),
     selectedClipId: null,
     onClipSelect: jest.fn(),
@@ -212,5 +221,94 @@ describe('TimelineContainer', () => {
       const btn = screen.getByText('+ Add Track');
       fireEvent.click(btn);
       expect(defaultProps.onAddTrack).toHaveBeenCalled();
+  });
+
+  it('opens context menu and deletes clip', () => {
+      render(<TimelineContainer {...defaultProps} />);
+
+      // Trigger context menu
+      const btn = screen.getByTestId('context-btn-clip-1');
+      fireEvent.click(btn); // In real app it's contextmenu event but our mock uses click
+
+      // Check if Context Menu appears (we can look for "Delete Clip" text which is in options)
+      const deleteOption = screen.getByText('Delete Clip');
+      expect(deleteOption).toBeInTheDocument();
+
+      // Click delete
+      fireEvent.click(deleteOption);
+
+      expect(defaultProps.onRemoveClip).toHaveBeenCalledWith('clip-1');
+  });
+
+  it('opens context menu and duplicates clip', () => {
+      render(<TimelineContainer {...defaultProps} />);
+
+      const btn = screen.getByTestId('context-btn-clip-1');
+      fireEvent.click(btn);
+
+      const duplicateOption = screen.getByText('Duplicate Clip');
+      expect(duplicateOption).toBeInTheDocument();
+
+      fireEvent.click(duplicateOption);
+
+      expect(defaultProps.onDuplicateClip).toHaveBeenCalledWith('clip-1');
+  });
+
+  it('deselects clip when clicking background', () => {
+      render(<TimelineContainer {...defaultProps} />);
+
+      // Find background (scroll container)
+      const canvas = document.querySelector('canvas');
+      const container = canvas?.closest('.overflow-auto');
+
+      if (container) {
+          fireEvent.click(container);
+          expect(defaultProps.onClipSelect).toHaveBeenCalledWith(null);
+      } else {
+          throw new Error('Container not found');
+      }
+  });
+
+  it('deletes selected clip on Delete key', () => {
+      render(<TimelineContainer {...defaultProps} selectedClipId="clip-1" />);
+
+      fireEvent.keyDown(window, { key: 'Delete' });
+      expect(defaultProps.onRemoveClip).toHaveBeenCalledWith('clip-1');
+  });
+
+  it('does not delete if editing text', () => {
+      render(<TimelineContainer {...defaultProps} selectedClipId="clip-1" />);
+
+      const input = document.createElement('input');
+      document.body.appendChild(input);
+      input.focus();
+
+      fireEvent.keyDown(input, { key: 'Delete' });
+      expect(defaultProps.onRemoveClip).not.toHaveBeenCalled();
+
+      document.body.removeChild(input);
+  });
+
+  it('zooms to fit', () => {
+      render(<TimelineContainer {...defaultProps} />);
+
+      // Spy on clientWidth to ensure it returns 1000
+      const spy = jest.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(1000);
+
+      // Trigger Zoom to Fit
+      const btn = screen.getByTitle('Zoom to Fit');
+      fireEvent.click(btn);
+
+      // Clips end at 30+5=35.
+      // Container width defaults to 1000 in component (or mocked resize observer? No, we didn't mock resize observer so it might be 0 or 1000).
+      // In component: useState(1000).
+      // Logic: maxTime = 35 * 1.1 = 38.5.
+      // Zoom = 1000 / 38.5 = 25.97...
+
+      expect(defaultProps.setZoomLevel).toHaveBeenCalled();
+      const call = (defaultProps.setZoomLevel as jest.Mock).mock.calls[0][0];
+      expect(call).toBeCloseTo(1000 / 38.5, 0);
+
+      spy.mockRestore();
   });
 });

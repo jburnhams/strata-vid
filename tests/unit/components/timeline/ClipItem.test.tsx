@@ -145,4 +145,26 @@ describe('ClipItem', () => {
         fireEvent.pointerUp(window);
     }
   });
+
+  it('shows tooltip when resizing', () => {
+    render(<ClipItem {...defaultProps} />);
+    const clipElement = screen.getByText('clip-1').closest('div');
+    const handles = clipElement?.querySelectorAll('div.absolute');
+    const rightHandle = Array.from(handles || []).find(el => el.className.includes('cursor-e-resize'));
+
+    if (rightHandle) {
+        // Start resize
+        fireEvent(rightHandle, new MouseEvent('pointerdown', { bubbles: true }));
+
+        // Check for tooltip
+        expect(screen.getByTestId('resize-tooltip')).toBeInTheDocument();
+        expect(screen.getByText(/End:/)).toBeInTheDocument();
+
+        // End resize
+        fireEvent.pointerUp(window);
+
+        // Tooltip should be gone
+        expect(screen.queryByTestId('resize-tooltip')).not.toBeInTheDocument();
+    }
+  });
 });

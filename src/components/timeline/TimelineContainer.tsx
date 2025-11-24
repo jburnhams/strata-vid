@@ -7,6 +7,7 @@ import {
   PointerSensor,
   DragEndEvent,
   DragStartEvent,
+  DragMoveEvent,
   defaultDropAnimationSideEffects,
   DropAnimation,
   Modifier,
@@ -74,6 +75,9 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
   isPlaying,
 }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [snapLine, setSnapLine] = useState<number | null>(null);
+  const [isValidDrop, setIsValidDrop] = useState(true);
+
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [scrollLeft, setScrollLeft] = useState(0);
   const [containerWidth, setContainerWidth] = useState(1000);
@@ -129,11 +133,67 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
+    setIsValidDrop(true);
+    setSnapLine(null);
+  };
+
+  const handleDragMove = (event: DragMoveEvent) => {
+    const { active, over, delta } = event;
+
+    if (!active) return;
+
+    // Clear snap line by default
+    setSnapLine(null);
+    setIsValidDrop(true);
+
+    const clipId = active.id as string;
+    const clip = clips[clipId];
+    if (!clip) return;
+
+    // Calculate potentially new start time
+    const deltaSeconds = delta.x / zoomLevel;
+    let newStart = clip.start + deltaSeconds;
+    newStart = Math.max(0, newStart);
+
+    // Check snapping for visual feedback
+    const snapPoints = getSnapPoints(clips, currentTime);
+    const snapTolerance = 10 / zoomLevel;
+
+    const snappedStart = findNearestSnapPoint(newStart, snapPoints, snapTolerance);
+    if (snappedStart !== null) {
+        setSnapLine(snappedStart);
+        newStart = snappedStart;
+    } else {
+        const newEnd = newStart + clip.duration;
+        const snappedEnd = findNearestSnapPoint(newEnd, snapPoints, snapTolerance);
+        if (snappedEnd !== null) {
+            setSnapLine(snappedEnd);
+            newStart = snappedEnd - clip.duration;
+        }
+    }
+
+    // Check collision
+    if (over) {
+        const targetTrackId = over.id as string;
+        const targetTrack = tracks[targetTrackId];
+
+        if (targetTrack) {
+            const trackClips = targetTrack.clips
+                .map(id => clips[id])
+                .filter(c => c && c.id !== clipId);
+
+            if (checkCollision(newStart, clip.duration, trackClips)) {
+                setIsValidDrop(false);
+            }
+        }
+    }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over, delta } = event;
     setActiveId(null);
+    setSnapLine(null);
+    setIsValidDrop(true);
 
     if (active && over) {
       const clipId = active.id as string;
@@ -280,6 +340,7 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
     <DndContext
       sensors={sensors}
       onDragStart={handleDragStart}
+      onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
     >
       <div className="flex flex-col h-full bg-gray-950 text-gray-300 select-none">
@@ -338,6 +399,15 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
                   />
                 </div>
 
+                {/* Snap Line */}
+                {snapLine !== null && (
+                  <div
+                    className="absolute top-0 bottom-0 w-px bg-yellow-400 z-50 pointer-events-none shadow-[0_0_4px_rgba(250,204,21,0.8)]"
+                    style={{ left: `${snapLine * zoomLevel}px` }}
+                    data-testid="snap-line"
+                  />
+                )}
+
                 {/* Tracks */}
                 {trackOrder.map(trackId => {
                     const track = tracks[trackId];
@@ -374,9 +444,14 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
                 width: `${activeClip.duration * zoomLevel}px`,
                 height: '100%'
             }}
-            className="rounded border border-blue-500 bg-blue-600/80 text-white text-xs flex items-center overflow-hidden shadow-xl opacity-80"
+            className={`
+                rounded border text-white text-xs flex items-center overflow-hidden shadow-xl opacity-80 transition-colors duration-100
+                ${isValidDrop ? 'border-blue-500 bg-blue-600/80' : 'border-red-500 bg-red-600/80 ring-2 ring-red-500'}
+            `}
+            data-testid="drag-overlay-preview"
           >
              <span className="px-2 truncate">{activeClip.id}</span>
+             {!isValidDrop && <span className="ml-2">🚫</span>}
           </div>
         ) : null}
       </DragOverlay>

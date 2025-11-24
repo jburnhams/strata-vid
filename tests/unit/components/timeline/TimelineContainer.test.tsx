@@ -3,14 +3,18 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { TimelineContainer } from '../../../../src/components/timeline/TimelineContainer';
 import { Track, Clip } from '../../../../src/types';
 
-// Capture onDragEnd callback
+// Capture dnd callbacks
 let capturedOnDragEnd: any;
+let capturedOnDragMove: any;
+let capturedOnDragStart: any;
 
 // Mock dnd-kit
 jest.mock('@dnd-kit/core', () => ({
   ...jest.requireActual('@dnd-kit/core'),
-  DndContext: ({ children, onDragEnd }: any) => {
+  DndContext: ({ children, onDragEnd, onDragMove, onDragStart }: any) => {
     capturedOnDragEnd = onDragEnd;
+    capturedOnDragMove = onDragMove;
+    capturedOnDragStart = onDragStart;
     return <div>{children}</div>;
   },
   useDraggable: () => ({
@@ -310,5 +314,50 @@ describe('TimelineContainer', () => {
       expect(call).toBeCloseTo(1000 / 38.5, 0);
 
       spy.mockRestore();
+  });
+
+  it('shows snap line during drag move', () => {
+    render(<TimelineContainer {...defaultProps} />);
+
+    // Start drag
+    act(() => {
+        // Need to simulate drag start logic if we were testing activeId,
+        // but for onDragMove we just need to ensure active and over are present
+    });
+
+    // Move Clip-1 near 0
+    act(() => {
+        capturedOnDragMove({
+            active: { id: 'clip-1' },
+            over: { id: 'track-1' },
+            delta: { x: -95, y: 0 } // Move close to 0
+        });
+    });
+
+    expect(screen.getByTestId('snap-line')).toBeInTheDocument();
+  });
+
+  it('shows invalid drop feedback on collision', () => {
+    render(<TimelineContainer {...defaultProps} />);
+
+    // Start Drag
+    act(() => {
+        capturedOnDragStart({
+            active: { id: 'clip-1' }
+        });
+    });
+
+    // Move to collision spot (overlap clip-2)
+    act(() => {
+        capturedOnDragMove({
+            active: { id: 'clip-1' },
+            over: { id: 'track-1' },
+            delta: { x: 170, y: 0 } // Move to 27 (overlaps 30)
+        });
+    });
+
+    const overlay = screen.getByTestId('drag-overlay-preview');
+    expect(overlay.className).toContain('border-red-500');
+    expect(screen.getByText('🚫')).toBeInTheDocument();
   });
 });

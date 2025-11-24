@@ -1,7 +1,8 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Clip } from '../../types';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
+import { formatTime } from '../../utils/timeUtils';
 
 interface ClipItemProps {
   clip: Clip;
@@ -20,13 +21,15 @@ export const ClipItem: React.FC<ClipItemProps> = ({
   onResize,
   onContextMenu
 }) => {
+  const [resizeState, setResizeState] = useState<{ direction: 'left' | 'right' } | null>(null);
+
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: clip.id,
     data: {
       type: 'Clip',
       clip,
     },
-    disabled: false // We might want to disable drag when resizing
+    disabled: !!resizeState // Disable drag when resizing
   });
 
   const getClipColorClasses = (type: Clip['type']) => {
@@ -60,6 +63,8 @@ export const ClipItem: React.FC<ClipItemProps> = ({
     e.stopPropagation();
     e.preventDefault();
 
+    setResizeState({ direction });
+
     const startX = e.clientX;
     const originalStart = clip.start;
     const originalDuration = clip.duration;
@@ -85,6 +90,7 @@ export const ClipItem: React.FC<ClipItemProps> = ({
     };
 
     const handlePointerUp = () => {
+      setResizeState(null);
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
     };
@@ -120,6 +126,20 @@ export const ClipItem: React.FC<ClipItemProps> = ({
       <span className="px-2 truncate">
         {clip.id}
       </span>
+
+      {/* Resize Tooltip */}
+      {resizeState && (
+        <div
+            className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded shadow border border-gray-600 z-50 whitespace-nowrap"
+            data-testid="resize-tooltip"
+        >
+            {resizeState.direction === 'left' ? (
+                <span>Start: {formatTime(clip.start)} ({formatTime(clip.duration)})</span>
+            ) : (
+                <span>End: {formatTime(clip.start + clip.duration)} ({formatTime(clip.duration)})</span>
+            )}
+        </div>
+      )}
 
       {/* Resize Handles */}
       <div

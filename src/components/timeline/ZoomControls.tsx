@@ -1,11 +1,12 @@
 import React from 'react';
-import { Minus, Plus, ZoomIn } from 'lucide-react';
+import { Minus, Plus, ZoomIn, Maximize } from 'lucide-react';
 
 interface ZoomControlsProps {
   zoomLevel: number;
   setZoomLevel: (level: number) => void;
   min?: number;
   max?: number;
+  onZoomToFit?: () => void;
 }
 
 export const ZoomControls: React.FC<ZoomControlsProps> = ({
@@ -13,6 +14,7 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({
   setZoomLevel,
   min = 1,
   max = 200, // Maximum reasonable pixel-per-second
+  onZoomToFit,
 }) => {
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseFloat(e.target.value);
@@ -64,6 +66,16 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({
       <span className="w-12 text-right tabular-nums text-gray-500">
         {Math.round(zoomLevel)}px
       </span>
+
+      {onZoomToFit && (
+        <button
+          onClick={onZoomToFit}
+          className="p-1 hover:text-white hover:bg-gray-700 rounded transition-colors ml-1 border-l border-gray-700 pl-2"
+          title="Zoom to Fit"
+        >
+          <Maximize size={12} />
+        </button>
+      )}
     </div>
   );
 };

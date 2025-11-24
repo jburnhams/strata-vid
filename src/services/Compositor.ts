@@ -100,7 +100,8 @@ export class Compositor {
     globalTime: number,
     transitionProgress: number = 1
   ) {
-    const localTime = globalTime - clip.start + clip.offset;
+    const clipRate = clip.playbackRate || 1;
+    const localTime = (globalTime - clip.start) * clipRate + clip.offset;
 
     // Save context state
     ctx.save();
@@ -125,6 +126,11 @@ export class Compositor {
       }
     }
     ctx.globalAlpha = effectiveOpacity;
+
+    // Apply Filter
+    if (clip.properties.filter) {
+      ctx.filter = clip.properties.filter;
+    }
 
     // Apply Transform: Translate to center of clip, then rotate
     const centerX = px + w / 2;

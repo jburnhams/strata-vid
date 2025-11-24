@@ -12,7 +12,8 @@ import {
   DropAnimation,
 } from '@dnd-kit/core';
 
-import { Track, Clip, Asset, ProjectSettings, Transition } from '../../types';
+import { Track, Clip, Asset, ProjectSettings, Transition, Marker } from '../../types';
+import { Marker as MarkerComponent } from './Marker';
 import { TrackLane } from './TrackLane';
 import { TrackHeader } from './TrackHeader';
 import { Ruler } from './Ruler';
@@ -45,10 +46,13 @@ interface TimelineContainerProps {
   onRippleDeleteClip: (id: string) => void;
   onAddTransition: (id: string, transition: Transition) => void;
   onAddTrack?: () => void;
+  onAddMarker?: () => void;
   selectedClipId?: string | null;
   onClipSelect?: (id: string | null) => void;
   currentTime: number;
   isPlaying: boolean;
+  markers?: Marker[];
+  onMarkerClick?: (id: string) => void;
 }
 
 const dropAnimation: DropAnimation = {
@@ -80,10 +84,13 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
   onRippleDeleteClip,
   onAddTransition,
   onAddTrack,
+  onAddMarker,
   selectedClipId,
   onClipSelect,
   currentTime,
   isPlaying,
+  markers,
+  onMarkerClick,
 }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [snapLine, setSnapLine] = useState<number | null>(null);
@@ -369,6 +376,13 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
         <div className="h-10 bg-gray-900 border-b border-gray-700 flex items-center px-4 justify-between sticky top-0 z-30">
            <div className="flex items-center gap-4">
                <div className="text-xs text-gray-500 font-medium uppercase tracking-wider">TIMELINE</div>
+               <button
+                   className="px-2 py-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-[10px] text-gray-300 transition-colors"
+                   onClick={onAddMarker}
+                   title="Add Marker at Playhead"
+               >
+                   + Marker
+               </button>
                <div className="flex items-center gap-3 border-l border-gray-700 pl-4">
                   <label className="flex items-center gap-1 text-xs text-gray-400 hover:text-white cursor-pointer select-none">
                     <input
@@ -441,6 +455,14 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
                     scrollLeft={scrollLeft}
                     containerWidth={containerWidth}
                   />
+                  {markers?.map((marker) => (
+                    <MarkerComponent
+                      key={marker.id}
+                      marker={marker}
+                      zoomLevel={zoomLevel}
+                      onClick={onMarkerClick}
+                    />
+                  ))}
                 </div>
 
                 {/* Snap Line */}

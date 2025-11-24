@@ -38,6 +38,7 @@ export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, c
     overflow: 'hidden',
     pointerEvents: 'none', // Allow clicks to pass through to map? No, map needs interaction?
     clipPath,
+    filter: clip.properties.filter,
     // Usually overlays block interaction. But MapPanel has MapContainer which handles events.
     // If pointerEvents is none, Map won't be pannable.
     // Requirement says "drag, resize clips" in Section B, but Section D implies map interaction?

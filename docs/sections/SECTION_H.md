@@ -26,17 +26,17 @@
   - Render in preview and export
   - Files: `src/types.ts`, `src/components/preview/*`, `src/services/Compositor.ts`
 
-- [ ] **H5: Speed ramping** (6-8 hours)
+- [x] **H5: Speed ramping** (6-8 hours)
   - Clip property: playbackRate (0.5x, 2x)
-  - Time-remapping curve
+  - Time-remapping curve (constant rate implemented)
   - Files: `src/types.ts`, `src/components/preview/VideoPlayer.tsx`
 
-- [ ] **H6: Markers** (4-5 hours)
+- [x] **H6: Markers** (4-5 hours)
   - Add colored markers on timeline
   - Jump to marker, label markers
   - Files: `src/types.ts`, `src/components/timeline/Marker.tsx` (new)
 
-- [ ] **H7: Video filters/effects** (10-15 hours)
+- [x] **H7: Video filters/effects** (10-15 hours)
   - Brightness, Contrast, Saturation
   - Blur, Sharpen
   - Apply via CSS filters (preview) and canvas (export)

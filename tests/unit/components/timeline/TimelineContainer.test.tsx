@@ -108,14 +108,16 @@ describe('TimelineContainer', () => {
 
   it('handles zoom controls', () => {
     render(<TimelineContainer {...defaultProps} />);
-    const zoomInBtn = screen.getByText('+');
-    const zoomOutBtn = screen.getByText('-');
+    const zoomInBtn = screen.getByTitle('Zoom In');
+    const zoomOutBtn = screen.getByTitle('Zoom Out');
 
     fireEvent.click(zoomInBtn);
-    expect(defaultProps.setZoomLevel).toHaveBeenCalledWith(11); // min(500, 10+1)
+    // The new logic increases by 10% or at least 1 unit. 10 * 0.1 = 1. So 10 + 1 = 11.
+    expect(defaultProps.setZoomLevel).toHaveBeenCalledWith(11);
 
     fireEvent.click(zoomOutBtn);
-    expect(defaultProps.setZoomLevel).toHaveBeenCalledWith(9); // max(1, 10-1)
+    // The new logic decreases by 10% or at least 1 unit. 10 * 0.1 = 1. So 10 - 1 = 9.
+    expect(defaultProps.setZoomLevel).toHaveBeenCalledWith(9);
   });
 
   it('handles wheel zoom', () => {

@@ -119,4 +119,26 @@ describe('useKeyboardShortcuts', () => {
     expect(useProjectStore.getState().isPlaying).toBe(false);
     document.body.removeChild(input);
   });
+
+  it('deletes selected clip on Delete/Backspace', () => {
+    renderHook(() => useKeyboardShortcuts());
+
+    // Mock store with a selected clip
+    useProjectStore.setState({
+      selectedClipId: 'clip-123',
+      clips: {
+        'clip-123': { id: 'clip-123', trackId: 'track-1', start: 0, duration: 10, offset: 0, type: 'video' } as any
+      },
+      tracks: {
+        'track-1': { id: 'track-1', clips: ['clip-123'] } as any
+      }
+    });
+
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Delete' }));
+    });
+
+    expect(useProjectStore.getState().clips['clip-123']).toBeUndefined();
+    expect(useProjectStore.getState().selectedClipId).toBeNull();
+  });
 });

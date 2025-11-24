@@ -70,4 +70,20 @@ describe('TrackLane', () => {
     const lane = screen.getByText('clip-1').closest('.relative');
     expect(lane).toHaveClass('bg-gray-900'); // default
   });
+
+  it('passes isSelected prop to ClipItem', () => {
+    // We mock ClipItem to check props, or check for the selection class if using real ClipItem
+    // Since ClipItem is imported, we can check for the class 'ring-2' which indicates selection
+    // provided by ClipItem implementation.
+
+    // First render without selection
+    const { rerender } = render(<TrackLane {...defaultProps} />);
+    const clipElement = screen.getByText('clip-1').closest('.cursor-move');
+    expect(clipElement).not.toHaveClass('ring-2');
+
+    // Rerender with selection
+    rerender(<TrackLane {...defaultProps} selectedClipId="clip-1" />);
+    const selectedClipElement = screen.getByText('clip-1').closest('.cursor-move');
+    expect(selectedClipElement).toHaveClass('ring-2');
+  });
 });

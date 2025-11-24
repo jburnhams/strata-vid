@@ -11,6 +11,7 @@ export interface AssetsSlice {
   assets: Record<string, Asset>;
   selectedAssetId: string | null;
   addAsset: (asset: Asset) => void;
+  updateAsset: (id: string, asset: Partial<Asset>) => void;
   removeAsset: (id: string) => void;
   selectAsset: (id: string | null) => void;
 }

@@ -12,10 +12,11 @@
   - Handles 100+ clips smoothly
   - Implemented custom virtualization in `src/components/timeline/TimelineContainer.tsx`
 
-- [ ] **J2: Lazy asset loading** (4-5 hours)
-  - Load assets on-demand
-  - Unload unused assets
-  - Files: `src/services/AssetLoader.ts`
+- [x] **J2: Lazy asset loading** (4-5 hours)
+  - Load assets on-demand (Metadata first, thumbnails lazy)
+  - Unload unused assets (Revoke Blob URLs on project clear)
+  - Implemented `ConcurrencyLimiter` for thumbnail generation
+  - Files: `src/services/AssetLoader.ts`, `src/utils/concurrency.ts`
 
 - [ ] **J3: Web Worker for export** (8-10 hours)
   - Offload export to Worker

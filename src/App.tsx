@@ -32,6 +32,7 @@ function App() {
     tracks: tracksRecord,
     selectedAssetId,
     addAsset,
+    updateAsset,
     selectAsset,
     addClip,
     addTrack,
@@ -61,7 +62,18 @@ function App() {
       const newAssets = (await Promise.all(newAssetsPromises)).filter((a): a is Asset => a !== null);
 
       newAssets.forEach(asset => {
+          // Add basic asset immediately (with duration but no thumbnail)
           addAsset(asset);
+
+          // Lazy load thumbnail
+          if (asset.type === 'video' && asset.file) {
+              AssetLoader.loadThumbnail(asset.file).then(thumbnail => {
+                  updateAsset(asset.id, { thumbnail });
+              }).catch(e => {
+                  console.warn(`Failed to generate thumbnail for ${asset.name}`, e);
+              });
+          }
+
           if (asset.type === 'video') {
                // Find or create a video track
                let trackId = tracks.find(t => t.type === 'video')?.id;

@@ -109,7 +109,7 @@ This is what makes Strata Vid unique - synchronizing GPS data with video playbac
 **Files**: Multiple
 
 - [x] Verify map updates smoothly during playback:
-  - Verified via integration tests (props update correctly)
+  - Verified via integration tests (`tests/integration/MapPreview.test.tsx` confirms marker updates with time)
 - [x] Check performance with long GPX tracks (1000+ points):
   - Binary search implemented for efficiency
 - [x] Optimize tile loading/caching:
@@ -134,7 +134,9 @@ This is what makes Strata Vid unique - synchronizing GPS data with video playbac
 ### Unit Tests
 - `tests/unit/utils/gpxParser.test.ts` - ✅ Passed
 - `tests/unit/components/MapPanel.test.tsx` - ✅ Passed
+- `tests/unit/components/MapSyncControl.test.tsx` - ✅ Passed
 - `tests/integration/MapSync.test.tsx` - ✅ Passed
+- `tests/integration/MapPreview.test.tsx` - ✅ Passed
 
 ---
 

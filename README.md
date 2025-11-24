@@ -6,7 +6,7 @@ Strata Vid is a client-side video editing application that combines multiple vid
 
 ## Status: Early Development 🚧
 
-This project is in active development. Core infrastructure is in place, but many features are not yet functional. See [Current State](docs/CURRENT_STATE.md) for an honest assessment.
+This project is in active development. Core infrastructure is in place, but many features are not yet functional.
 
 **What works**:
 - ✅ Type system and state management (Zustand)
@@ -54,7 +54,6 @@ For detailed setup instructions, see [Quick Start Guide](docs/QUICKSTART.md).
 | Document | Description |
 |----------|-------------|
 | **[Quick Start](docs/QUICKSTART.md)** | Get up and running in minutes |
-| **[Current State](docs/CURRENT_STATE.md)** | What actually works right now |
 | **[Architecture](docs/ARCHITECTURE.md)** | Technical design and data model |
 | **[Implementation](docs/IMPLEMENTATION.md)** | Task roadmap organized by section |
 
@@ -192,4 +191,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-**Note**: This project is in active development. Expect breaking changes, incomplete features, and rough edges. See [docs/CURRENT_STATE.md](docs/CURRENT_STATE.md) for the latest status.
+**Note**: This project is in active development. Expect breaking changes, incomplete features, and rough edges.

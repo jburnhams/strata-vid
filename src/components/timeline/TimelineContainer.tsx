@@ -10,14 +10,11 @@ import {
   DragMoveEvent,
   defaultDropAnimationSideEffects,
   DropAnimation,
-  Modifier,
 } from '@dnd-kit/core';
-import { restrictToWindowEdges } from '@dnd-kit/modifiers';
 
-import { Track, Clip } from '../../types';
+import { Track, Clip, Asset, ProjectSettings } from '../../types';
 import { TrackLane } from './TrackLane';
 import { TrackHeader } from './TrackHeader';
-import { ClipItem } from './ClipItem';
 import { Ruler } from './Ruler';
 import { Playhead } from './Playhead';
 import { ZoomControls } from './ZoomControls';
@@ -32,9 +29,13 @@ import {
 interface TimelineContainerProps {
   tracks: Record<string, Track>;
   clips: Record<string, Clip>;
+  assets: Record<string, Asset>;
   trackOrder: string[];
   zoomLevel: number;
   setZoomLevel: (z: number) => void;
+  snapToGrid: boolean;
+  allowOverlaps: boolean;
+  setSettings: (settings: Partial<ProjectSettings>) => void;
   onMoveClip: (id: string, newStart: number, newTrackId?: string) => void;
   onResizeClip: (id: string, newDuration: number, newOffset: number) => void;
   onRemoveTrack: (id: string) => void;
@@ -60,9 +61,13 @@ const dropAnimation: DropAnimation = {
 export const TimelineContainer: React.FC<TimelineContainerProps> = ({
   tracks,
   clips,
+  assets,
   trackOrder,
   zoomLevel,
   setZoomLevel,
+  snapToGrid,
+  allowOverlaps,
+  setSettings,
   onMoveClip,
   onResizeClip,
   onRemoveTrack,
@@ -155,20 +160,22 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
     let newStart = clip.start + deltaSeconds;
     newStart = Math.max(0, newStart);
 
-    // Check snapping for visual feedback
-    const snapPoints = getSnapPoints(clips, currentTime);
-    const snapTolerance = 10 / zoomLevel;
+    if (snapToGrid) {
+        // Check snapping for visual feedback
+        const snapPoints = getSnapPoints(clips, currentTime);
+        const snapTolerance = 10 / zoomLevel;
 
-    const snappedStart = findNearestSnapPoint(newStart, snapPoints, snapTolerance);
-    if (snappedStart !== null) {
-        setSnapLine(snappedStart);
-        newStart = snappedStart;
-    } else {
-        const newEnd = newStart + clip.duration;
-        const snappedEnd = findNearestSnapPoint(newEnd, snapPoints, snapTolerance);
-        if (snappedEnd !== null) {
-            setSnapLine(snappedEnd);
-            newStart = snappedEnd - clip.duration;
+        const snappedStart = findNearestSnapPoint(newStart, snapPoints, snapTolerance);
+        if (snappedStart !== null) {
+            setSnapLine(snappedStart);
+            newStart = snappedStart;
+        } else {
+            const newEnd = newStart + clip.duration;
+            const snappedEnd = findNearestSnapPoint(newEnd, snapPoints, snapTolerance);
+            if (snappedEnd !== null) {
+                setSnapLine(snappedEnd);
+                newStart = snappedEnd - clip.duration;
+            }
         }
     }
 
@@ -183,7 +190,9 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
                 .filter(c => c && c.id !== clipId);
 
             if (checkCollision(newStart, clip.duration, trackClips)) {
-                setIsValidDrop(false);
+                if (!allowOverlaps) {
+                    setIsValidDrop(false);
+                }
             }
         }
     }
@@ -216,49 +225,53 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
         .filter((c) => c && c.id !== clipId);
 
       // 1. Snapping
-      const snapPoints = getSnapPoints(clips, currentTime);
-      // We snap the start or end of the clip to the snap points
-      const snapTolerance = 10 / zoomLevel; // 10 pixels tolerance
+      if (snapToGrid) {
+          const snapPoints = getSnapPoints(clips, currentTime);
+          const snapTolerance = 10 / zoomLevel; // 10 pixels tolerance
 
-      // Check snap for start
-      const snappedStart = findNearestSnapPoint(
-        newStart,
-        snapPoints,
-        snapTolerance
-      );
-      if (snappedStart !== null) {
-        newStart = snappedStart;
-      } else {
-        // Check snap for end
-        const newEnd = newStart + clip.duration;
-        const snappedEnd = findNearestSnapPoint(
-          newEnd,
-          snapPoints,
-          snapTolerance
-        );
-        if (snappedEnd !== null) {
-          newStart = snappedEnd - clip.duration;
-        }
+          // Check snap for start
+          const snappedStart = findNearestSnapPoint(
+            newStart,
+            snapPoints,
+            snapTolerance
+          );
+          if (snappedStart !== null) {
+            newStart = snappedStart;
+          } else {
+            // Check snap for end
+            const newEnd = newStart + clip.duration;
+            const snappedEnd = findNearestSnapPoint(
+              newEnd,
+              snapPoints,
+              snapTolerance
+            );
+            if (snappedEnd !== null) {
+              newStart = snappedEnd - clip.duration;
+            }
+          }
       }
 
       // 2. Collision Check & Resolution
       if (checkCollision(newStart, clip.duration, trackClips)) {
-        // Collision! Find nearest valid spot
-        // Use a slightly larger tolerance for "valid slot" finding to be helpful
-        const validStart = findNearestValidTime(
-          newStart,
-          clip.duration,
-          trackClips,
-          snapTolerance * 2
-        );
+        if (!allowOverlaps) {
+            // Collision! Find nearest valid spot
+            // Use a slightly larger tolerance for "valid slot" finding to be helpful
+            const snapTolerance = 10 / zoomLevel;
+            const validStart = findNearestValidTime(
+              newStart,
+              clip.duration,
+              trackClips,
+              snapTolerance * 2
+            );
 
-        if (validStart !== null) {
-          newStart = validStart;
-        } else {
-          // Reject move (snap back)
-          // We just don't call onMoveClip
-          return;
+            if (validStart !== null) {
+              newStart = validStart;
+            } else {
+              // Reject move (snap back)
+              return;
+            }
         }
+        // If allowOverlaps is true, we just proceed with newStart (even if colliding)
       }
 
       onMoveClip(clipId, newStart, targetTrackId);
@@ -280,8 +293,10 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
 
     // Check collision
     if (checkCollision(newStart, newDuration, trackClips)) {
-      // Reject resize if it causes collision
-      return;
+      if (!allowOverlaps) {
+          // Reject resize if it causes collision
+          return;
+      }
     }
 
     if (newStart !== clip.start) {
@@ -346,7 +361,30 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
       <div className="flex flex-col h-full bg-gray-950 text-gray-300 select-none">
         {/* Top Bar / Toolbar */}
         <div className="h-10 bg-gray-900 border-b border-gray-700 flex items-center px-4 justify-between sticky top-0 z-30">
-           <div className="text-xs text-gray-500 font-medium uppercase tracking-wider">TIMELINE</div>
+           <div className="flex items-center gap-4">
+               <div className="text-xs text-gray-500 font-medium uppercase tracking-wider">TIMELINE</div>
+               <div className="flex items-center gap-3 border-l border-gray-700 pl-4">
+                  <label className="flex items-center gap-1 text-xs text-gray-400 hover:text-white cursor-pointer select-none">
+                    <input
+                        type="checkbox"
+                        className="rounded bg-gray-700 border-gray-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-gray-900"
+                        checked={snapToGrid}
+                        onChange={(e) => setSettings({ snapToGrid: e.target.checked })}
+                    />
+                    Snap
+                  </label>
+                   <label className="flex items-center gap-1 text-xs text-gray-400 hover:text-white cursor-pointer select-none">
+                    <input
+                        type="checkbox"
+                        className="rounded bg-gray-700 border-gray-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-gray-900"
+                        checked={allowOverlaps}
+                        onChange={(e) => setSettings({ allowOverlaps: e.target.checked })}
+                    />
+                    Overlap
+                  </label>
+               </div>
+           </div>
+
            <ZoomControls
              zoomLevel={zoomLevel}
              setZoomLevel={setZoomLevel}
@@ -422,6 +460,7 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
                             key={trackId}
                             track={track}
                             clips={trackClips}
+                            assets={assets}
                             zoomLevel={zoomLevel}
                             selectedClipId={selectedClipId}
                             onClipSelect={onClipSelect}

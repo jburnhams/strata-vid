@@ -14,6 +14,8 @@ export const createProjectSlice: StateCreator<
     fps: 30,
     duration: 0,
     previewQuality: 'high',
+    snapToGrid: true,
+    allowOverlaps: false,
   },
   setSettings: (newSettings) =>
     set((state) => {

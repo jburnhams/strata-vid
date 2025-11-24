@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { TrackLane } from '../../../../src/components/timeline/TrackLane';
-import { Track, Clip } from '../../../../src/types';
+import { Track, Clip, Asset } from '../../../../src/types';
 
 // Mock dnd-kit
 jest.mock('@dnd-kit/core', () => ({
@@ -48,10 +48,21 @@ const mockClips: Clip[] = [
   },
 ];
 
+const mockAssets: Record<string, Asset> = {
+  'asset-1': {
+    id: 'asset-1',
+    name: 'video.mp4',
+    type: 'video',
+    src: 'mock-src',
+    duration: 100
+  }
+};
+
 describe('TrackLane', () => {
   const defaultProps = {
     track: mockTrack,
     clips: mockClips,
+    assets: mockAssets,
     zoomLevel: 10,
     selectedClipId: null,
     onClipSelect: jest.fn(),
@@ -64,24 +75,16 @@ describe('TrackLane', () => {
   });
 
   it('highlights drop zone when isOver (mocked)', () => {
-    // Since we mock useDroppable, we can't easily toggle isOver without manual mocking in test.
-    // But we can check it renders.
     render(<TrackLane {...defaultProps} />);
-    const lane = screen.getByText('clip-1').closest('.relative');
+    const lane = screen.getByTestId('track-lane');
     expect(lane).toHaveClass('bg-gray-900'); // default
   });
 
   it('passes isSelected prop to ClipItem', () => {
-    // We mock ClipItem to check props, or check for the selection class if using real ClipItem
-    // Since ClipItem is imported, we can check for the class 'ring-2' which indicates selection
-    // provided by ClipItem implementation.
-
-    // First render without selection
     const { rerender } = render(<TrackLane {...defaultProps} />);
     const clipElement = screen.getByText('clip-1').closest('.cursor-move');
     expect(clipElement).not.toHaveClass('ring-2');
 
-    // Rerender with selection
     rerender(<TrackLane {...defaultProps} selectedClipId="clip-1" />);
     const selectedClipElement = screen.getByText('clip-1').closest('.cursor-move');
     expect(selectedClipElement).toHaveClass('ring-2');

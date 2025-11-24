@@ -120,6 +120,24 @@ describe('useKeyboardShortcuts', () => {
     document.body.removeChild(input);
   });
 
+  it('ignores events in textarea fields', () => {
+    renderHook(() => useKeyboardShortcuts());
+
+    const textarea = document.createElement('textarea');
+    document.body.appendChild(textarea);
+    textarea.focus();
+
+    act(() => {
+      // Dispatch event on textarea
+      const event = new KeyboardEvent('keydown', { code: 'Space', bubbles: true });
+      Object.defineProperty(event, 'target', { value: textarea, writable: false });
+      textarea.dispatchEvent(event);
+    });
+
+    expect(useProjectStore.getState().isPlaying).toBe(false);
+    document.body.removeChild(textarea);
+  });
+
   it('deletes selected clip on Delete/Backspace', () => {
     renderHook(() => useKeyboardShortcuts());
 

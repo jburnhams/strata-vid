@@ -61,4 +61,10 @@ describe('TransportControls', () => {
 
     expect(screen.getByText('01:05.500')).toBeInTheDocument();
   });
+
+  test('displays playback rate', () => {
+    useProjectStore.setState({ playbackRate: 1.5 });
+    render(<TransportControls />);
+    expect(screen.getByText('Rate: 1.5x')).toBeInTheDocument();
+  });
 });

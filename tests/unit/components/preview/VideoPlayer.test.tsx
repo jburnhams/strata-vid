@@ -165,4 +165,32 @@ describe('VideoPlayer', () => {
       // Expected video time = (Current - Start) + Offset = (12 - 10) + 5 = 7
       expect(video.currentTime).toBe(7);
   });
+
+  it('updates video playbackRate', () => {
+    const { container, rerender } = render(
+      <VideoPlayer
+        clip={mockClip}
+        asset={mockAsset}
+        currentTime={0}
+        isPlaying={false}
+        playbackRate={1}
+      />
+    );
+
+    const video = container.querySelector('video') as HTMLVideoElement;
+    // Note: JSDOM might default playbackRate to 1.
+    expect(video.playbackRate).toBe(1);
+
+    rerender(
+      <VideoPlayer
+        clip={mockClip}
+        asset={mockAsset}
+        currentTime={0}
+        isPlaying={false}
+        playbackRate={2}
+      />
+    );
+
+    expect(video.playbackRate).toBe(2);
+  });
 });

@@ -1,6 +1,7 @@
 import { Asset, AssetType } from '../types';
 import { BlobSource, Input, ALL_FORMATS } from 'mediabunny';
 import { parseGpxFile } from '../utils/gpxParser';
+import { extractAudioMetadata } from '../utils/audioUtils';
 
 // Helper interface for Mediabunny Input to handle potential type mismatches
 interface IMediabunnyInput {
@@ -31,6 +32,8 @@ export class AssetLoader {
       }
     } else if (type === 'gpx') {
       await this.enrichGpxMetadata(asset, file);
+    } else if (type === 'audio') {
+      await this.enrichAudioMetadata(asset, file);
     }
 
     return asset;
@@ -108,6 +111,16 @@ export class AssetLoader {
         asset.stats = stats;
     } catch (e) {
         console.warn("Failed to parse GPX", e);
+    }
+  }
+
+  private static async enrichAudioMetadata(asset: Asset, file: File): Promise<void> {
+    try {
+      const { duration, waveform } = await extractAudioMetadata(file);
+      asset.duration = duration;
+      asset.waveform = waveform;
+    } catch (e) {
+      console.warn('Failed to extract audio metadata:', e);
     }
   }
 

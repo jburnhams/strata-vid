@@ -97,9 +97,10 @@ export const ClipItem: React.FC<ClipItemProps> = ({
       style={style}
       className={`
         rounded border ${getClipColorClasses(clip.type)} text-white text-xs
-        flex items-center overflow-hidden cursor-move select-none group
-        ${isSelected ? 'ring-2 ring-white' : ''}
+        flex items-center overflow-hidden cursor-move select-none group transition-shadow duration-100
+        ${isSelected ? 'ring-2 ring-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.3)] z-10' : ''}
         ${isDragging ? 'opacity-50' : ''}
+        hover:brightness-110
       `}
       onClick={(e) => {
         e.stopPropagation();

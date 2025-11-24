@@ -19,6 +19,7 @@ import { TrackHeader } from './TrackHeader';
 import { ClipItem } from './ClipItem';
 import { Ruler } from './Ruler';
 import { Playhead } from './Playhead';
+import { ZoomControls } from './ZoomControls';
 import {
   checkCollision,
   getSnapPoints,
@@ -238,13 +239,14 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
     >
       <div className="flex flex-col h-full bg-gray-950 text-gray-300 select-none">
         {/* Top Bar / Toolbar */}
-        <div className="h-8 bg-gray-900 border-b border-gray-700 flex items-center px-2 sticky top-0 z-30">
-           {/* Simple zoom controls */}
-           <div className="flex gap-2 text-xs">
-             <button onClick={() => setZoomLevel(Math.max(1, zoomLevel - 1))}>-</button>
-             <span>Zoom: {zoomLevel.toFixed(1)}px/s</span>
-             <button onClick={() => setZoomLevel(Math.min(500, zoomLevel + 1))}>+</button>
-           </div>
+        <div className="h-10 bg-gray-900 border-b border-gray-700 flex items-center px-4 justify-between sticky top-0 z-30">
+           <div className="text-xs text-gray-500 font-medium uppercase tracking-wider">Timeline</div>
+           <ZoomControls
+             zoomLevel={zoomLevel}
+             setZoomLevel={setZoomLevel}
+             min={1}
+             max={200}
+           />
         </div>
 
         <div className="flex flex-1 overflow-hidden">

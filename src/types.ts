@@ -41,6 +41,7 @@ export interface Asset {
   creationTime?: Date;
   creationTimeSource?: 'metadata' | 'file' | 'none';
   thumbnail?: string; // Blob URL for thumbnail
+  waveform?: number[]; // Array of peak values (0-1) for audio visualization
 }
 
 export interface OverlayProperties {

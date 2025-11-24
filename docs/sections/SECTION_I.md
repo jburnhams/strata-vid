@@ -3,11 +3,11 @@
 **Priority**: Medium (complete the experience)
 **Goal**: Audio track support, mixing, volume control.
 **Dependencies**: Section A (playback), Section B (timeline)
-**Status**: 🔴 Not implemented
+**Status**: 🟨 Partially implemented
 
 ## Tasks
 
-- [ ] **I1: Audio asset loading** (2-3 hours)
+- [x] **I1: Audio asset loading** (2-3 hours)
   - Load MP3, WAV, AAC files
   - Extract duration and waveform data
   - Files: `src/services/AssetLoader.ts`

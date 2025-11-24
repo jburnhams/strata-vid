@@ -39,6 +39,8 @@ interface TimelineContainerProps {
   onMoveClip: (id: string, newStart: number, newTrackId?: string) => void;
   onResizeClip: (id: string, newDuration: number, newOffset: number) => void;
   onRemoveTrack: (id: string) => void;
+  onUpdateTrack: (id: string, updates: Partial<Track>) => void;
+  onUpdateTrackVolume: (id: string, volume: number) => void;
   onRemoveClip: (id: string) => void;
   onDuplicateClip: (id: string) => void;
   onSplitClip: (id: string, time: number) => void;
@@ -74,6 +76,8 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
   onMoveClip,
   onResizeClip,
   onRemoveTrack,
+  onUpdateTrack,
+  onUpdateTrackVolume,
   onRemoveClip,
   onDuplicateClip,
   onSplitClip,
@@ -411,6 +415,9 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
                         key={trackId}
                         track={track}
                         onRemove={onRemoveTrack}
+                        onToggleMute={(id) => onUpdateTrack(id, { isMuted: !tracks[id].isMuted })}
+                        onToggleLock={(id) => onUpdateTrack(id, { isLocked: !tracks[id].isLocked })}
+                        onVolumeChange={onUpdateTrackVolume}
                     />
                 );
             })}

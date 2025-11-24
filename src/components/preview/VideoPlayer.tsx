@@ -7,6 +7,7 @@ interface VideoPlayerProps {
   currentTime: number; // Global time
   isPlaying: boolean;
   playbackRate: number;
+  volume: number;
 }
 
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({
@@ -15,11 +16,31 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   currentTime,
   isPlaying,
   playbackRate,
+  volume,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Calculate where the video should be in its own timeline
   const expectedVideoTime = Math.max(0, currentTime - clip.start + clip.offset);
+
+  // Transition Logic
+  let effectiveOpacity = clip.properties.opacity;
+  let effectiveVolume = volume;
+  let clipPath: string | undefined;
+
+  if (clip.transitionIn) {
+    const t = currentTime - clip.start;
+    if (t >= 0 && t < clip.transitionIn.duration) {
+      const progress = t / clip.transitionIn.duration;
+      if (clip.transitionIn.type === 'crossfade' || clip.transitionIn.type === 'fade') {
+        effectiveOpacity *= progress;
+        effectiveVolume *= progress;
+      } else if (clip.transitionIn.type === 'wipe') {
+        const p = progress * 100;
+        clipPath = `polygon(0 0, ${p}% 0, ${p}% 100%, 0 100%)`;
+      }
+    }
+  }
 
   useEffect(() => {
     const video = videoRef.current;
@@ -28,6 +49,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     // Sync Playback Rate
     if (Math.abs(video.playbackRate - playbackRate) > 0.01) {
       video.playbackRate = playbackRate;
+    }
+
+    // Sync Volume
+    if (Math.abs(video.volume - effectiveVolume) > 0.01) {
+       video.volume = Math.max(0, Math.min(1, effectiveVolume));
     }
 
     // Sync Time
@@ -53,24 +79,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     } else if (!isPlaying && !video.paused) {
       video.pause();
     }
-  }, [currentTime, isPlaying, playbackRate, expectedVideoTime, asset.src]);
-
-  // Transition Logic
-  let effectiveOpacity = clip.properties.opacity;
-  let clipPath: string | undefined;
-
-  if (clip.transitionIn) {
-    const t = currentTime - clip.start;
-    if (t >= 0 && t < clip.transitionIn.duration) {
-      const progress = t / clip.transitionIn.duration;
-      if (clip.transitionIn.type === 'crossfade' || clip.transitionIn.type === 'fade') {
-        effectiveOpacity *= progress;
-      } else if (clip.transitionIn.type === 'wipe') {
-        const p = progress * 100;
-        clipPath = `polygon(0 0, ${p}% 0, ${p}% 100%, 0 100%)`;
-      }
-    }
-  }
+  }, [currentTime, isPlaying, playbackRate, expectedVideoTime, asset.src, effectiveVolume]);
 
   const style: React.CSSProperties = {
     position: 'absolute',
@@ -91,7 +100,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       ref={videoRef}
       src={asset.src}
       style={style}
-      muted
       playsInline
     />
   );

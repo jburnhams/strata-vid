@@ -1,7 +1,7 @@
 /**
  * Extracts metadata and waveform data from an audio file using the Web Audio API.
  */
-export async function extractAudioMetadata(file: File): Promise<{ duration: number; waveform: number[] }> {
+export async function extractAudioMetadata(file: Blob): Promise<{ duration: number; waveform: number[] }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { Asset } from '../types';
 import { useProjectStore } from '../store/useProjectStore';
 import { MapSyncControl } from './MapSyncControl';
+import { VolumeControl } from './VolumeControl';
 
 interface MetadataPanelProps {
   activeAsset: Asset | null;
@@ -11,6 +12,7 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ activeAsset }) => 
   const selectedClipId = useProjectStore((state) => state.selectedClipId);
   const clips = useProjectStore((state) => state.clips);
   const updateClipProperties = useProjectStore((state) => state.updateClipProperties);
+  const updateClipVolume = useProjectStore((state) => state.updateClipVolume);
 
   const activeClip = selectedClipId ? clips[selectedClipId] : null;
 
@@ -29,6 +31,17 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ activeAsset }) => 
                     <div className="text-xs text-gray-500 mb-1">Type</div>
                     <div className="text-sm capitalize">{activeClip.type}</div>
                 </div>
+
+                {(activeClip.type === 'video' || activeClip.type === 'audio') && (
+                    <div className="mb-6 border-b border-neutral-700 pb-4">
+                        <label className="text-xs text-gray-500 block mb-2">Volume</label>
+                        <VolumeControl
+                            volume={activeClip.volume ?? 1}
+                            onChange={(v) => updateClipVolume(activeClip.id, v)}
+                            className="w-full"
+                        />
+                    </div>
+                )}
 
                 {activeClip.type === 'map' && (
                     <>

@@ -32,6 +32,9 @@ export interface TimelineSlice {
   rippleDeleteClip: (id: string) => void;
   addTransition: (id: string, transition: Transition) => void;
   updateClipSyncOffset: (id: string, syncOffset: number) => void;
+  updateClipVolume: (id: string, volume: number) => void;
+  updateTrackVolume: (id: string, volume: number) => void;
+  updateTrack: (id: string, updates: Partial<Track>) => void;
   updateClipProperties: (id: string, properties: any) => void; // Partial<OverlayProperties> but using any to avoid circular dep issues in types for now if needed, or import it.
 }
 

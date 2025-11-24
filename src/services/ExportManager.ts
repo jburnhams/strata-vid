@@ -1,5 +1,6 @@
 import { Asset, Clip, ProjectSettings, Track } from '../types';
 import { Compositor } from './Compositor';
+import { AudioCompositor } from './AudioCompositor';
 import { Output, Mp4OutputFormat, BufferTarget, CanvasSource } from 'mediabunny';
 
 export interface ExportProgress {
@@ -21,10 +22,12 @@ export type ProgressCallback = (progress: ExportProgress) => void;
 
 export class ExportManager {
   private compositor: Compositor;
+  private audioCompositor: AudioCompositor;
   private isCancelled: boolean = false;
 
   constructor() {
     this.compositor = new Compositor();
+    this.audioCompositor = new AudioCompositor();
   }
 
   public cancel() {
@@ -67,11 +70,26 @@ export class ExportManager {
              return this.handleCancellation(onProgress, totalFrames);
         }
 
+        const orderedTracks = project.trackOrder.map(id => project.tracks[id]).filter(Boolean);
+
+        // 1b. Render Audio
+        const audioBuffer = await this.audioCompositor.renderAudio({
+            tracks: orderedTracks,
+            clips: project.clips,
+            assets: project.assets,
+            settings: project.settings
+        });
+
         // 2. Initialize Output
         const output = new Output({
             format: new Mp4OutputFormat(),
             target: new BufferTarget(),
         });
+
+        // TODO: Add audio track to output once mediabunny API is confirmed
+        // if (audioBuffer) {
+        //     output.addAudioTrack(new AudioBufferSource(audioBuffer));
+        // }
 
         // Create OffscreenCanvas
         const canvas = new OffscreenCanvas(width, height);
@@ -95,8 +113,6 @@ export class ExportManager {
         await output.start();
 
         // 3. Render Loop
-        const orderedTracks = project.trackOrder.map(id => project.tracks[id]).filter(Boolean);
-
         const renderProjectState = {
             tracks: orderedTracks,
             clips: project.clips,

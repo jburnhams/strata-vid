@@ -12,7 +12,7 @@ import {
   DropAnimation,
 } from '@dnd-kit/core';
 
-import { Track, Clip, Asset, ProjectSettings } from '../../types';
+import { Track, Clip, Asset, ProjectSettings, Transition } from '../../types';
 import { TrackLane } from './TrackLane';
 import { TrackHeader } from './TrackHeader';
 import { Ruler } from './Ruler';
@@ -43,6 +43,7 @@ interface TimelineContainerProps {
   onDuplicateClip: (id: string) => void;
   onSplitClip: (id: string, time: number) => void;
   onRippleDeleteClip: (id: string) => void;
+  onAddTransition: (id: string, transition: Transition) => void;
   onAddTrack?: () => void;
   selectedClipId?: string | null;
   onClipSelect?: (id: string | null) => void;
@@ -77,6 +78,7 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
   onDuplicateClip,
   onSplitClip,
   onRippleDeleteClip,
+  onAddTransition,
   onAddTrack,
   selectedClipId,
   onClipSelect,
@@ -514,6 +516,19 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
                 // Only allow split if playhead is strictly inside the clip
                 return currentTime <= clip.start || currentTime >= clip.start + clip.duration;
               })(),
+            },
+            {
+              label: 'Add Crossfade (1s)',
+              onClick: () => onAddTransition(contextMenu.clipId, { type: 'crossfade', duration: 1 }),
+              disabled: (() => {
+                  const clip = clips[contextMenu.clipId];
+                  if (!clip) return true;
+                  const track = tracks[clip.trackId];
+                  if (!track) return true;
+                  const trackClips = track.clips.map(id => clips[id]).filter(Boolean).sort((a, b) => a.start - b.start);
+                  const index = trackClips.findIndex(c => c.id === clip.id);
+                  return index <= 0; // Disable if first clip
+              })()
             },
             {
               label: 'Duplicate Clip',

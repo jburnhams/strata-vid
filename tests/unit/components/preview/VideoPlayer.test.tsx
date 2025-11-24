@@ -193,4 +193,50 @@ describe('VideoPlayer', () => {
 
     expect(video.playbackRate).toBe(2);
   });
+
+  it('applies crossfade opacity', () => {
+    const transitionClip: Clip = {
+      ...mockClip,
+      start: 0,
+      duration: 10,
+      transitionIn: { type: 'crossfade', duration: 2 }
+    };
+
+    const { container } = render(
+      <VideoPlayer
+        clip={transitionClip}
+        asset={mockAsset}
+        currentTime={1} // 50% progress (1/2)
+        isPlaying={false}
+        playbackRate={1}
+      />
+    );
+
+    const video = container.querySelector('video') as HTMLVideoElement;
+    // opacity: 1 * 0.5 = 0.5
+    expect(video.style.opacity).toBe('0.5');
+  });
+
+  it('applies wipe clip-path', () => {
+    const transitionClip: Clip = {
+      ...mockClip,
+      start: 0,
+      duration: 10,
+      transitionIn: { type: 'wipe', duration: 2 }
+    };
+
+    const { container } = render(
+      <VideoPlayer
+        clip={transitionClip}
+        asset={mockAsset}
+        currentTime={1} // 50% progress
+        isPlaying={false}
+        playbackRate={1}
+      />
+    );
+
+    const video = container.querySelector('video') as HTMLVideoElement;
+    // 50% wipe
+    expect(video.style.clipPath).toBe('polygon(0 0, 50% 0, 50% 100%, 0 100%)');
+  });
 });

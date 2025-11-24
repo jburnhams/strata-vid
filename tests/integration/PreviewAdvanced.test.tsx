@@ -212,4 +212,66 @@ describe('PreviewAdvanced Integration', () => {
           expect(container.querySelector('img')).toBeInTheDocument();
       });
   });
+
+  describe('Transitions', () => {
+    it('applies crossfade transition to video', () => {
+        act(() => {
+            useProjectStore.setState({
+                currentTime: 1, // 1s into transition
+                trackOrder: ['track1'],
+                tracks: {
+                    track1: { id: 'track1', type: 'video', label: 'V', isMuted: false, isLocked: false, clips: ['clip1'] }
+                },
+                clips: {
+                    clip1: {
+                        id: 'clip1', trackId: 'track1', assetId: 'vid1',
+                        start: 0, duration: 10, offset: 0, type: 'video',
+                        properties: { x: 0, y: 0, width: 100, height: 100, rotation: 0, opacity: 1, zIndex: 1 },
+                        transitionIn: { type: 'crossfade', duration: 2 }
+                    }
+                },
+                assets: {
+                    vid1: { id: 'vid1', name: 'v.mp4', type: 'video', src: 'v.mp4' }
+                }
+            });
+        });
+
+        const { container } = render(<PreviewPanel />);
+        const video = container.querySelector('video') as HTMLVideoElement;
+
+        // Progress = 1s / 2s = 0.5. Opacity = 1 * 0.5 = 0.5
+        expect(video).toHaveStyle('opacity: 0.5');
+    });
+
+    it('applies wipe transition to image', () => {
+        act(() => {
+            useProjectStore.setState({
+                currentTime: 1, // 1s into transition
+                trackOrder: ['track1'],
+                tracks: {
+                    track1: { id: 'track1', type: 'overlay', label: 'O', isMuted: false, isLocked: false, clips: ['clip1'] }
+                },
+                clips: {
+                    clip1: {
+                        id: 'clip1', trackId: 'track1', assetId: 'img1',
+                        start: 0, duration: 10, offset: 0, type: 'image',
+                        properties: { x: 0, y: 0, width: 100, height: 100, rotation: 0, opacity: 1, zIndex: 1 },
+                        transitionIn: { type: 'wipe', duration: 2 }
+                    }
+                },
+                assets: {
+                    img1: { id: 'img1', name: 'i.png', type: 'image', src: 'i.png' }
+                }
+            });
+        });
+
+        const { container } = render(<PreviewPanel />);
+        const img = container.querySelector('img');
+        const wrapper = img!.parentElement;
+
+        // Progress = 0.5. Wipe 50%.
+        // clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%)
+        expect(wrapper).toHaveStyle('clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%)');
+    });
+  });
 });

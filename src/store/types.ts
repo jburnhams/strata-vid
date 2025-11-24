@@ -1,4 +1,4 @@
-import { Asset, Clip, Track, ProjectSettings, DeserializedState } from '../types';
+import { Asset, Clip, Track, ProjectSettings, DeserializedState, Transition } from '../types';
 
 export interface ProjectSlice {
   id: string;
@@ -30,6 +30,7 @@ export interface TimelineSlice {
   duplicateClip: (id: string) => void;
   splitClip: (id: string, time: number) => void;
   rippleDeleteClip: (id: string) => void;
+  addTransition: (id: string, transition: Transition) => void;
   updateClipSyncOffset: (id: string, syncOffset: number) => void;
   updateClipProperties: (id: string, properties: any) => void; // Partial<OverlayProperties> but using any to avoid circular dep issues in types for now if needed, or import it.
 }

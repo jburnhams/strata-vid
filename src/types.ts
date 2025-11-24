@@ -74,6 +74,13 @@ export interface TextStyle {
   textAlign: 'left' | 'center' | 'right';
 }
 
+export type TransitionType = 'crossfade' | 'fade' | 'wipe';
+
+export interface Transition {
+  type: TransitionType;
+  duration: number;
+}
+
 export interface Clip {
   id: string;
   assetId: string;
@@ -86,6 +93,7 @@ export interface Clip {
   type: 'video' | 'audio' | 'image' | 'map' | 'text' | 'html';
   content?: string; // For text/html
   syncOffset?: number; // For map/gpx clips: offset in ms between video time 0 and GPX time
+  transitionIn?: Transition;
 }
 
 export interface Track {

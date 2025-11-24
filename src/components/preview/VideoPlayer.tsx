@@ -55,6 +55,23 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [currentTime, isPlaying, playbackRate, expectedVideoTime, asset.src]);
 
+  // Transition Logic
+  let effectiveOpacity = clip.properties.opacity;
+  let clipPath: string | undefined;
+
+  if (clip.transitionIn) {
+    const t = currentTime - clip.start;
+    if (t >= 0 && t < clip.transitionIn.duration) {
+      const progress = t / clip.transitionIn.duration;
+      if (clip.transitionIn.type === 'crossfade' || clip.transitionIn.type === 'fade') {
+        effectiveOpacity *= progress;
+      } else if (clip.transitionIn.type === 'wipe') {
+        const p = progress * 100;
+        clipPath = `polygon(0 0, ${p}% 0, ${p}% 100%, 0 100%)`;
+      }
+    }
+  }
+
   const style: React.CSSProperties = {
     position: 'absolute',
     left: `${clip.properties.x}%`,
@@ -62,10 +79,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     width: `${clip.properties.width}%`,
     height: `${clip.properties.height}%`,
     transform: `rotate(${clip.properties.rotation}deg)`,
-    opacity: clip.properties.opacity,
+    opacity: effectiveOpacity,
     zIndex: clip.properties.zIndex,
     objectFit: 'cover',
     pointerEvents: 'none',
+    clipPath,
   };
 
   return (

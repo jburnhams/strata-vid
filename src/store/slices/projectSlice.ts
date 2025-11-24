@@ -21,4 +21,32 @@ export const createProjectSlice: StateCreator<
     set((state) => {
       Object.assign(state.settings, newSettings);
     }),
+  loadProject: (project) =>
+    set((state) => {
+      // Load project ID and settings
+      state.id = project.id;
+      state.settings = project.settings;
+
+      // Load Assets
+      // Clear existing first
+      state.assets = {};
+      Object.assign(state.assets, project.assets);
+      state.selectedAssetId = null;
+
+      // Load Timeline
+      // Clear existing first
+      state.tracks = {};
+      state.clips = {};
+      state.trackOrder = [];
+
+      Object.assign(state.tracks, project.tracks);
+      Object.assign(state.clips, project.clips);
+      state.trackOrder = project.trackOrder;
+
+      state.selectedClipId = null;
+
+      // Reset Playback
+      state.currentTime = 0;
+      state.isPlaying = false;
+    }),
 });

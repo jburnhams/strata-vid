@@ -105,6 +105,7 @@ export const ClipItem: React.FC<ClipItemProps> = ({
     <div
       ref={setNodeRef}
       style={style}
+      data-testid={`clip-item-${clip.id}`}
       className={`
         rounded border ${getClipColorClasses(clip.type)} text-white text-xs
         flex items-center overflow-hidden cursor-move select-none group transition-shadow duration-100

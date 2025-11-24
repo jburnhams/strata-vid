@@ -1,9 +1,10 @@
-import { Asset, Clip, Track, ProjectSettings } from '../types';
+import { Asset, Clip, Track, ProjectSettings, DeserializedState } from '../types';
 
 export interface ProjectSlice {
   id: string;
   settings: ProjectSettings;
   setSettings: (settings: Partial<ProjectSettings>) => void;
+  loadProject: (project: DeserializedState) => void;
 }
 
 export interface AssetsSlice {

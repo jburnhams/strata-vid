@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useProjectStore } from '../store/useProjectStore';
-import { serializeProject, deserializeProject, applyProjectState } from '../utils/projectSerializer';
+import { serializeProject, deserializeProject } from '../utils/projectSerializer';
 
 const AUTO_SAVE_KEY = 'strata_vid_autosave';
 const SAVE_INTERVAL = 60000; // 60 seconds
@@ -21,7 +21,7 @@ export function useAutoSave() {
 
              if (Object.keys(currentAssets).length === 0 && Object.keys(currentTracks).length === 0) {
                  console.log('Restoring auto-saved project...');
-                 applyProjectState(store, state);
+                 store.loadProject(state);
              }
          }
       } catch (e) {

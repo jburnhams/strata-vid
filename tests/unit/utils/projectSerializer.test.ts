@@ -8,6 +8,9 @@ describe('projectSerializer', () => {
     height: 1080,
     fps: 30,
     duration: 60,
+    previewQuality: 'high',
+    snapToGrid: true,
+    allowOverlaps: false,
   };
 
   const mockAsset: Asset = {
@@ -59,6 +62,8 @@ describe('projectSerializer', () => {
     currentTime: 10, // Should be ignored/reset
     isPlaying: true, // Should be ignored/reset
     playbackRate: 1, // Should be ignored/reset
+
+    // Mock functions
     setSettings: jest.fn(),
     addAsset: jest.fn(),
     removeAsset: jest.fn(),
@@ -69,8 +74,18 @@ describe('projectSerializer', () => {
     removeClip: jest.fn(),
     moveClip: jest.fn(),
     resizeClip: jest.fn(),
+    duplicateClip: jest.fn(),
     updateClipSyncOffset: jest.fn(),
     setPlaybackState: jest.fn(),
+    loadProject: jest.fn(),
+    updateClipProperties: jest.fn(),
+    selectClip: jest.fn(),
+    setLoading: jest.fn(),
+    addToast: jest.fn(),
+    removeToast: jest.fn(),
+    toasts: [],
+    isLoading: false,
+    loadingMessage: null,
   };
 
   describe('serializeProject', () => {

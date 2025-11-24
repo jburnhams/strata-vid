@@ -12,7 +12,6 @@ jest.mock('../../../src/store/useProjectStore');
 jest.mock('../../../src/utils/projectSerializer', () => ({
   serializeProject: jest.fn(),
   deserializeProject: jest.fn(),
-  applyProjectState: jest.fn(),
 }));
 
 // Mock URL and Blob
@@ -30,6 +29,7 @@ describe('ProjectMenu', () => {
     addAsset: jest.fn(),
     addTrack: jest.fn(),
     addClip: jest.fn(),
+    loadProject: jest.fn(),
   };
 
   beforeEach(() => {
@@ -74,7 +74,7 @@ describe('ProjectMenu', () => {
   });
 
   it('handles Load Project', async () => {
-    const { deserializeProject, applyProjectState } = require('../../../src/utils/projectSerializer');
+    const { deserializeProject } = require('../../../src/utils/projectSerializer');
     const mockState = {
       settings: { width: 1280, height: 720 },
       assets: { 'a1': { id: 'a1' } },
@@ -92,7 +92,7 @@ describe('ProjectMenu', () => {
 
     await waitFor(() => {
       expect(deserializeProject).toHaveBeenCalled();
-      expect(applyProjectState).toHaveBeenCalledWith(mockStore, mockState);
+      expect(mockStore.loadProject).toHaveBeenCalledWith(mockState);
     });
   });
 });

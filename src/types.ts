@@ -120,3 +120,13 @@ export interface ProjectState {
   isPlaying: boolean;
   playbackRate: number;
 }
+
+// State shape used for loading/saving projects
+export interface DeserializedState {
+  id: string;
+  settings: ProjectSettings;
+  assets: Record<string, Asset>;
+  tracks: Record<string, Track>;
+  clips: Record<string, Clip>;
+  trackOrder: string[];
+}

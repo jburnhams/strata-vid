@@ -50,3 +50,20 @@
 - Undo/Redo works for timeline edits
 - Auto-save prevents data loss
 - Can export/import .svp files
+
+## Testing
+- **Unit Tests**:
+  - `tests/unit/store/historyMiddleware.test.ts`: Verified undo/redo logic, including history limits and branching.
+  - `tests/unit/utils/projectSerializer.test.ts`: Verified JSON serialization/deserialization.
+  - `tests/unit/hooks/useAutoSave.test.ts`: Verified auto-save interval and restoration.
+  - `tests/unit/components/ProjectMenu.test.tsx`: Verified UI interactions for load/save.
+
+- **Integration Tests**:
+  - `tests/integration/undoRedo.integration.test.tsx`: Verified real-world scenario (Clip deletion -> Undo -> Clip restoration).
+  - `tests/integration/autoSave.integration.test.tsx`: Verified app state persistence to `localStorage`.
+  - `tests/integration/projectManagement.test.tsx`: Verified full Save/Load flow with mock assets.
+
+## Notes
+- **History Management**: Implemented `loadProject` action to ensure project loading is atomic and doesn't flood the undo history stack.
+- **Asset Restoration**: Currently, loading a project does *not* automatically re-link local files due to browser security constraints. Users must be aware that `src` blobs are lost on reload.
+- **Undo/Redo**: Implemented via `historyMiddleware`. Future improvements could exclude more high-frequency updates if needed.

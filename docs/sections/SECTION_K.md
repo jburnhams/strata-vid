@@ -19,11 +19,12 @@
   - Implemented as a toggleable component within `MapPanel`. Supports track selection, hover tooltips, and click-to-seek.
   - Files: `src/components/preview/ElevationProfile.tsx` (new), `src/components/MapPanel.tsx` (updated), `src/components/PreviewPanel.tsx` (updated)
 
-- [ ] **K3: Data overlays on video** (5-6 hours)
+- [x] **K3: Data overlays on video** (5-6 hours)
   - Display speed, distance, elevation as text
   - Real-time updates
   - Customizable styling
-  - Files: `src/components/preview/DataOverlay.tsx` (new), `src/components/preview/OverlayRenderer.tsx` (updated)
+  - Implemented as a new 'data' clip type with configurable units and text styles in the `MetadataPanel`.
+  - Files: `src/components/preview/DataOverlay.tsx` (new), `src/components/preview/OverlayRenderer.tsx` (updated), `src/components/MetadataPanel.tsx` (updated), `src/types.ts` (updated)
 
 - [ ] **K4: Custom map styles** (3-4 hours)
   - Mapbox styles, satellite view

@@ -75,6 +75,8 @@ export interface OverlayProperties {
     dataSource: 'speed' | 'elevation';
   };
   showElevationProfile?: boolean;
+  // Data overlay specific properties
+  dataOverlay?: DataOverlayOptions;
 }
 
 export interface TextStyle {
@@ -84,6 +86,15 @@ export interface TextStyle {
   color: string;
   backgroundColor?: string;
   textAlign: 'left' | 'center' | 'right';
+}
+
+export interface DataOverlayOptions {
+  showSpeed: boolean;
+  showDistance: boolean;
+  showElevation: boolean;
+  speedUnit: 'kmh' | 'mph' | 'm/s';
+  distanceUnit: 'km' | 'mi' | 'm';
+  elevationUnit: 'm' | 'ft';
 }
 
 export type TransitionType = 'crossfade' | 'fade' | 'wipe';
@@ -123,7 +134,7 @@ export interface Clip {
   offset: number; // Source media start time (trimming)
   properties: OverlayProperties;
   textStyle?: TextStyle;
-  type: 'video' | 'audio' | 'image' | 'map' | 'text' | 'html';
+  type: 'video' | 'audio' | 'image' | 'map' | 'text' | 'html' | 'data';
   content?: string; // For text/html
   syncOffset?: number; // For map/gpx clips: offset in ms between video time 0 and GPX time
   extraTrackAssets?: ExtraTrack[]; // For map clips: additional GPX tracks to display

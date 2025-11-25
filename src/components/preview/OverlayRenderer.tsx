@@ -137,13 +137,6 @@ export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, c
           });
       }
 
-      const currentGpxPoint = useMemo(() => {
-        if (!asset.gpxPoints || asset.gpxPoints.length === 0) return null;
-        const baseTime = clip.syncOffset || (asset.gpxPoints[0]?.time ?? 0);
-        const targetTime = baseTime + (currentTime - clip.start) * 1000;
-        return getCoordinateAtTime(asset.gpxPoints, targetTime);
-      }, [asset.gpxPoints, currentTime, clip.start, clip.syncOffset]);
-
       return (
           <div style={{...style, pointerEvents: 'auto', position: 'relative'}}>
               <MapPanel
@@ -161,14 +154,29 @@ export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, c
                 extraTracks={clip.extraTrackAssets}
                  clipDuration={clip.duration}
               />
-              {currentGpxPoint && (
-                <DataOverlay
-                  gpxData={currentGpxPoint}
-                  className="absolute bottom-4 left-4 z-10"
-                />
-              )}
           </div>
       );
+  }
+
+  if (clip.type === 'data' && asset && asset.gpxPoints) {
+    const currentGpxPoint = getCoordinateAtTime(
+      asset.gpxPoints,
+      (clip.syncOffset || (asset.gpxPoints[0]?.time ?? 0)) + (currentTime - clip.start) * 1000,
+    );
+
+    if (!currentGpxPoint) {
+      return null;
+    }
+
+    return (
+      <div style={style}>
+        <DataOverlay
+          gpxData={currentGpxPoint}
+          options={clip.properties.dataOverlay}
+          textStyle={clip.textStyle}
+        />
+      </div>
+    );
   }
 
   return null;

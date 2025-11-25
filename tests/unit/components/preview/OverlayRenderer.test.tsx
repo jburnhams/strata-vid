@@ -84,4 +84,26 @@ describe('OverlayRenderer', () => {
     );
     expect(getByTestId('map-panel')).toBeInTheDocument();
   });
+
+  it('interpolates properties based on keyframes', () => {
+    const clipWithKeyframes: Clip = {
+      ...baseClip,
+      type: 'text',
+      content: 'Animating',
+      keyframes: {
+        x: [
+          { id: 'k1', time: 0, value: 10, easing: 'linear' },
+          { id: 'k2', time: 10, value: 60, easing: 'linear' },
+        ],
+      },
+    };
+
+    const { container } = render(
+      <OverlayRenderer clip={clipWithKeyframes} currentTime={5} /> // 5s into 10s clip
+    );
+
+    const div = container.firstChild as HTMLElement;
+    // 5s is halfway, so x should be halfway between 10 and 60 -> 35
+    expect(div).toHaveStyle('left: 35%');
+  });
 });

@@ -52,6 +52,7 @@ export interface OverlayProperties {
   rotation: number; // degrees
   opacity: number; // 0-1
   zIndex: number;
+  filter?: string; // CSS filter string
   // Map specific properties
   mapStyle?: 'osm' | 'mapbox' | 'satellite';
   mapZoom?: number;
@@ -82,6 +83,20 @@ export interface Transition {
   duration: number;
 }
 
+export interface Marker {
+  id: string;
+  time: number;
+  label: string;
+  color: string;
+}
+
+export interface Keyframe {
+  id: string;
+  time: number; // relative to clip start
+  value: number;
+  easing: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
+}
+
 export interface Clip {
   id: string;
   assetId: string;
@@ -96,6 +111,8 @@ export interface Clip {
   content?: string; // For text/html
   syncOffset?: number; // For map/gpx clips: offset in ms between video time 0 and GPX time
   transitionIn?: Transition;
+  playbackRate?: number;
+  keyframes?: Record<string, Keyframe[]>;
 }
 
 export interface Track {

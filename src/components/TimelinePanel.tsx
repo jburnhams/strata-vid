@@ -8,6 +8,7 @@ export const TimelinePanel: React.FC = () => {
   const clips = useProjectStore((state) => state.clips);
   const assets = useProjectStore((state) => state.assets);
   const trackOrder = useProjectStore((state) => state.trackOrder);
+  const markers = useProjectStore((state) => state.markers);
 
   // Actions
   const moveClip = useProjectStore((state) => state.moveClip);
@@ -21,6 +22,7 @@ export const TimelinePanel: React.FC = () => {
   const removeTrack = useProjectStore((state) => state.removeTrack);
   const updateTrack = useProjectStore((state) => state.updateTrack);
   const updateTrackVolume = useProjectStore((state) => state.updateTrackVolume);
+  const addMarker = useProjectStore((state) => state.addMarker);
   const selectClip = useProjectStore((state) => state.selectClip);
   const setSettings = useProjectStore((state) => state.setSettings);
 
@@ -29,9 +31,26 @@ export const TimelinePanel: React.FC = () => {
   const isPlaying = useProjectStore((state) => state.isPlaying);
   const selectedClipId = useProjectStore((state) => state.selectedClipId);
   const settings = useProjectStore((state) => state.settings);
+  const setPlaybackState = useProjectStore((state) => state.setPlaybackState);
 
   // Local state for UI
   const [zoomLevel, setZoomLevel] = useState(10); // pixels per second
+
+  const handleMarkerClick = (id: string) => {
+    const marker = markers.find((m) => m.id === id);
+    if (marker) {
+      setPlaybackState({ currentTime: marker.time });
+    }
+  };
+
+  const handleAddMarker = () => {
+    addMarker({
+      id: `marker-${Date.now()}`,
+      time: currentTime,
+      label: 'M',
+      color: '#f59e0b',
+    });
+  };
 
   const handleAddTrack = () => {
     const id = `track-${Date.now()}`;
@@ -68,10 +87,13 @@ export const TimelinePanel: React.FC = () => {
         onUpdateTrack={updateTrack}
         onUpdateTrackVolume={updateTrackVolume}
         onAddTrack={handleAddTrack}
+        onAddMarker={handleAddMarker}
         selectedClipId={selectedClipId}
         onClipSelect={selectClip}
         currentTime={currentTime}
         isPlaying={isPlaying}
+        markers={markers}
+        onMarkerClick={handleMarkerClick}
       />
     </div>
   );

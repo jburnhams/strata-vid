@@ -2,6 +2,7 @@ import { Asset, AssetType } from '../types';
 import { BlobSource, Input, ALL_FORMATS } from 'mediabunny';
 import { parseGpxFile } from '../utils/gpxParser';
 import { extractAudioMetadata } from '../utils/audioUtils';
+import { ConcurrencyLimiter } from '../utils/concurrency';
 
 // Helper interface for Mediabunny Input to handle potential type mismatches
 interface IMediabunnyInput {
@@ -12,6 +13,9 @@ interface IMediabunnyInput {
 }
 
 export class AssetLoader {
+  // Limit concurrent thumbnail generations to avoid browser freeze
+  private static thumbnailLimiter = new ConcurrencyLimiter(2);
+
   static async loadAsset(file: File): Promise<Asset> {
     const type = this.determineType(file);
     const id = crypto.randomUUID();
@@ -25,11 +29,7 @@ export class AssetLoader {
 
     if (type === 'video') {
       await this.enrichVideoMetadata(asset, file);
-      try {
-        asset.thumbnail = await this.generateVideoThumbnail(file);
-      } catch (e) {
-        console.warn('Failed to generate thumbnail:', e);
-      }
+      // Thumbnail is now loaded separately via loadThumbnail
     } else if (type === 'gpx') {
       await this.enrichGpxMetadata(asset, file);
     } else if (type === 'audio') {
@@ -37,6 +37,27 @@ export class AssetLoader {
     }
 
     return asset;
+  }
+
+  /**
+   * Generates a thumbnail for a video file.
+   * Uses a concurrency limiter to prevent overwhelming the browser.
+   */
+  static async loadThumbnail(file: File): Promise<string> {
+    return this.thumbnailLimiter.execute(() => this.generateVideoThumbnail(file));
+  }
+
+  /**
+   * Revokes object URLs associated with an asset.
+   * Call this when removing an asset from the project.
+   */
+  static revokeAsset(asset: Asset) {
+    if (asset.src && asset.src.startsWith('blob:')) {
+      URL.revokeObjectURL(asset.src);
+    }
+    if (asset.thumbnail && asset.thumbnail.startsWith('blob:')) {
+      URL.revokeObjectURL(asset.thumbnail);
+    }
   }
 
   public static determineType(file: File): AssetType {

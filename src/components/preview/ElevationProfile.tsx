@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { GpxPoint, Asset, ExtraTrack } from '../../../types';
-import { useProjectStore } from '../../../store/useProjectStore';
+import { GpxPoint, Asset, ExtraTrack } from '../../types';
+import { useProjectStore } from '../../store/useProjectStore';
 
 interface ElevationProfileProps {
   gpxAssets: (Asset | undefined)[];
@@ -76,12 +76,12 @@ const ElevationProfile: React.FC<ElevationProfileProps> = ({ gpxAssets, mainAsse
   const { pathData, minEle, maxEle } = useMemo(() => {
     if (points.length < 2) return { pathData: '', minEle: 0, maxEle: 0 };
 
-    const eleValues = points.map(p => p.ele).filter(e => e !== undefined) as number[];
+    const eleValues = points.map((p: GpxPoint) => p.ele).filter((e): e is number => e !== undefined);
     const min = Math.min(...eleValues);
     const max = Math.max(...eleValues);
     const totalDist = points[points.length - 1].dist!;
 
-    const path = points.map((p, i) => {
+    const path = points.map((p: GpxPoint, i: number) => {
       const x = (p.dist! / totalDist) * 100;
       const y = ((p.ele! - min) / (max - min)) * 100;
       return `${i === 0 ? 'M' : 'L'} ${x} ${100 - y}`;
@@ -129,7 +129,7 @@ const ElevationProfile: React.FC<ElevationProfileProps> = ({ gpxAssets, mainAsse
       )}
       <div className="flex justify-between text-xs text-gray-400 mt-1">
         <span>{minEle.toFixed(0)}m</span>
-        <span>{(points[points.length-1]?.dist/2 || 0).toFixed(0)}m</span>
+        <span>{((points[points.length - 1]?.dist ?? 0) / 2).toFixed(0)}m</span>
         <span>{maxEle.toFixed(0)}m</span>
       </div>
     </div>

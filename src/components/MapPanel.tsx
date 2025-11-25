@@ -196,10 +196,9 @@ export const MapPanel: React.FC<MapPanelProps> = ({
 
   return (
     <div className={`${className} flex flex-col`} style={{ height: '100%', width: '100%' }}>
-      <div style={{ flex: '1 1 75%' }}>
-        <MapContainer
-          center={center}
-          zoom={zoom}
+      <MapContainer
+        center={center}
+        zoom={zoom}
           style={{ height: '100%', width: '100%' }}
           zoomControl={false}
         >
@@ -260,7 +259,6 @@ export const MapPanel: React.FC<MapPanelProps> = ({
             </div>
           )}
         </MapContainer>
-      </div>
       {showElevationProfile && onSeek && (
         <div style={{ flex: '0 0 auto', height: '120px' }}>
           <ElevationProfile

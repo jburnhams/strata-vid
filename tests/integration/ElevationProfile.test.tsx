@@ -30,38 +30,15 @@ jest.mock('react-leaflet', () => ({
 describe('Elevation Profile Integration Test', () => {
   beforeEach(() => {
     act(() => {
-      // Set a complete, self-contained, valid state for this specific test
+      const initialState = useProjectStore.getState();
       useProjectStore.setState({
-        // Project Slice
-        id: 'test-project',
-        settings: {
-          width: 1920,
-          height: 1080,
-          fps: 30,
-          duration: 30,
-          previewQuality: 'high',
-          snapToGrid: true,
-          allowOverlaps: false,
-          simplificationTolerance: 0.0001,
-        },
-        // Timeline Slice
+        ...initialState,
         tracks: { 'track-1': { id: 'track-1', type: 'video', label: 'V1', isMuted: false, isLocked: false, clips: [mockMapClip.id] } },
         clips: { [mockMapClip.id]: { ...mockMapClip, properties: { ...mockMapClip.properties, showElevationProfile: false } } },
         trackOrder: ['track-1'],
-        markers: [],
         selectedClipId: mockMapClip.id,
-        // Assets Slice
         assets: { [mockGpxAsset.id]: mockGpxAsset },
-        selectedAssetId: null,
-        // Playback Slice
-        currentTime: 0,
-        isPlaying: false,
-        playbackRate: 1,
-        // UI Slice
-        isLoading: false,
-        loadingMessage: null,
-        toasts: [],
-      }, true); // Use true to replace the state entirely
+      }, true);
     });
   });
 

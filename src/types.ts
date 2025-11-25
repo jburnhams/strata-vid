@@ -44,6 +44,17 @@ export interface Asset {
   waveform?: number[]; // Array of peak values (0-1) for audio visualization
 }
 
+export interface TrackStyle {
+  color: string;
+  weight: number;
+  opacity: number;
+}
+
+export interface MarkerStyle {
+  color: string; // hex or name
+  type?: 'dot' | 'pin';
+}
+
 export interface OverlayProperties {
   x: number; // % of screen width
   y: number; // % of screen height
@@ -56,15 +67,8 @@ export interface OverlayProperties {
   // Map specific properties
   mapStyle?: 'osm' | 'mapbox' | 'satellite';
   mapZoom?: number;
-  trackStyle?: {
-    color: string;
-    weight: number;
-    opacity: number;
-  };
-  markerStyle?: {
-    color: string; // hex or name
-    type?: 'dot' | 'pin';
-  };
+  trackStyle?: TrackStyle;
+  markerStyle?: MarkerStyle;
 }
 
 export interface TextStyle {
@@ -81,6 +85,13 @@ export type TransitionType = 'crossfade' | 'fade' | 'wipe';
 export interface Transition {
   type: TransitionType;
   duration: number;
+}
+
+export interface ExtraTrack {
+  assetId: string; // Reference to the GPX asset
+  trackStyle?: TrackStyle;
+  markerStyle?: MarkerStyle;
+  syncOffset?: number; // Override or specific sync offset
 }
 
 export interface Marker {
@@ -109,6 +120,7 @@ export interface Clip {
   type: 'video' | 'audio' | 'image' | 'map' | 'text' | 'html';
   content?: string; // For text/html
   syncOffset?: number; // For map/gpx clips: offset in ms between video time 0 and GPX time
+  extraTrackAssets?: ExtraTrack[]; // For map clips: additional GPX tracks to display
   transitionIn?: Transition;
   playbackRate?: number;
   keyframes?: Record<string, Keyframe[]>;

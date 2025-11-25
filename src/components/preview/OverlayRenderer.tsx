@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { MapPanel, MapTrackData } from '../MapPanel';
-import { Clip, Asset, OverlayProperties } from '../../types';
+import DataOverlay from './DataOverlay';
+import { Clip, Asset, OverlayProperties, GpxPoint } from '../../types';
 import { interpolateValue } from '../../utils/animationUtils';
+import { getCoordinateAtTime } from '../../utils/gpxParser';
 
 interface OverlayRendererProps {
   clip: Clip;
@@ -132,18 +134,29 @@ export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, c
           });
       }
 
+      const currentGpxPoint = useMemo(() => {
+        if (!asset.gpxPoints || asset.gpxPoints.length === 0) return null;
+        const baseTime = clip.syncOffset || (asset.gpxPoints[0]?.time ?? 0);
+        const targetTime = baseTime + (currentTime - clip.start) * 1000;
+        return getCoordinateAtTime(asset.gpxPoints, targetTime);
+      }, [asset.gpxPoints, currentTime, clip.start, clip.syncOffset]);
+
       return (
-          <div style={{...style, pointerEvents: 'auto'}}>
+          <div style={{...style, pointerEvents: 'auto', position: 'relative'}}>
               <MapPanel
                 className="w-full h-full"
                 tracks={tracks}
-                currentTime={currentTime}
-                // View settings come from the primary clip properties
+                currentTime={currentTime - clip.start} // MapPanel expects time relative to clip
                 mapStyle={clip.properties.mapStyle}
-                zoom={clip.properties.mapZoom}
-                trackStyle={clip.properties.trackStyle}
-                markerStyle={clip.properties.markerStyle}
+                zoom={mapZoom}
+                heatmapPoints={clip.properties.heatmap?.enabled ? asset.gpxPoints : undefined}
               />
+              {currentGpxPoint && (
+                <DataOverlay
+                  gpxData={currentGpxPoint}
+                  className="absolute bottom-4 left-4 z-10"
+                />
+              )}
           </div>
       );
   }

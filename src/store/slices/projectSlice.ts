@@ -16,6 +16,7 @@ export const createProjectSlice: StateCreator<
     previewQuality: 'high',
     snapToGrid: true,
     allowOverlaps: false,
+    simplificationTolerance: 0.0001,
   },
   setSettings: (newSettings) =>
     set((state) => {

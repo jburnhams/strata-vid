@@ -10,22 +10,30 @@ jest.mock('../../src/components/MapSyncControl', () => ({
 }));
 
 describe('MetadataPanel', () => {
+  const mockSettings = {
+    width: 1920, height: 1080, fps: 30, duration: 0,
+    previewQuality: 'high', snapToGrid: true, allowOverlaps: false,
+    simplificationTolerance: 0.0001
+  };
+  const mockSetSettings = jest.fn();
+
   beforeEach(() => {
     useProjectStore.setState({
         selectedClipId: null,
         clips: {},
         selectedAssetId: null
     });
+    mockSetSettings.mockClear();
   });
 
   it('renders empty state', () => {
-    render(<MetadataPanel activeAsset={null} />);
+    render(<MetadataPanel assets={[]} selectedAssetId={null} settings={mockSettings} setSettings={mockSetSettings} />);
     expect(screen.getByText('Select an asset to view details')).toBeInTheDocument();
   });
 
   it('renders asset details', () => {
     const asset: Asset = { id: '1', name: 'test.mp4', type: 'video', src: 'blob:x' };
-    render(<MetadataPanel activeAsset={asset} />);
+    render(<MetadataPanel assets={[asset]} selectedAssetId="1" settings={mockSettings} setSettings={mockSetSettings} />);
     expect(screen.getByText('test.mp4')).toBeInTheDocument();
     expect(screen.getByText('video')).toBeInTheDocument();
   });
@@ -40,7 +48,7 @@ describe('MetadataPanel', () => {
         }
     };
 
-    render(<MetadataPanel activeAsset={asset} />);
+    render(<MetadataPanel assets={[asset]} selectedAssetId="1" settings={mockSettings} setSettings={mockSetSettings} />);
 
     expect(screen.getByText('GPX Statistics')).toBeInTheDocument();
     expect(screen.getByText('5.00 km')).toBeInTheDocument();
@@ -65,7 +73,7 @@ describe('MetadataPanel', () => {
           clips: { 'clip-1': clip }
       });
 
-      render(<MetadataPanel activeAsset={null} />);
+      render(<MetadataPanel assets={[]} selectedAssetId={null} settings={mockSettings} setSettings={mockSetSettings} />);
 
       expect(screen.getByText('Clip Properties')).toBeInTheDocument();
       expect(screen.getByText('Opacity')).toBeInTheDocument();
@@ -95,7 +103,7 @@ describe('MetadataPanel', () => {
           clips: { 'clip-map': clip }
       });
 
-      render(<MetadataPanel activeAsset={null} />);
+      render(<MetadataPanel assets={[]} selectedAssetId={null} settings={mockSettings} setSettings={mockSetSettings} />);
 
       expect(screen.getByText('Map Styling')).toBeInTheDocument();
       expect(screen.getByTestId('map-sync-control')).toBeInTheDocument();
@@ -144,7 +152,7 @@ describe('MetadataPanel', () => {
       clips: { 'clip-1': clip },
     });
 
-    render(<MetadataPanel activeAsset={null} />);
+    render(<MetadataPanel assets={[]} selectedAssetId={null} settings={mockSettings} setSettings={mockSetSettings} />);
 
     // Check that the KeyframeList for Opacity is rendered and displays a keyframe
     const keyframeList = screen.getByTestId('keyframe-list-opacity');

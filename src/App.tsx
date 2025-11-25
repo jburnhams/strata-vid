@@ -31,6 +31,8 @@ function App() {
     clips: clipsRecord,
     tracks: tracksRecord,
     selectedAssetId,
+    settings,
+    setSettings,
     addAsset,
     updateAsset,
     selectAsset,
@@ -45,14 +47,14 @@ function App() {
   const clips = Object.values(clipsRecord || {});
   const tracks = Object.values(tracksRecord || {});
 
-  const activeAsset = assets.find(a => a.id === selectedAssetId) || null;
-
   const handleAssetAdd = async (fileList: FileList) => {
     setLoading(true, 'Loading assets...');
     try {
       const newAssetsPromises = Array.from(fileList).map(async (file) => {
         try {
-          return await AssetLoader.loadAsset(file);
+          return await AssetLoader.loadAsset(file, {
+            simplificationTolerance: settings.simplificationTolerance,
+          });
         } catch (e) {
           handleError(e, `Failed to load ${file.name}`);
           return null;
@@ -189,7 +191,7 @@ function App() {
 
       {/* Metadata */}
       <div className="[grid-area:metadata] border-l border-neutral-700 bg-neutral-800 flex flex-col overflow-hidden" data-testid="metadata-panel-container">
-        <MetadataPanel activeAsset={activeAsset} />
+        <MetadataPanel assets={assets} selectedAssetId={selectedAssetId} settings={settings} setSettings={setSettings} />
       </div>
 
       {/* Timeline */}

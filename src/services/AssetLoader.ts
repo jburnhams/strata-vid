@@ -1,6 +1,6 @@
 import { Asset, AssetType } from '../types';
 import { BlobSource, Input, ALL_FORMATS } from 'mediabunny';
-import { parseGpxFile } from '../utils/gpxParser';
+import { parseGpxFile, simplifyTrack } from '../utils/gpxParser';
 import { extractAudioMetadata } from '../utils/audioUtils';
 import { ConcurrencyLimiter } from '../utils/concurrency';
 
@@ -16,7 +16,7 @@ export class AssetLoader {
   // Limit concurrent thumbnail generations to avoid browser freeze
   private static thumbnailLimiter = new ConcurrencyLimiter(2);
 
-  static async loadAsset(file: File): Promise<Asset> {
+  static async loadAsset(file: File, options: { simplificationTolerance?: number } = {}): Promise<Asset> {
     const type = this.determineType(file);
     const id = crypto.randomUUID();
     const asset: Asset = {
@@ -31,7 +31,7 @@ export class AssetLoader {
       await this.enrichVideoMetadata(asset, file);
       // Thumbnail is now loaded separately via loadThumbnail
     } else if (type === 'gpx') {
-      await this.enrichGpxMetadata(asset, file);
+      await this.enrichGpxMetadata(asset, file, options.simplificationTolerance);
     } else if (type === 'audio') {
       await this.enrichAudioMetadata(asset, file);
     }
@@ -125,11 +125,18 @@ export class AssetLoader {
     }
   }
 
-  private static async enrichGpxMetadata(asset: Asset, file: File): Promise<void> {
+  private static async enrichGpxMetadata(asset: Asset, file: File, tolerance: number = 0.0001): Promise<void> {
     try {
-        const { geoJson, stats } = await parseGpxFile(file);
+        const { geoJson, stats, points } = await parseGpxFile(file);
+
+        const simplifiedPoints = simplifyTrack(points, tolerance);
+
+        console.log(`GPX track simplified from ${points.length} to ${simplifiedPoints.length} points with tolerance ${tolerance}.`);
+
         asset.geoJson = geoJson;
         asset.stats = stats;
+        asset.gpxPoints = simplifiedPoints;
+
     } catch (e) {
         console.warn("Failed to parse GPX", e);
     }

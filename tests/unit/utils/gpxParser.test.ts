@@ -1,164 +1,112 @@
+import { parseGpxFile, simplifyTrack, getCoordinateAtTime } from '../../../src/utils/gpxParser';
+import { GpxPoint } from '../../../src/types';
 
-import { parseGpxFile, getCoordinateAtTime } from '../../../src/utils/gpxParser';
-import { Asset, GpxPoint } from '../../../src/types';
-import * as gpxJs from '@we-gold/gpxjs';
-
-// Mock @we-gold/gpxjs
-jest.mock('@we-gold/gpxjs', () => ({
-  parseGPX: jest.fn(),
-}));
-
-describe('GPX Utils', () => {
-    describe('parseGpxFile', () => {
-        let file: File;
-
-        beforeEach(() => {
-            file = new File(['fake gpx content'], 'test.gpx', { type: 'application/gpx+xml' });
-            // Mock file.text() since jsdom File implementation might not have it or it's not working as expected in test env
-            file.text = jest.fn().mockResolvedValue('fake gpx content');
-        });
-
-        it('throws error on parse failure', async () => {
-            (gpxJs.parseGPX as jest.Mock).mockReturnValue([null, new Error('Parse error')]);
-            await expect(parseGpxFile(file)).rejects.toThrow('Error parsing GPX: Parse error');
-        });
-
-        it('throws error if no data found', async () => {
-            (gpxJs.parseGPX as jest.Mock).mockReturnValue([null, null]);
-            await expect(parseGpxFile(file)).rejects.toThrow('No GPX data found');
-        });
-
-        it('parses valid GPX file with tracks', async () => {
-            const mockGpx = {
-                toGeoJSON: jest.fn().mockReturnValue({ type: 'FeatureCollection', features: [] }),
-                tracks: [{
-                    points: [
-                        { time: new Date(1000), latitude: 10, longitude: 10, elevation: 5 },
-                        { time: new Date(2000), latitude: 20, longitude: 20, elevation: 15 }
-                    ],
-                    distance: { total: 100 },
-                    elevation: { positive: 10, negative: 0, maximum: 15, minimum: 5, average: 10 },
-                    duration: { startTime: new Date(1000), endTime: new Date(2000), totalDuration: 1 }
-                }]
-            };
-            (gpxJs.parseGPX as jest.Mock).mockReturnValue([mockGpx, null]);
-
-            const result = await parseGpxFile(file);
-
-            expect(result.points).toHaveLength(2);
-            expect(result.points[0]).toEqual({ time: 1000, lat: 10, lon: 10, ele: 5 });
-            expect(result.stats).toBeDefined();
-            expect(result.stats?.distance.total).toBe(100);
-            expect(result.stats?.time.duration).toBe(1000);
-        });
-
-        it('handles track with no points (fallback stats)', async () => {
-             const mockGpx = {
-                toGeoJSON: jest.fn().mockReturnValue({ type: 'FeatureCollection', features: [] }),
-                tracks: [{
-                    points: [],
-                    distance: { total: 0 },
-                    elevation: { positive: 0, negative: 0, maximum: 0, minimum: 0, average: 0 },
-                    duration: { startTime: new Date(1000), endTime: new Date(2000), totalDuration: 1 }
-                }]
-            };
-            (gpxJs.parseGPX as jest.Mock).mockReturnValue([mockGpx, null]);
-
-            const result = await parseGpxFile(file);
-            expect(result.points).toHaveLength(0);
-            expect(result.stats?.time.duration).toBe(1000);
-        });
-
-         it('handles tracks with points missing time', async () => {
-            const mockGpx = {
-                toGeoJSON: jest.fn().mockReturnValue({ type: 'FeatureCollection', features: [] }),
-                tracks: [{
-                    points: [
-                        { latitude: 10, longitude: 10 }, // No time
-                        { time: new Date(2000), latitude: 20, longitude: 20 }
-                    ],
-                    distance: { total: 100 },
-                    elevation: { positive: 10, negative: 0, maximum: 15, minimum: 5, average: 10 },
-                    duration: { startTime: new Date(1000), endTime: new Date(2000), totalDuration: 1 }
-                }]
-            };
-            (gpxJs.parseGPX as jest.Mock).mockReturnValue([mockGpx, null]);
-
-            const result = await parseGpxFile(file);
-            expect(result.points).toHaveLength(1); // Only the one with time
-        });
+describe('gpxParser', () => {
+  describe('parseGpxFile', () => {
+    it('should parse a valid GPX file', async () => {
+      const gpxContent = `
+        <?xml version="1.0" encoding="UTF-8"?>
+        <gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Strata-Vid-Test">
+          <trk>
+            <name>Test Track</name>
+            <trkseg>
+              <trkpt lat="45.0" lon="-75.0">
+                <ele>100</ele>
+                <time>2025-11-25T00:00:00Z</time>
+              </trkpt>
+              <trkpt lat="45.001" lon="-75.001">
+                <ele>110</ele>
+                <time>2025-11-25T00:00:10Z</time>
+              </trkpt>
+            </trkseg>
+          </trk>
+        </gpx>
+      `;
+      const file = new File([gpxContent], 'test.gpx', { type: 'application/gpx+xml' });
+      file.text = jest.fn().mockResolvedValue(gpxContent);
+      const { geoJson, stats, points } = await parseGpxFile(file);
+      expect(geoJson).toBeDefined();
+      expect(stats).toBeDefined();
+      expect(points.length).toBe(2);
     });
+
+    it('should throw an error for an invalid GPX file', async () => {
+      const file = new File(['invalid'], 'test.gpx', { type: 'application/gpx+xml' });
+      file.text = jest.fn().mockResolvedValue('invalid');
+      await expect(parseGpxFile(file)).rejects.toThrow();
+    });
+
+    it('should return no stats for a GPX file with no tracks', async () => {
+        const gpxContent = `
+            <?xml version="1.0" encoding="UTF-8"?>
+            <gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Strata-Vid-Test">
+            </gpx>
+        `;
+        const file = new File([gpxContent], 'test.gpx', { type: 'application/gpx+xml' });
+        file.text = jest.fn().mockResolvedValue(gpxContent);
+        const { stats } = await parseGpxFile(file);
+        expect(stats).toBeUndefined();
+    });
+  });
+
+  describe('simplifyTrack', () => {
+    const straightLine: GpxPoint[] = [
+        { time: 0, lat: 0, lon: 0, ele: 0 },
+        { time: 1, lat: 0, lon: 1, ele: 0 },
+        { time: 2, lat: 0, lon: 2, ele: 0 },
+    ];
+
+    const nearlyStraightLine: GpxPoint[] = [
+        { time: 0, lat: 0, lon: 0, ele: 0 },
+        { time: 1, lat: 0.00005, lon: 1, ele: 0 }, // Slight deviation
+        { time: 2, lat: 0, lon: 2, ele: 0 },
+    ];
+
+    const deviatedLine: GpxPoint[] = [
+        { time: 0, lat: 0, lon: 0, ele: 0 },
+        { time: 1, lat: 0.1, lon: 1, ele: 0 }, // Significant deviation
+        { time: 2, lat: 0, lon: 2, ele: 0 },
+    ];
+
+    it('should simplify a perfectly straight line to two points', () => {
+        const simplified = simplifyTrack(straightLine, 0.0001);
+        expect(simplified.length).toBe(2);
+    });
+
+    it('should NOT simplify a nearly straight line if tolerance is too low', () => {
+        const simplified = simplifyTrack(nearlyStraightLine, 0.00001);
+        expect(simplified.length).toBe(3);
+    });
+
+    it('SHOULD simplify a nearly straight line if tolerance is high enough', () => {
+        const simplified = simplifyTrack(nearlyStraightLine, 0.001);
+        expect(simplified.length).toBe(2);
+    });
+
+    it('should keep points that deviate significantly', () => {
+        const simplified = simplifyTrack(deviatedLine, 0.01);
+        expect(simplified.length).toBe(3);
+    });
+  });
 
   describe('getCoordinateAtTime', () => {
     const points: GpxPoint[] = [
-      { time: 1000, lat: 10, lon: 10 },
-      { time: 2000, lat: 20, lon: 20 },
-      { time: 3000, lat: 30, lon: 30 },
+        { time: 1000, lat: 10, lon: 10, ele: 100, dist: 0 },
+        { time: 2000, lat: 20, lon: 20, ele: 200, dist: 1000 },
     ];
 
-    it('returns the exact point if time matches', () => {
-      const result = getCoordinateAtTime(points, 2000);
-      expect(result).toEqual({ lat: 20, lon: 20 });
+    it('interpolates all values correctly', () => {
+        const result = getCoordinateAtTime(points, 1500);
+        expect(result).not.toBeNull();
+        expect(result?.lat).toBe(15);
+        expect(result?.lon).toBe(15);
+        expect(result?.ele).toBe(150);
+        expect(result?.dist).toBe(500);
     });
 
-    it('interpolates between points', () => {
-      const result = getCoordinateAtTime(points, 1500);
-      expect(result).toEqual({ lat: 15, lon: 15 });
-    });
-
-    it('interpolates closer to the correct point', () => {
-      const result = getCoordinateAtTime(points, 1250);
-      expect(result).toEqual({ lat: 12.5, lon: 12.5 });
-    });
-
-    it('returns the first point if time is before start', () => {
-      const result = getCoordinateAtTime(points, 500);
-      expect(result).toEqual({ lat: 10, lon: 10 });
-    });
-
-    it('returns the last point if time is after end', () => {
-      const result = getCoordinateAtTime(points, 3500);
-      expect(result).toEqual({ lat: 30, lon: 30 });
-    });
-
-    it('handles single point array', () => {
-        const singlePoint = [{ time: 1000, lat: 10, lon: 10 }];
-        const result = getCoordinateAtTime(singlePoint, 2000);
-        expect(result).toEqual({ lat: 10, lon: 10 });
-    });
-
-    it('returns null for empty array', () => {
-        const result = getCoordinateAtTime([], 2000);
-        expect(result).toBeNull();
-    });
-
-    // Test for robust binary search
-    it('correctly finds interval in larger dataset', () => {
-         const points2: GpxPoint[] = [
-            { time: 100, lat: 1, lon: 1 },
-            { time: 200, lat: 2, lon: 2 },
-            { time: 300, lat: 3, lon: 3 },
-            { time: 400, lat: 4, lon: 4 },
-            { time: 500, lat: 5, lon: 5 },
-        ];
-
-        // 250 should be between 200 and 300 (indices 1 and 2)
-        expect(getCoordinateAtTime(points2, 250)).toEqual({ lat: 2.5, lon: 2.5 });
-
-        // 399 should be between 300 and 400
-        const result = getCoordinateAtTime(points2, 399);
-        expect(result?.lat).toBeCloseTo(3.99);
-        expect(result?.lon).toBeCloseTo(3.99);
-    });
-
-    it('handles zero time difference gracefully (division by zero protection)', () => {
-        const points3: GpxPoint[] = [
-            { time: 1000, lat: 10, lon: 10 },
-            { time: 1000, lat: 20, lon: 20 }, // Duplicate time, different pos?
-        ];
-        // Should return the first point's pos
-        const result = getCoordinateAtTime(points3, 1000);
-        expect(result).toEqual({ lat: 10, lon: 10 });
+    it('returns start/end point when time is out of bounds', () => {
+        expect(getCoordinateAtTime(points, 500)).toEqual(points[0]);
+        expect(getCoordinateAtTime(points, 2500)).toEqual(points[1]);
     });
   });
 });

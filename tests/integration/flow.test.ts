@@ -31,13 +31,9 @@ describe('Integration Flow: Load Asset -> Store Update', () => {
             selectedAssetId: null,
             currentTime: 0,
             isPlaying: false,
-            settings: { width: 1920, height: 1080, fps: 30, duration: 0 }
+            settings: { width: 1920, height: 1080, fps: 30, duration: 0, simplificationTolerance: 0.0001 }
         });
         jest.clearAllMocks();
-    });
-
-    afterEach(() => {
-        jest.restoreAllMocks();
     });
 
     it('should load a video file and add it to the store', async () => {
@@ -65,7 +61,8 @@ describe('Integration Flow: Load Asset -> Store Update', () => {
         // Mock parser response
         (parseGpxFile as jest.Mock).mockResolvedValue({
             geoJson: { type: 'FeatureCollection', features: [] },
-            stats: { distance: { total: 500 } }
+            stats: { distance: { total: 500 } },
+            points: [],
         });
 
         // 1. Load Asset

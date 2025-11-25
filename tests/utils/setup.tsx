@@ -50,7 +50,10 @@ if (!global.crypto.randomUUID) {
     global.crypto.randomUUID = () => crypto.randomUUID();
 }
 
-// Mock URL.revokeObjectURL globally
+// Mock URL.createObjectURL and URL.revokeObjectURL globally
+if (typeof URL.createObjectURL !== 'function') {
+    global.URL.createObjectURL = jest.fn(() => 'blob:mock-url');
+}
 if (typeof URL.revokeObjectURL !== 'function') {
     global.URL.revokeObjectURL = jest.fn();
 }
@@ -156,6 +159,17 @@ if (isJSDOM) {
         setView: jest.fn(),
         flyTo: jest.fn(),
         fitBounds: jest.fn(),
+        getPanes: () => ({
+          overlayPane: {
+            appendChild: jest.fn(),
+            removeChild: jest.fn(),
+          },
+        }),
+        on: jest.fn(),
+        off: jest.fn(),
+        getBounds: () => ({ getNorthWest: () => ({ lat: 0, lng: 0 }) }),
+        latLngToLayerPoint: () => ({ x: 0, y: 0 }),
+        getSize: () => ({ x: 100, y: 100 }),
       }),
     }));
     afterEach(() => {
@@ -176,7 +190,7 @@ if (isJSDOM) {
     // @ts-ignore
     HTMLCanvasElement.prototype.getContext = jest.fn((contextId) => {
       if (contextId === '2d') {
-        return {
+        const mockContext = {
           clearRect: jest.fn(),
           fillRect: jest.fn(),
           strokeRect: jest.fn(),
@@ -194,7 +208,21 @@ if (isJSDOM) {
           arc: jest.fn(),
           fill: jest.fn(),
           drawImage: jest.fn(),
+          createLinearGradient: jest.fn(() => ({
+            addColorStop: jest.fn(),
+          })),
+          createRadialGradient: jest.fn(() => ({
+            addColorStop: jest.fn(),
+          })),
+          _filter: 'none',
+          get filter() {
+            return this._filter;
+          },
+          set filter(value) {
+            this._filter = value;
+          },
         };
+        return mockContext;
       }
       return null;
     });

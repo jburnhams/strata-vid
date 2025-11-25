@@ -7,6 +7,7 @@ export interface GpxPoint {
   lat: number;
   lon: number;
   ele?: number;
+  dist?: number; // meters from start
 }
 
 export interface GpxStats {
@@ -69,6 +70,10 @@ export interface OverlayProperties {
   mapZoom?: number;
   trackStyle?: TrackStyle;
   markerStyle?: MarkerStyle;
+  heatmap?: {
+    enabled: boolean;
+    dataSource: 'speed' | 'elevation';
+  };
 }
 
 export interface TextStyle {
@@ -143,6 +148,7 @@ export interface ProjectSettings {
   previewQuality: 'low' | 'medium' | 'high';
   snapToGrid: boolean;
   allowOverlaps: boolean;
+  simplificationTolerance: number; // for GPX track simplification
 }
 
 // Note: The full Project State structure including slices is defined in src/store/types.ts

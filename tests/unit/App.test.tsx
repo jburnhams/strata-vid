@@ -16,16 +16,16 @@ jest.mock('../../src/components/PreviewPanel', () => ({
   PreviewPanel: () => <div>Mock Preview Panel</div>
 }));
 
+// Mock useAutoSave to prevent side effects in tests
+jest.mock('../../src/hooks/useAutoSave', () => ({
+  useAutoSave: () => {},
+}));
+
 describe('App', () => {
+  const initialState = useProjectStore.getState();
   beforeEach(() => {
-     jest.clearAllMocks();
-     useProjectStore.setState({
-         assets: {},
-         tracks: {},
-         clips: {},
-         trackOrder: [],
-         selectedAssetId: null
-     });
+    useProjectStore.setState(initialState, true);
+    (AssetLoader.loadAsset as jest.Mock).mockClear();
 
      // Default mock implementation
      (AssetLoader.loadAsset as jest.Mock).mockImplementation(async (file) => ({
@@ -36,6 +36,10 @@ describe('App', () => {
          src: 'mock-src',
          file
      }));
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   it('renders the application shell with all panels', () => {
@@ -60,10 +64,12 @@ describe('App', () => {
 
     await user.upload(input, file);
 
-    // Expect the asset to appear in the library list
-    // use findByText to wait for async state update
-    const items = await screen.findAllByText('video.mp4');
-    expect(items.length).toBeGreaterThan(0);
+    // check that the store has been updated
+    await waitFor(() => {
+        const { assets } = useProjectStore.getState();
+        expect(Object.values(assets).length).toBe(1);
+        expect(Object.values(assets)[0].name).toBe('video.mp4');
+    });
   });
 
   it('handles asset loading error gracefully', async () => {

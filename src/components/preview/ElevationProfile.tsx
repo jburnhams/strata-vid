@@ -88,6 +88,11 @@ const ElevationProfile: React.FC<ElevationProfileProps> = ({
 
   const currentX = currentPos?.dist !== undefined ? xScale(currentPos.dist) : -1;
 
+  const firstTime = stats.pointsWithDist[0]?.time ?? 0;
+  const lastTime = stats.pointsWithDist[stats.pointsWithDist.length - 1]?.time ?? 0;
+  const gpxTime = (syncOffset || firstTime) + currentTime * 1000;
+  const isTimeInRange = gpxTime >= firstTime && gpxTime <= lastTime;
+
   return (
     <div className={className} style={style} data-testid="elevation-profile">
       <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} preserveAspectRatio="none" style={{ width: '100%', height: '100%' }}>
@@ -105,7 +110,7 @@ const ElevationProfile: React.FC<ElevationProfileProps> = ({
         <path d={pathData} fill="none" stroke="#007acc" strokeWidth="2" />
 
         {/* Current position indicator */}
-        {currentX > 0 && (
+        {isTimeInRange && currentX > 0 && (
             <g>
                 <line x1={currentX} y1={padding.top} x2={currentX} y2={svgHeight - padding.bottom} stroke="yellow" strokeWidth="1" strokeDasharray="4 2" />
                 {currentPos && <circle cx={currentX} cy={yScale(currentPos.ele ?? 0)} r="4" fill="yellow" />}

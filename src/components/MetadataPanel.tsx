@@ -70,10 +70,26 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                                     className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
                                  >
                                      <option value="osm">OpenStreetMap</option>
-                                     <option value="mapbox">Mapbox (Demo)</option>
-                                     <option value="satellite">Satellite (Esri)</option>
+                                     <option value="dark">Dark</option>
+                                     <option value="terrain">Terrain</option>
+                                     <option value="satellite">Satellite</option>
+                                     <option value="custom">Custom URL</option>
                                  </select>
                              </div>
+
+                            {activeClip.properties.mapStyle === 'custom' && (
+                                <div className="mb-3">
+                                    <label htmlFor="custom-map-style-url" className="text-xs text-gray-500 block mb-1">Custom Tile URL</label>
+                                    <input
+                                        id="custom-map-style-url"
+                                        type="text"
+                                        placeholder="https://.../{z}/{x}/{y}.png"
+                                        value={activeClip.properties.customMapStyleUrl || ''}
+                                        onChange={(e) => updateClipProperties(activeClip.id, { customMapStyleUrl: e.target.value })}
+                                        className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
+                                    />
+                                </div>
+                            )}
 
                             <div className="flex items-center my-3">
                                 <input

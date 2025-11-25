@@ -173,7 +173,7 @@ function App() {
       </div>
 
       {/* Library */}
-      <div className="[grid-area:library] border-r border-neutral-700 bg-neutral-800 flex flex-col overflow-hidden">
+      <div className="[grid-area:library] border-r border-neutral-700 bg-neutral-800 flex flex-col overflow-hidden" data-testid="library-panel-container">
         <LibraryPanel
             assets={assets}
             selectedAssetId={selectedAssetId}
@@ -188,7 +188,7 @@ function App() {
       </div>
 
       {/* Metadata */}
-      <div className="[grid-area:metadata] border-l border-neutral-700 bg-neutral-800 flex flex-col overflow-hidden">
+      <div className="[grid-area:metadata] border-l border-neutral-700 bg-neutral-800 flex flex-col overflow-hidden" data-testid="metadata-panel-container">
         <MetadataPanel activeAsset={activeAsset} />
       </div>
 

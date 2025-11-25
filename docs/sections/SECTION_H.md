@@ -42,11 +42,11 @@
   - Apply via CSS filters (preview) and canvas (export)
   - Files: `src/types.ts`, rendering logic
 
-- [ ] **H8: Keyframe animation** (15-20 hours, HARD)
+- [x] **H8: Keyframe animation** (15-20 hours, HARD)
   - Animate clip properties over time
   - [x] Data Model (Store & Types)
-  - [ ] Keyframe editor UI
-  - [ ] Interpolation Logic (Rendering)
+  - [x] Keyframe editor UI
+  - [x] Interpolation Logic (Rendering)
   - Files: `src/components/KeyframeEditor.tsx` (new)
 
 ## Success Criteria

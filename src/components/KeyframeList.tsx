@@ -43,7 +43,7 @@ export const KeyframeList: React.FC<KeyframeListProps> = ({ clipId, property, la
   };
 
   return (
-    <div className="mb-4 bg-neutral-900 rounded p-2 border border-neutral-700">
+    <div className="mb-4 bg-neutral-900 rounded p-2 border border-neutral-700" data-testid={`keyframe-list-${property}`}>
       <div className="flex items-center justify-between mb-2">
         <label className="text-xs text-gray-400 font-bold uppercase tracking-wider">{label}</label>
         <button

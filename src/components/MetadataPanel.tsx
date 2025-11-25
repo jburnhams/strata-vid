@@ -226,7 +226,127 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                     </>
                 )}
 
-                {activeClip.type !== 'map' && (
+                {activeClip.type === 'data' && (
+                    <>
+                        <MapSyncControl clipId={activeClip.id} className="mb-6" />
+                        <div className="border-t border-neutral-700 pt-4">
+                            <h4 className="text-sm font-bold mb-3">Display Fields</h4>
+                            <div className="space-y-2">
+                                {['showSpeed', 'showDistance', 'showElevation'].map((field) => (
+                                    <div key={field} className="flex items-center">
+                                        <input
+                                            id={`data-${field}`}
+                                            type="checkbox"
+                                            checked={activeClip.properties.dataOverlay?.[field] ?? true}
+                                            onChange={(e) => updateClipProperties(activeClip.id, {
+                                                dataOverlay: { ...activeClip.properties.dataOverlay, [field]: e.target.checked }
+                                            })}
+                                            className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 ring-offset-gray-800 focus:ring-2"
+                                        />
+                                        <label htmlFor={`data-${field}`} className="ml-2 text-sm text-gray-300">
+                                            Show {field.replace('show', '')}
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="border-t border-neutral-700 pt-4 mt-4">
+                            <h4 className="text-sm font-bold mb-3">Units</h4>
+                            <div className="space-y-3">
+                                <div>
+                                    <label htmlFor="speed-unit" className="text-xs text-gray-500 block mb-1">Speed Unit</label>
+                                    <select
+                                        id="speed-unit"
+                                        value={activeClip.properties.dataOverlay?.speedUnit || 'kmh'}
+                                        onChange={(e) => updateClipProperties(activeClip.id, {
+                                            dataOverlay: { ...activeClip.properties.dataOverlay, speedUnit: e.target.value }
+                                        })}
+                                        className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
+                                    >
+                                        <option value="kmh">km/h</option>
+                                        <option value="mph">mph</option>
+                                        <option value="m/s">m/s</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label htmlFor="distance-unit" className="text-xs text-gray-500 block mb-1">Distance Unit</label>
+                                    <select
+                                        id="distance-unit"
+                                        value={activeClip.properties.dataOverlay?.distanceUnit || 'km'}
+                                        onChange={(e) => updateClipProperties(activeClip.id, {
+                                            dataOverlay: { ...activeClip.properties.dataOverlay, distanceUnit: e.target.value }
+                                        })}
+                                        className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
+                                    >
+                                        <option value="km">km</option>
+                                        <option value="mi">miles</option>
+                                        <option value="m">meters</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label htmlFor="elevation-unit" className="text-xs text-gray-500 block mb-1">Elevation Unit</label>
+                                    <select
+                                        id="elevation-unit"
+                                        value={activeClip.properties.dataOverlay?.elevationUnit || 'm'}
+                                        onChange={(e) => updateClipProperties(activeClip.id, {
+                                            dataOverlay: { ...activeClip.properties.dataOverlay, elevationUnit: e.target.value }
+                                        })}
+                                        className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
+                                    >
+                                        <option value="m">meters</option>
+                                        <option value="ft">feet</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {activeClip.type === 'data' && (
+                    <div className="border-t border-neutral-700 pt-4 mt-4">
+                        <h4 className="text-sm font-bold mb-3">Text Styling</h4>
+                        <div className="space-y-3">
+                            <div>
+                                <label htmlFor="font-size" className="text-xs text-gray-500 block mb-1">Font Size</label>
+                                <input
+                                    id="font-size"
+                                    type="number"
+                                    value={activeClip.textStyle?.fontSize || 16}
+                                    onChange={(e) => updateClipProperties(activeClip.id, {
+                                        textStyle: { ...activeClip.textStyle, fontSize: parseInt(e.target.value) }
+                                    })}
+                                    className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
+                                />
+                            </div>
+                            <div>
+                                <label htmlFor="text-color" className="text-xs text-gray-500 block mb-1">Text Color</label>
+                                <input
+                                    id="text-color"
+                                    type="color"
+                                    value={activeClip.textStyle?.color || '#ffffff'}
+                                    onChange={(e) => updateClipProperties(activeClip.id, {
+                                        textStyle: { ...activeClip.textStyle, color: e.target.value }
+                                    })}
+                                    className="w-full h-8 bg-neutral-900 border border-neutral-700 rounded cursor-pointer"
+                                />
+                            </div>
+                            <div>
+                                <label htmlFor="background-color" className="text-xs text-gray-500 block mb-1">Background Color</label>
+                                <input
+                                    id="background-color"
+                                    type="color"
+                                    value={activeClip.textStyle?.backgroundColor || '#000000'}
+                                    onChange={(e) => updateClipProperties(activeClip.id, {
+                                        textStyle: { ...activeClip.textStyle, backgroundColor: e.target.value }
+                                    })}
+                                    className="w-full h-8 bg-neutral-900 border border-neutral-700 rounded cursor-pointer"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeClip.type !== 'map' && activeClip.type !== 'data' && (
                      <div className="space-y-6">
                          <div>
                             <div className="flex justify-between mb-1">

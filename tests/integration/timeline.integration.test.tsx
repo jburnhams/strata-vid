@@ -1,25 +1,38 @@
 import React from 'react';
 import { describe, it, expect } from '@jest/globals';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import App from '@/src/App';
-import { useProjectStore } from '@/src/store/useProjectStore';
+import { render, screen, waitFor, act } from '@testing-library/react';
+import App from '../../src/App';
+import { useProjectStore } from '../../src/store/useProjectStore';
+import { AssetLoader } from '../../src/services/AssetLoader';
 
 // Mock URL.createObjectURL
 global.URL.createObjectURL = jest.fn(() => 'mock-url');
+global.URL.revokeObjectURL = jest.fn();
 
-// Mock AssetLoader to avoid actual file processing/mediabunny
-jest.mock('@/src/services/AssetLoader', () => ({
-  AssetLoader: {
-    loadAsset: jest.fn(async (file: File) => ({
-      id: 'mock-asset-id',
-      name: file.name,
-      type: 'video',
-      duration: 60,
-      src: 'mock-url',
-      file
-    }))
-  }
+// Mock AssetLoader without factory
+jest.mock('../../src/services/AssetLoader');
+
+// Mock leaflet completely to avoid JSDOM issues
+jest.mock('leaflet', () => ({
+    icon: jest.fn(),
+    divIcon: jest.fn(),
+    Marker: {
+        prototype: {
+            options: {}
+        }
+    },
+    Map: jest.fn(),
+    TileLayer: jest.fn(),
+}));
+
+// Mock react-leaflet
+jest.mock('react-leaflet', () => ({
+    MapContainer: ({ children }: any) => <div>{children}</div>,
+    TileLayer: () => <div>TileLayer</div>,
+    Marker: () => <div>Marker</div>,
+    Popup: () => <div>Popup</div>,
+    GeoJSON: () => <div>GeoJSON</div>,
+    useMap: () => ({ fitBounds: jest.fn() }),
 }));
 
 // We need to mock ResizeObserver for the TimelineContainer/Ruler
@@ -31,28 +44,62 @@ global.ResizeObserver = class ResizeObserver {
 
 describe('Timeline Integration', () => {
   beforeEach(() => {
-    useProjectStore.setState({
+    jest.clearAllMocks();
+
+    // Setup AssetLoader mocks
+    (AssetLoader.loadAsset as jest.Mock).mockImplementation(async (file: File) => ({
+      id: 'mock-asset-id',
+      name: file.name,
+      type: 'video',
+      duration: 60,
+      src: 'mock-url',
+      file
+    }));
+    (AssetLoader.loadThumbnail as jest.Mock).mockResolvedValue('mock-thumb-url');
+    (AssetLoader.revokeAsset as jest.Mock).mockImplementation(() => {});
+    (AssetLoader.determineType as jest.Mock).mockReturnValue('video');
+
+    // Reset store safely using loadProject action
+    useProjectStore.getState().loadProject({
+      id: 'test-project',
+      settings: {
+        width: 1920,
+        height: 1080,
+        fps: 30,
+        duration: 0,
+        previewQuality: 'high',
+        snapToGrid: true,
+        allowOverlaps: false
+      },
       assets: {},
       tracks: {},
       clips: {},
-      trackOrder: [],
-      selectedAssetId: null
+      trackOrder: []
     });
   });
 
   it('automatically adds a track and clip when a video is uploaded', async () => {
-    const user = userEvent.setup();
-    render(<App />);
+    const { container } = render(<App />);
 
     // 1. Upload a video
     // Select the library input (accepts video/gpx), not the project load input
-    const input = document.querySelector('input[accept*="video"]') as HTMLInputElement;
+    const input = container.querySelector('input[accept*="video"]') as HTMLInputElement;
     const file = new File(['content'], 'test-video.mp4', { type: 'video/mp4' });
-    await user.upload(input, file);
+
+    // Manually trigger change event
+    await act(async () => {
+        Object.defineProperty(input, 'files', {
+            value: [file]
+        });
+        const event = new Event('change', { bubbles: true });
+        input.dispatchEvent(event);
+    });
 
     // 2. Wait for asset to be loaded and added to store
     await waitFor(() => {
-      expect(screen.getAllByText('test-video.mp4').length).toBeGreaterThan(0);
+      // Use getAllByText because it might appear in multiple places (list + tooltip etc)
+      const elements = screen.getAllByText('test-video.mp4');
+      expect(elements.length).toBeGreaterThan(0);
     });
 
     // 3. Verify Timeline state
@@ -64,15 +111,10 @@ describe('Timeline Integration', () => {
     });
 
     // Check if the clip is rendered in the timeline
-    // ClipItem renders the ID by default, but maybe we can verify its existence by class or structure
-    // Or, since we know the ID generation in App.tsx is random, we might look for the element logic.
-    // But wait, App.tsx uses `Math.random().toString(36).substr(2, 9)` for clip ID.
-    // It will be displayed in the ClipItem: `{clip.id}`.
-
-    // We can check if *any* clip item is present.
-    // ClipItem has `rounded border border-blue-500 ...`
-    const clips = document.querySelectorAll('.border-blue-500');
-    expect(clips.length).toBeGreaterThan(0);
+    await waitFor(() => {
+        const clips = document.querySelectorAll('.border-blue-500');
+        expect(clips.length).toBeGreaterThan(0);
+    });
 
     // Verify Ruler is present
     const canvas = document.querySelector('canvas');

@@ -115,6 +115,7 @@ export interface Clip {
   start: number; // Global timeline start (seconds)
   duration: number; // Playback duration (seconds)
   offset: number; // Source media start time (trimming)
+  volume?: number; // Audio volume (0-1)
   properties: OverlayProperties;
   textStyle?: TextStyle;
   type: 'video' | 'audio' | 'image' | 'map' | 'text' | 'html';
@@ -130,6 +131,7 @@ export interface Track {
   id: string;
   type: 'video' | 'audio' | 'overlay';
   label: string;
+  volume?: number; // Track volume (0-1)
   isMuted: boolean;
   isLocked: boolean;
   clips: string[]; // Array of Clip IDs

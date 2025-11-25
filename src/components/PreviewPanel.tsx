@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useProjectStore } from '../store/useProjectStore';
 import { VideoPlayer } from './preview/VideoPlayer';
+import { AudioPlayer } from './preview/AudioPlayer';
 import { OverlayRenderer } from './preview/OverlayRenderer';
 import { TransportControls } from './TransportControls';
 import { usePlaybackLoop } from '../hooks/usePlaybackLoop';
@@ -111,7 +112,11 @@ export const PreviewPanel: React.FC = () => {
              >
                 {activeClips.map(clip => {
                     const asset = assets[clip.assetId];
-                    if (!asset && clip.type !== 'text') return null; // Text might not have asset
+                    const track = tracks[clip.trackId];
+                    if ((!asset && clip.type !== 'text') || !track) return null; // Text might not have asset
+
+                    // Calculate total volume (Track * Clip)
+                    const totalVolume = (track.volume ?? 1) * (clip.volume ?? 1);
 
                     if (clip.type === 'video' && asset) {
                         return (
@@ -122,6 +127,19 @@ export const PreviewPanel: React.FC = () => {
                                 currentTime={currentTime}
                                 isPlaying={isPlaying}
                                 playbackRate={playbackRate}
+                                volume={totalVolume}
+                            />
+                        );
+                    } else if (clip.type === 'audio' && asset) {
+                        return (
+                            <AudioPlayer
+                                key={clip.id}
+                                clip={clip}
+                                asset={asset}
+                                currentTime={currentTime}
+                                isPlaying={isPlaying}
+                                playbackRate={playbackRate}
+                                volume={totalVolume}
                             />
                         );
                     } else {

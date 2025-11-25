@@ -16,6 +16,8 @@ export const createTimelineSlice: StateCreator<
   selectedClipId: null,
   addTrack: (track) =>
     set((state) => {
+      // Ensure default volume
+      if (track.volume === undefined) track.volume = 1;
       state.tracks[track.id] = track;
       state.trackOrder.push(track.id);
     }),
@@ -55,6 +57,8 @@ export const createTimelineSlice: StateCreator<
     set((state) => {
       const track = state.tracks[clip.trackId];
       if (track) {
+        // Ensure default volume
+        if (clip.volume === undefined) clip.volume = 1;
         state.clips[clip.id] = clip;
         track.clips.push(clip.id);
       }
@@ -285,6 +289,27 @@ export const createTimelineSlice: StateCreator<
       const clip = state.clips[id];
       if (clip) {
         clip.syncOffset = syncOffset;
+      }
+    }),
+  updateClipVolume: (id, volume) =>
+    set((state) => {
+      const clip = state.clips[id];
+      if (clip) {
+        clip.volume = Math.max(0, Math.min(1, volume));
+      }
+    }),
+  updateTrackVolume: (id, volume) =>
+    set((state) => {
+      const track = state.tracks[id];
+      if (track) {
+        track.volume = Math.max(0, Math.min(1, volume));
+      }
+    }),
+  updateTrack: (id, updates) =>
+    set((state) => {
+      const track = state.tracks[id];
+      if (track) {
+        Object.assign(track, updates);
       }
     }),
   updateClipProperties: (id, properties) =>

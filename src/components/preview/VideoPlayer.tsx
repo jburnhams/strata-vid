@@ -8,6 +8,7 @@ interface VideoPlayerProps {
   currentTime: number; // Global time
   isPlaying: boolean;
   playbackRate: number;
+  volume: number;
 }
 
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({
@@ -16,12 +17,32 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   currentTime,
   isPlaying,
   playbackRate,
+  volume,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Calculate where the video should be in its own timeline
   const clipRate = clip.playbackRate || 1;
   const expectedVideoTime = Math.max(0, (currentTime - clip.start) * clipRate + clip.offset);
+
+  // Transition Logic
+  let effectiveOpacity = clip.properties.opacity;
+  let effectiveVolume = volume;
+  let clipPath: string | undefined;
+
+  if (clip.transitionIn) {
+    const t = currentTime - clip.start;
+    if (t >= 0 && t < clip.transitionIn.duration) {
+      const progress = t / clip.transitionIn.duration;
+      if (clip.transitionIn.type === 'crossfade' || clip.transitionIn.type === 'fade') {
+        effectiveOpacity *= progress;
+        effectiveVolume *= progress;
+      } else if (clip.transitionIn.type === 'wipe') {
+        const p = progress * 100;
+        clipPath = `polygon(0 0, ${p}% 0, ${p}% 100%, 0 100%)`;
+      }
+    }
+  }
 
   useEffect(() => {
     const video = videoRef.current;
@@ -31,6 +52,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     const effectiveRate = playbackRate * clipRate;
     if (Math.abs(video.playbackRate - effectiveRate) > 0.01) {
       video.playbackRate = effectiveRate;
+    }
+
+    // Sync Volume
+    if (Math.abs(video.volume - effectiveVolume) > 0.01) {
+       video.volume = Math.max(0, Math.min(1, effectiveVolume));
     }
 
     // Sync Time
@@ -56,7 +82,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     } else if (!isPlaying && !video.paused) {
       video.pause();
     }
-  }, [currentTime, isPlaying, playbackRate, expectedVideoTime, asset.src]);
+  }, [currentTime, isPlaying, playbackRate, expectedVideoTime, asset.src, effectiveVolume]);
 
   // Helper to get animated value
   const getValue = (prop: keyof OverlayProperties, defaultValue: any) => {
@@ -110,7 +136,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       ref={videoRef}
       src={asset.src}
       style={style}
-      muted
       playsInline
     />
   );

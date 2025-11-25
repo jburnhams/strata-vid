@@ -20,6 +20,8 @@ export const TimelinePanel: React.FC = () => {
   const removeClip = useProjectStore((state) => state.removeClip);
   const addTrack = useProjectStore((state) => state.addTrack);
   const removeTrack = useProjectStore((state) => state.removeTrack);
+  const updateTrack = useProjectStore((state) => state.updateTrack);
+  const updateTrackVolume = useProjectStore((state) => state.updateTrackVolume);
   const addMarker = useProjectStore((state) => state.addMarker);
   const selectClip = useProjectStore((state) => state.selectClip);
   const setSettings = useProjectStore((state) => state.setSettings);
@@ -82,6 +84,8 @@ export const TimelinePanel: React.FC = () => {
         onAddTransition={addTransition}
         onRemoveClip={removeClip}
         onRemoveTrack={removeTrack}
+        onUpdateTrack={updateTrack}
+        onUpdateTrackVolume={updateTrackVolume}
         onAddTrack={handleAddTrack}
         onAddMarker={handleAddMarker}
         selectedClipId={selectedClipId}

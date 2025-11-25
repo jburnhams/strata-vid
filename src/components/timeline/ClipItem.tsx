@@ -139,6 +139,24 @@ export const ClipItem: React.FC<ClipItemProps> = ({
         />
       )}
 
+      {/* Audio Waveform */}
+      {asset?.waveform && (
+        <div className="absolute inset-0 z-0 opacity-60 pointer-events-none flex items-center overflow-hidden">
+          <svg width="100%" height="100%" preserveAspectRatio="none" className="text-white/70">
+            {asset.waveform.map((val, i) => (
+              <rect
+                key={i}
+                x={`${i * (100 / asset.waveform!.length)}%`}
+                y={`${50 - val * 40}%`}
+                width={`${100 / asset.waveform!.length}%`}
+                height={`${val * 80}%`}
+                fill="currentColor"
+              />
+            ))}
+          </svg>
+        </div>
+      )}
+
       <span className="px-2 truncate z-10 font-medium drop-shadow-md">
         {clip.id}
       </span>

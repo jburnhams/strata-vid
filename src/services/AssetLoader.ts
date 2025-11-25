@@ -145,6 +145,36 @@ export class AssetLoader {
     }
   }
 
+  static async extractAudioFromVideo(videoAsset: Asset): Promise<Asset> {
+    if (videoAsset.type !== 'video') {
+      throw new Error('Asset is not a video');
+    }
+
+    const id = crypto.randomUUID();
+    const asset: Asset = {
+      id,
+      name: `${videoAsset.name} (Audio)`,
+      type: 'audio',
+      src: videoAsset.src,
+      file: videoAsset.file,
+      duration: videoAsset.duration,
+    };
+
+    if (videoAsset.file) {
+      await this.enrichAudioMetadata(asset, videoAsset.file);
+    } else {
+        try {
+            const response = await fetch(videoAsset.src);
+            const blob = await response.blob();
+            await this.enrichAudioMetadata(asset, blob);
+        } catch (e) {
+            console.warn("Failed to extract audio waveform from video source", e);
+        }
+    }
+
+    return asset;
+  }
+
   private static async generateVideoThumbnail(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const video = document.createElement('video');

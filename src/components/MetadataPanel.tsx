@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Asset, ProjectSettings } from '../types';
+import { Asset, DataOverlayOptions, ProjectSettings } from '../types';
 import { useProjectStore } from '../store/useProjectStore';
 import { MapSyncControl } from './MapSyncControl';
 import { KeyframeList } from './KeyframeList';
@@ -232,7 +232,7 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                         <div className="border-t border-neutral-700 pt-4">
                             <h4 className="text-sm font-bold mb-3">Display Fields</h4>
                             <div className="space-y-2">
-                                {['showSpeed', 'showDistance', 'showElevation'].map((field) => (
+                                {(['showSpeed', 'showDistance', 'showElevation'] as const).map((field: keyof Pick<DataOverlayOptions, 'showSpeed' | 'showDistance' | 'showElevation'>) => (
                                     <div key={field} className="flex items-center">
                                         <input
                                             id={`data-${field}`}

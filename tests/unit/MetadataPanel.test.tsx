@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, act, within } from '@testing-library/react';
+import { render, screen, fireEvent, act, within, waitFor } from '@testing-library/react';
 import { MetadataPanel } from '../../src/components/MetadataPanel';
 import { Asset } from '../../src/types';
 import { useProjectStore } from '../../src/store/useProjectStore';
@@ -114,19 +114,27 @@ describe('MetadataPanel', () => {
       expect(useProjectStore.getState().clips['clip-map'].properties.mapZoom).toBe(15);
 
       const styleSelect = screen.getByLabelText(/Map Style/);
-      fireEvent.change(styleSelect, { target: { value: 'mapbox' } });
-      expect(useProjectStore.getState().clips['clip-map'].properties.mapStyle).toBe('mapbox');
+      act(() => {
+        fireEvent.change(styleSelect, { target: { value: 'mapbox' } });
+      });
+      waitFor(() => expect(useProjectStore.getState().clips['clip-map'].properties.mapStyle).toBe('mapbox'));
 
       const colorInput = screen.getByLabelText(/Track Color/);
-      fireEvent.change(colorInput, { target: { value: '#ff0000' } });
+      act(() => {
+        fireEvent.change(colorInput, { target: { value: '#ff0000' } });
+      });
       expect(useProjectStore.getState().clips['clip-map'].properties.trackStyle?.color).toBe('#ff0000');
 
       const widthInput = screen.getByLabelText(/Track Width/);
-      fireEvent.change(widthInput, { target: { value: '8' } });
+      act(() => {
+        fireEvent.change(widthInput, { target: { value: '8' } });
+      });
       expect(useProjectStore.getState().clips['clip-map'].properties.trackStyle?.weight).toBe(8);
 
       const markerColorInput = screen.getByLabelText(/Marker Color/);
-      fireEvent.change(markerColorInput, { target: { value: '#00ff00' } });
+      act(() => {
+        fireEvent.change(markerColorInput, { target: { value: '#00ff00' } });
+      });
       expect(useProjectStore.getState().clips['clip-map'].properties.markerStyle?.color).toBe('#00ff00');
   });
 

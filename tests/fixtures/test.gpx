@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="GPSBabel - http://www.gpsbabel.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+  <metadata>
+    <time>2023-01-01T10:00:00Z</time>
+  </metadata>
+  <trk>
+    <name>test</name>
+    <trkseg>
+      <trkpt lat="10" lon="10">
+        <ele>10</ele>
+        <time>2023-01-01T10:00:00Z</time>
+      </trkpt>
+      <trkpt lat="20" lon="20">
+        <ele>20</ele>
+        <time>2023-01-01T10:00:10Z</time>
+      </trkpt>
+      <trkpt lat="30" lon="30">
+        <ele>30</ele>
+        <time>2023-01-01T10:00:20Z</time>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>

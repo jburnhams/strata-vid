@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, act } from '@testing-library/react';
-import { PreviewPanel } from '../../src/components/PreviewPanel';
+import App from '../../src/App';
 import { useProjectStore } from '../../src/store/useProjectStore';
 import '@testing-library/jest-dom';
 import { Asset, Clip, Track } from '../../src/types';
@@ -97,11 +97,12 @@ describe('Map Multi-Track Integration', () => {
                  clips: { 'clip-map': clip },
                  tracks: { 'track-1': track },
                  trackOrder: ['track-1'],
-                 currentTime: 0
+                 currentTime: 0,
+                 selectedClipId: 'clip-map'
              });
         });
 
-        const { findAllByTestId } = render(<PreviewPanel />);
+        const { findAllByTestId } = render(<App />);
 
         // We expect markers for both tracks
         // At t=0 (video) -> t=gpxStartTime (gpx)

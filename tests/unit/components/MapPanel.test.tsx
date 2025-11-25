@@ -84,4 +84,11 @@ describe('MapPanel', () => {
       const tileLayer = screen.getByTestId('tile-layer');
       expect(tileLayer).toHaveAttribute('data-url', expect.stringContaining('openstreetmap'));
   });
+
+  it('uses custom URL when mapStyle is "custom"', () => {
+    const customUrl = 'https://my-custom-tile-server.com/{z}/{x}/{y}.png';
+    render(<MapPanel mapStyle="custom" customMapStyleUrl={customUrl} />);
+    const tileLayer = screen.getByTestId('tile-layer');
+    expect(tileLayer).toHaveAttribute('data-url', customUrl);
+  });
 });

@@ -43,7 +43,8 @@ interface MapPanelProps {
   syncOffset?: number; // Offset in ms between video time 0 and GPX time
 
   // Styling
-  mapStyle?: 'osm' | 'mapbox' | 'satellite';
+  mapStyle?: 'osm' | 'mapbox' | 'satellite' | 'dark' | 'terrain' | 'custom' | string; // string for custom URL
+  customMapStyleUrl?: string;
   trackStyle?: TrackStyle;
   markerStyle?: MarkerStyle;
 
@@ -51,15 +52,18 @@ interface MapPanelProps {
   heatmapPoints?: GpxPoint[];
 }
 
-const TILE_PROVIDERS = {
+const TILE_PROVIDERS: Record<string, { url: string, attribution: string }> = {
     osm: {
         url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     },
-    mapbox: {
-        // Fallback to OSM as we don't have a token, but structure is here
-        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    dark: {
+        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    },
+    terrain: {
+        url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+        attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
     },
     satellite: {
         url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -150,9 +154,18 @@ export const MapPanel: React.FC<MapPanelProps> = ({
   syncOffset = 0,
   trackStyle,
   markerStyle,
-  heatmapPoints
+  heatmapPoints,
+  customMapStyleUrl,
 }) => {
-  const tileProvider = TILE_PROVIDERS[mapStyle] || TILE_PROVIDERS.osm;
+  const tileProvider = useMemo(() => {
+    if (mapStyle === 'custom' && customMapStyleUrl) {
+      return { url: customMapStyleUrl, attribution: 'Custom Tile Layer' };
+    }
+    if (mapStyle && TILE_PROVIDERS[mapStyle]) {
+      return TILE_PROVIDERS[mapStyle];
+    }
+    return TILE_PROVIDERS.osm;
+  }, [mapStyle, customMapStyleUrl]);
 
   // normalize tracks
   const effectiveTracks = useMemo(() => {
@@ -226,6 +239,15 @@ export const MapPanel: React.FC<MapPanelProps> = ({
           {heatmapPoints && <HeatmapOverlay points={heatmapPoints} />}
         </MapContainer>
       </div>
+      {primaryTrack && primaryTrack.gpxPoints && (
+        <div style={{ flex: '0 0 25%', padding: '0 1rem', backgroundColor: '#2d3748' }}>
+            <ElevationProfile
+              gpxPoints={primaryTrack.gpxPoints}
+              currentTime={currentTime}
+              syncOffset={primaryTrack.syncOffset}
+            />
+        </div>
+      )}
     </div>
   );
 };

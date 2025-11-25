@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useProjectStore } from '../store/useProjectStore';
 import { VideoPlayer } from './preview/VideoPlayer';
 import { OverlayRenderer } from './preview/OverlayRenderer';
+import { MapPanel } from './MapPanel';
 import { TransportControls } from './TransportControls';
 import { usePlaybackLoop } from '../hooks/usePlaybackLoop';
 import { Clip, ProjectSettings } from '../types';
@@ -111,7 +112,7 @@ export const PreviewPanel: React.FC = () => {
              >
                 {activeClips.map(clip => {
                     const asset = assets[clip.assetId];
-                    if (!asset && clip.type !== 'text') return null; // Text might not have asset
+                    if (!asset && clip.type !== 'text' && clip.type !== 'html') return null;
 
                     if (clip.type === 'video' && asset) {
                         return (
@@ -124,17 +125,17 @@ export const PreviewPanel: React.FC = () => {
                                 playbackRate={playbackRate}
                             />
                         );
-                    } else {
-                        return (
-                            <OverlayRenderer
-                                key={clip.id}
-                                clip={clip}
-                                asset={asset}
-                                currentTime={currentTime}
-                                allAssets={assets}
-                            />
-                        );
                     }
+                    // All non-video clips are handled by OverlayRenderer
+                    return (
+                        <OverlayRenderer
+                            key={clip.id}
+                            clip={clip}
+                            asset={asset}
+                            currentTime={currentTime}
+                            allAssets={assets}
+                        />
+                    );
                 })}
              </div>
 

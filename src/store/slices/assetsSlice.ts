@@ -1,5 +1,6 @@
 import { StateCreator } from 'zustand';
 import { AssetsSlice, StoreState } from '../types';
+import { AssetLoader } from '../../services/AssetLoader';
 
 export const createAssetsSlice: StateCreator<
   StoreState,
@@ -31,4 +32,24 @@ export const createAssetsSlice: StateCreator<
     set((state) => {
       state.selectedAssetId = id;
     }),
+  reprocessGpxAsset: async (id, tolerance) => {
+    const asset = useProjectStore.getState().assets[id];
+    if (asset && asset.type === 'gpx') {
+      try {
+        const updatedData = await AssetLoader.reprocessGpxAsset(asset, tolerance);
+        set((state) => {
+          const targetAsset = state.assets[id];
+          if (targetAsset) {
+            Object.assign(targetAsset, updatedData);
+          }
+        });
+      } catch (error) {
+        console.error('Failed to reprocess GPX asset:', error);
+      }
+    }
+  },
 });
+
+// Need to import useProjectStore at the end to avoid circular dependency issues
+// during store initialization.
+import { useProjectStore } from '../useProjectStore';

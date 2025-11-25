@@ -32,6 +32,7 @@ export const LibraryPanel: React.FC<LibraryPanelProps> = ({
             <label className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm font-medium cursor-pointer transition-colors" aria-label="Add Asset">
             + Add
             <input
+                data-testid="add-asset-input"
                 type="file"
                 multiple
                 accept="video/*,.gpx"

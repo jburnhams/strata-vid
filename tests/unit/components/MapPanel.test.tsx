@@ -95,4 +95,19 @@ describe('MapPanel', () => {
     toggleButton.click();
     expect(onToggle).toHaveBeenCalledTimes(1);
   });
+
+  it('uses custom map style URL when provided', () => {
+    const customUrl = 'https://my-custom-tile.server/{z}/{x}/{y}.png';
+    render(<MapPanel mapStyle="custom" customMapStyleUrl={customUrl} />);
+
+    const tileLayer = screen.getByTestId('tile-layer');
+    expect(tileLayer).toHaveAttribute('data-url', customUrl);
+  });
+
+  it('uses dark map style URL', () => {
+    render(<MapPanel mapStyle="dark" />);
+
+    const tileLayer = screen.getByTestId('tile-layer');
+    expect(tileLayer).toHaveAttribute('data-url', expect.stringContaining('cartocdn'));
+  });
 });

@@ -14,6 +14,7 @@ interface MetadataPanelProps {
 export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAssetId, settings, setSettings }) => {
   const activeAsset = assets.find(a => a.id === selectedAssetId) || null;
   const {
+    reprocessGpxAsset,
     selectedClipId,
     clips,
     updateClipProperties,
@@ -72,8 +73,24 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                                      <option value="osm">OpenStreetMap</option>
                                      <option value="mapbox">Mapbox (Demo)</option>
                                      <option value="satellite">Satellite (Esri)</option>
+                                     <option value="dark">Dark Mode (CARTO)</option>
+                                     <option value="custom">Custom</option>
                                  </select>
                              </div>
+
+                             {activeClip.properties.mapStyle === 'custom' && (
+                                <div className="mb-3">
+                                    <label htmlFor="custom-map-style-url" className="text-xs text-gray-500 block mb-1">Custom Tile URL</label>
+                                    <input
+                                        id="custom-map-style-url"
+                                        type="text"
+                                        placeholder="https://.../{z}/{x}/{y}.png"
+                                        value={activeClip.properties.customMapStyleUrl || ''}
+                                        onChange={(e) => updateClipProperties(activeClip.id, { customMapStyleUrl: e.target.value })}
+                                        className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
+                                    />
+                                </div>
+                             )}
 
                             <div className="flex items-center my-3">
                                 <input
@@ -502,9 +519,19 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                     className="w-full h-2 bg-neutral-900 rounded-lg appearance-none cursor-pointer"
                   />
                   <p className="text-xs text-neutral-500 mt-1">
-                    Higher values reduce detail. Reload asset to apply changes.
+                    Higher values reduce detail.
                   </p>
                 </div>
+                <button
+                  onClick={() => {
+                    if (activeAsset) {
+                      reprocessGpxAsset(activeAsset.id, settings.simplificationTolerance);
+                    }
+                  }}
+                  className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded text-sm transition-colors"
+                >
+                  Re-process GPX
+                </button>
               </div>
             )}
           </div>

@@ -1,10 +1,10 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { useProjectStore } from '../../src/store/useProjectStore';
 import { AssetLoader } from '../../src/services/AssetLoader';
-import { parseGpxFile } from '../../src/utils/gpxParser';
+import * as gpxParser from '../../src/utils/gpxParser';
+import fs from 'fs';
+import path from 'path';
 
-// Mock dependencies
-jest.mock('../../src/utils/gpxParser');
 jest.mock('mediabunny', () => {
     return {
         BlobSource: jest.fn(),
@@ -31,13 +31,9 @@ describe('Integration Flow: Load Asset -> Store Update', () => {
             selectedAssetId: null,
             currentTime: 0,
             isPlaying: false,
-            settings: { width: 1920, height: 1080, fps: 30, duration: 0 }
+            settings: { width: 1920, height: 1080, fps: 30, duration: 0, simplificationTolerance: 0.0001 }
         });
         jest.clearAllMocks();
-    });
-
-    afterEach(() => {
-        jest.restoreAllMocks();
     });
 
     it('should load a video file and add it to the store', async () => {
@@ -60,18 +56,20 @@ describe('Integration Flow: Load Asset -> Store Update', () => {
     });
 
     it('should load a GPX file, add to store, and verify stats', async () => {
-        const file = new File(['<gpx>...</gpx>'], 'track.gpx', { type: 'application/gpx+xml' });
+        const gpxPath = path.join(__dirname, '..', 'fixtures', 'sample.gpx');
+        const gpxContent = fs.readFileSync(gpxPath, 'utf-8');
+        const file = new File([gpxContent], 'sample.gpx', { type: 'application/gpx+xml' });
+        // JSDOM's File.text() is unreliable, so we mock it like in the unit tests.
+        (file as any).text = jest.fn().mockResolvedValue(gpxContent);
 
-        // Mock parser response
-        (parseGpxFile as jest.Mock).mockResolvedValue({
-            geoJson: { type: 'FeatureCollection', features: [] },
-            stats: { distance: { total: 500 } }
-        });
 
         // 1. Load Asset
         const asset = await AssetLoader.loadAsset(file);
         expect(asset.type).toBe('gpx');
-        expect(asset.stats?.distance.total).toBe(500);
+        expect(asset.stats).toBeDefined();
+        expect(asset.stats?.distance.total).toBeCloseTo(136.18, 1);
+        expect(asset.stats?.elevation.gain).toBe(10);
+        expect(asset.gpxPoints).toHaveLength(2);
 
         // 2. Add to Store
         useProjectStore.getState().addAsset(asset);
@@ -79,7 +77,7 @@ describe('Integration Flow: Load Asset -> Store Update', () => {
         // 3. Verify Store
         const updatedStore = useProjectStore.getState();
         expect(updatedStore.assets[asset.id]).toBeDefined();
-        expect(updatedStore.assets[asset.id].stats?.distance.total).toBe(500);
+        expect(updatedStore.assets[asset.id].stats?.distance.total).toBeCloseTo(136.18, 1);
     });
 
     it('should complete a full workflow: load asset -> add track -> add clip -> move clip', async () => {

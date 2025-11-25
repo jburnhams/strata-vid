@@ -1,9 +1,12 @@
 import { AssetLoader } from '../../src/services/AssetLoader';
-import { parseGpxFile } from '../../src/utils/gpxParser';
+import { parseGpxFile, simplifyTrack } from '../../src/utils/gpxParser';
 import { Input } from 'mediabunny';
 
 // Mock dependencies
-jest.mock('../../src/utils/gpxParser');
+jest.mock('../../src/utils/gpxParser', () => ({
+  parseGpxFile: jest.fn(),
+  simplifyTrack: jest.fn(points => points), // Pass-through mock
+}));
 jest.mock('mediabunny');
 
 describe('AssetLoader', () => {
@@ -210,7 +213,8 @@ describe('AssetLoader', () => {
   it('should load a GPX asset', async () => {
     (parseGpxFile as jest.Mock).mockResolvedValue({
       geoJson: {},
-      stats: { time: { duration: 1000 } }
+      stats: { time: { duration: 1000 } },
+      points: [{ time: 0, lat: 0, lon: 0, ele: 0 }]
     });
 
     const asset = await AssetLoader.loadAsset(mockGpxFile);

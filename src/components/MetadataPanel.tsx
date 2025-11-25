@@ -1,17 +1,23 @@
 import React from 'react';
-import { Asset } from '../types';
+import { Asset, ProjectSettings } from '../types';
 import { useProjectStore } from '../store/useProjectStore';
 import { MapSyncControl } from './MapSyncControl';
 import { KeyframeList } from './KeyframeList';
 
 interface MetadataPanelProps {
-  activeAsset: Asset | null;
+  assets: Asset[];
+  selectedAssetId: string | null;
+  settings: ProjectSettings;
+  setSettings: (settings: Partial<ProjectSettings>) => void;
 }
 
-export const MetadataPanel: React.FC<MetadataPanelProps> = ({ activeAsset }) => {
-  const selectedClipId = useProjectStore((state) => state.selectedClipId);
-  const clips = useProjectStore((state) => state.clips);
-  const updateClipProperties = useProjectStore((state) => state.updateClipProperties);
+export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAssetId, settings, setSettings }) => {
+  const activeAsset = assets.find(a => a.id === selectedAssetId) || null;
+  const {
+    selectedClipId,
+    clips,
+    updateClipProperties,
+  } = useProjectStore();
 
   const activeClip = selectedClipId ? clips[selectedClipId] : null;
 
@@ -65,7 +71,41 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ activeAsset }) => 
                                  </select>
                              </div>
 
-                             <div className="mb-3">
+                             <div className="border-t border-neutral-700 pt-4 mt-4">
+                                <h4 className="text-sm font-bold mb-3">Heatmap</h4>
+                                <div className="flex items-center mb-3">
+                                    <input
+                                        id="heatmap-enabled"
+                                        type="checkbox"
+                                        checked={activeClip.properties.heatmap?.enabled || false}
+                                        onChange={(e) => updateClipProperties(activeClip.id, {
+                                            heatmap: { ...activeClip.properties.heatmap, enabled: e.target.checked }
+                                        })}
+                                        className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 ring-offset-gray-800 focus:ring-2"
+                                    />
+                                    <label htmlFor="heatmap-enabled" className="ml-2 text-sm text-gray-300">Enable Heatmap</label>
+                                </div>
+                                {activeClip.properties.heatmap?.enabled && (
+                                    <div className="mb-3">
+                                        <label htmlFor="heatmap-source" className="text-xs text-gray-500 block mb-1">Data Source</label>
+                                        <select
+                                            id="heatmap-source"
+                                            value={activeClip.properties.heatmap?.dataSource || 'speed'}
+                                            onChange={(e) => updateClipProperties(activeClip.id, {
+                                                heatmap: { ...activeClip.properties.heatmap, dataSource: e.target.value }
+                                            })}
+                                            className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
+                                        >
+                                            <option value="speed">Speed</option>
+                                            <option value="elevation">Elevation</option>
+                                        </select>
+                                    </div>
+                                )}
+                             </div>
+
+                             <div className="border-t border-neutral-700 pt-4 mt-4">
+                                <h4 className="text-sm font-bold mb-3">Track Styling</h4>
+                                <div className="mb-3">
                                  <label htmlFor="track-color" className="text-xs text-gray-500 block mb-1">Track Color</label>
                                  <input
                                     id="track-color"
@@ -76,9 +116,8 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ activeAsset }) => 
                                     })}
                                     className="w-full h-8 bg-neutral-900 border border-neutral-700 rounded cursor-pointer"
                                  />
-                             </div>
-
-                             <div className="mb-3">
+                                </div>
+                                <div className="mb-3">
                                  <label htmlFor="track-width" className="text-xs text-gray-500 block mb-1">Track Width</label>
                                  <input
                                     id="track-width"
@@ -90,9 +129,8 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ activeAsset }) => 
                                     })}
                                     className="w-full"
                                  />
-                             </div>
-
-                             <div className="mb-3">
+                                </div>
+                                <div className="mb-3">
                                  <label htmlFor="marker-color" className="text-xs text-gray-500 block mb-1">Marker Color</label>
                                  <input
                                     id="marker-color"
@@ -103,7 +141,8 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ activeAsset }) => 
                                     })}
                                     className="w-full h-8 bg-neutral-900 border border-neutral-700 rounded cursor-pointer"
                                  />
-                             </div>
+                                </div>
+                            </div>
                         </div>
                     </>
                 )}
@@ -244,6 +283,30 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ activeAsset }) => 
                       <div>{new Date(activeAsset.stats.time.duration).toISOString().substr(11, 8)}</div>
                   </div>
                 </div>
+            )}
+
+            {activeAsset.type === 'gpx' && (
+              <div className="space-y-2 border-t border-neutral-700 pt-4">
+                <h5 className="font-bold text-sm mb-2">GPX Processing</h5>
+                <div className="mb-3">
+                  <label htmlFor="gpx-simplification" className="text-xs text-gray-500 block mb-1">
+                    Simplification Tolerance ({settings.simplificationTolerance})
+                  </label>
+                  <input
+                    id="gpx-simplification"
+                    type="range"
+                    min="0"
+                    max="0.001"
+                    step="0.00001"
+                    value={settings.simplificationTolerance}
+                    onChange={(e) => setSettings({ simplificationTolerance: parseFloat(e.target.value) })}
+                    className="w-full h-2 bg-neutral-900 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <p className="text-xs text-neutral-500 mt-1">
+                    Higher values reduce detail. Reload asset to apply changes.
+                  </p>
+                </div>
+              </div>
             )}
           </div>
         ) : (

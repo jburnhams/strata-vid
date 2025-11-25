@@ -1,10 +1,21 @@
-import { parseGPX } from '@we-gold/gpxjs';
+import { parseGPX, parseGPXWithCustomParser } from '@we-gold/gpxjs';
 import { FeatureCollection, Geometry, GeoJsonProperties } from 'geojson';
 import { GpxStats, GpxPoint } from '../types';
+import { DOMParser } from 'xmldom-qsa';
 
 export const parseGpxFile = async (file: File): Promise<{ geoJson: FeatureCollection<Geometry, GeoJsonProperties>; stats: GpxStats | undefined; points: GpxPoint[] }> => {
   const text = await file.text();
-  const [parsedGpx, error] = parseGPX(text);
+  let parsedGpx, error;
+
+  // JSDOM does not have a full DOMParser implementation, so we use a custom one for tests.
+  if (process.env.NODE_ENV === 'test') {
+    const customParseMethod = (txt: string): Document | null => {
+        return new DOMParser().parseFromString(txt, "text/xml")
+    }
+    [parsedGpx, error] = parseGPXWithCustomParser(text, customParseMethod);
+  } else {
+    [parsedGpx, error] = parseGPX(text);
+  }
 
   if (error) {
     throw new Error(`Error parsing GPX: ${error.message}`);
@@ -12,6 +23,17 @@ export const parseGpxFile = async (file: File): Promise<{ geoJson: FeatureCollec
 
   if (!parsedGpx) {
     throw new Error('No GPX data found');
+  }
+
+  // The library can "succeed" on invalid text by returning an empty structure.
+  // A valid GPX file will start with XML declaration or a GPX tag.
+  // If we have no tracks and the file doesn't look like XML, it's an error.
+  if (
+    parsedGpx.tracks.length === 0 &&
+    !text.trim().startsWith('<?xml') &&
+    !text.trim().startsWith('<gpx')
+  ) {
+    throw new Error('Invalid GPX content');
   }
 
   const geoJson = parsedGpx.toGeoJSON();
@@ -81,21 +103,21 @@ export const parseGpxFile = async (file: File): Promise<{ geoJson: FeatureCollec
 };
 
 /**
- * Finds the coordinate at a specific timestamp using linear interpolation.
+ * Finds the coordinate and other data at a specific timestamp using linear interpolation.
  * Assumes points are sorted by time.
  */
-export const getCoordinateAtTime = (points: GpxPoint[], time: number): { lat: number; lon: number } | null => {
+export const getCoordinateAtTime = (points: GpxPoint[], time: number): GpxPoint | null => {
   if (!points || points.length === 0) {
     return null;
   }
 
   // Edge cases: time outside range
   if (time <= points[0].time) {
-    return { lat: points[0].lat, lon: points[0].lon };
+    return points[0];
   }
 
   if (time >= points[points.length - 1].time) {
-    return { lat: points[points.length - 1].lat, lon: points[points.length - 1].lon };
+    return points[points.length - 1];
   }
 
   // Binary search to find the largest index i such that points[i].time <= time
@@ -114,8 +136,8 @@ export const getCoordinateAtTime = (points: GpxPoint[], time: number): { lat: nu
   }
 
   // Should not happen given outer boundary checks, but safe fallback
-  if (idx === -1) return { lat: points[0].lat, lon: points[0].lon };
-  if (idx === points.length - 1) return { lat: points[idx].lat, lon: points[idx].lon };
+  if (idx === -1) return points[0];
+  if (idx === points.length - 1) return points[idx];
 
   const p1 = points[idx];
   const p2 = points[idx + 1];
@@ -123,13 +145,94 @@ export const getCoordinateAtTime = (points: GpxPoint[], time: number): { lat: nu
   // Prevent division by zero if two points have same time
   const timeDiff = p2.time - p1.time;
   if (timeDiff === 0) {
-      return { lat: p1.lat, lon: p1.lon };
+      return p1;
   }
 
   const ratio = (time - p1.time) / timeDiff;
 
-  return {
-    lat: p1.lat + (p2.lat - p1.lat) * ratio,
-    lon: p1.lon + (p2.lon - p1.lon) * ratio
-  };
+  const lat = p1.lat + (p2.lat - p1.lat) * ratio;
+  const lon = p1.lon + (p2.lon - p1.lon) * ratio;
+  const ele = (p1.ele ?? 0) + ((p2.ele ?? 0) - (p1.ele ?? 0)) * ratio;
+  const dist = (p1.dist ?? 0) + ((p2.dist ?? 0) - (p1.dist ?? 0)) * ratio;
+
+  return { time, lat, lon, ele, dist };
+};
+
+// --- Track Simplification (Douglas-Peucker) ---
+
+// Helper to get the perpendicular distance from a point to a line segment.
+// Uses a simplified equirectangular projection, which is fine for small distances.
+function getPerpendicularDistance(p: GpxPoint, start: GpxPoint, end: GpxPoint) {
+    const x = p.lon;
+    const y = p.lat;
+    const x1 = start.lon;
+    const y1 = start.lat;
+    const x2 = end.lon;
+    const y2 = end.lat;
+
+    const A = x - x1;
+    const B = y - y1;
+    const C = x2 - x1;
+    const D = y2 - y1;
+
+    const dot = A * C + B * D;
+    const len_sq = C * C + D * D;
+    const param = len_sq !== 0 ? dot / len_sq : -1;
+
+    let xx, yy;
+
+    if (param < 0) {
+        xx = x1;
+        yy = y1;
+    } else if (param > 1) {
+        xx = x2;
+        yy = y2;
+    } else {
+        xx = x1 + param * C;
+        yy = y1 + param * D;
+    }
+
+    const dx = x - xx;
+    const dy = y - yy;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+
+function douglasPeucker(points: GpxPoint[], epsilon: number): GpxPoint[] {
+    if (points.length < 3) {
+        return points;
+    }
+
+    let dmax = 0;
+    let index = 0;
+    const end = points.length - 1;
+
+    for (let i = 1; i < end; i++) {
+        const d = getPerpendicularDistance(points[i], points[0], points[end]);
+        if (d > dmax) {
+            index = i;
+            dmax = d;
+        }
+    }
+
+    if (dmax > epsilon) {
+        const recResults1 = douglasPeucker(points.slice(0, index + 1), epsilon);
+        const recResults2 = douglasPeucker(points.slice(index), epsilon);
+
+        return recResults1.slice(0, recResults1.length - 1).concat(recResults2);
+    } else {
+        return [points[0], points[end]];
+    }
+}
+
+/**
+ * Simplifies a track using the Douglas-Peucker algorithm.
+ * @param points The array of GPX points to simplify.
+ * @param tolerance A value in degrees. A good starting point is 0.0001 (~11 meters).
+ */
+export const simplifyTrack = (points: GpxPoint[], tolerance: number): GpxPoint[] => {
+    if (tolerance <= 0 || points.length < 3) {
+        return points;
+    }
+    return douglasPeucker(points, tolerance);
 };

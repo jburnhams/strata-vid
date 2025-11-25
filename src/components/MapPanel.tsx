@@ -2,6 +2,8 @@ import React, { useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, GeoJSON as LeafletGeoJSON, useMap } from 'react-leaflet';
 import { LatLngExpression, GeoJSON as LGeoJSON } from 'leaflet';
 import L from 'leaflet';
+import ElevationProfile from './preview/ElevationProfile';
+import HeatmapOverlay from './preview/HeatmapOverlay';
 import { FeatureCollection, Geometry, GeoJsonProperties } from 'geojson';
 import { GpxPoint, TrackStyle, MarkerStyle } from '../types';
 import { getCoordinateAtTime } from '../utils/gpxParser';
@@ -44,6 +46,9 @@ interface MapPanelProps {
   mapStyle?: 'osm' | 'mapbox' | 'satellite';
   trackStyle?: TrackStyle;
   markerStyle?: MarkerStyle;
+
+  // Heatmap
+  heatmapPoints?: GpxPoint[];
 }
 
 const TILE_PROVIDERS = {
@@ -144,7 +149,8 @@ export const MapPanel: React.FC<MapPanelProps> = ({
   gpxPoints,
   syncOffset = 0,
   trackStyle,
-  markerStyle
+  markerStyle,
+  heatmapPoints
 }) => {
   const tileProvider = TILE_PROVIDERS[mapStyle] || TILE_PROVIDERS.osm;
 
@@ -169,54 +175,66 @@ export const MapPanel: React.FC<MapPanelProps> = ({
   const primaryTrack = effectiveTracks.length > 0 ? effectiveTracks[0] : null;
 
   return (
-    <div className={className} style={{ height: '100%', width: '100%' }}>
-      <MapContainer
-        center={center}
-        zoom={zoom}
-        style={{ height: '100%', width: '100%' }}
-        zoomControl={false}
-      >
-        <TileLayer
-          attribution={tileProvider.attribution}
-          url={tileProvider.url}
-        />
+    <div className={`${className} flex flex-col`} style={{ height: '100%', width: '100%' }}>
+      <div style={{ flex: '1 1 75%' }}>
+        <MapContainer
+          center={center}
+          zoom={zoom}
+          style={{ height: '100%', width: '100%' }}
+          zoomControl={false}
+        >
+          <TileLayer
+            attribution={tileProvider.attribution}
+            url={tileProvider.url}
+          />
 
-        {effectiveTracks.length === 0 && (
-          <Marker position={center}>
-            <Popup>
-              Default Marker
-            </Popup>
-          </Marker>
-        )}
+          {effectiveTracks.length === 0 && (
+            <Marker position={center}>
+              <Popup>
+                Default Marker
+              </Popup>
+            </Marker>
+          )}
 
-        {effectiveTracks.map((track, index) => (
-            <React.Fragment key={index}>
-                {track.geoJson && (
-                    <LeafletGeoJSON
-                        data={track.geoJson as any}
-                        style={{
-                            color: track.trackStyle?.color || '#007acc',
-                            weight: track.trackStyle?.weight || 4,
-                            opacity: track.trackStyle?.opacity || 1
-                        }}
+          {effectiveTracks.map((track, index) => (
+              <React.Fragment key={index}>
+                  {track.geoJson && (
+                      <LeafletGeoJSON
+                          data={track.geoJson as any}
+                          style={{
+                              color: track.trackStyle?.color || '#007acc',
+                              weight: track.trackStyle?.weight || 4,
+                              opacity: track.trackStyle?.opacity || 1
+                          }}
+                      />
+                  )}
+                  {track.gpxPoints && (
+                    <CurrentPositionMarker
+                      gpxPoints={track.gpxPoints}
+                      currentTime={currentTime}
+                      syncOffset={track.syncOffset || 0}
+                      markerStyle={track.markerStyle}
                     />
-                )}
-                {track.gpxPoints && (
-                  <CurrentPositionMarker
-                    gpxPoints={track.gpxPoints}
-                    currentTime={currentTime}
-                    syncOffset={track.syncOffset || 0}
-                    markerStyle={track.markerStyle}
-                  />
-                )}
-            </React.Fragment>
-        ))}
+                  )}
+              </React.Fragment>
+          ))}
 
-        {primaryTrack && primaryTrack.geoJson && (
-            <FitBounds geoJson={primaryTrack.geoJson} />
-        )}
+          {primaryTrack && primaryTrack.geoJson && (
+              <FitBounds geoJson={primaryTrack.geoJson} />
+          )}
 
-      </MapContainer>
+          {heatmapPoints && <HeatmapOverlay points={heatmapPoints} />}
+        </MapContainer>
+      </div>
+      {primaryTrack && primaryTrack.gpxPoints && (
+        <ElevationProfile
+          gpxPoints={primaryTrack.gpxPoints as any}
+          currentTime={currentTime}
+          syncOffset={primaryTrack.syncOffset}
+          className="bg-gray-800"
+          style={{ flex: '1 1 25%', minHeight: '80px' }}
+        />
+      )}
     </div>
   );
 };

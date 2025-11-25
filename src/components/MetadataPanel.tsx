@@ -75,6 +75,18 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                                  </select>
                              </div>
 
+                            <div className="flex items-center my-3">
+                                <input
+                                    id="elevation-profile-enabled"
+                                    type="checkbox"
+                                    data-testid="show-elevation-checkbox"
+                                    checked={activeClip.properties.showElevationProfile || false}
+                                    onChange={(e) => updateClipProperties(activeClip.id, { showElevationProfile: e.target.checked })}
+                                    className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 ring-offset-gray-800 focus:ring-2"
+                                />
+                                <label htmlFor="elevation-profile-enabled" className="ml-2 text-sm text-gray-300">Show Elevation Profile</label>
+                            </div>
+
                              <div className="border-t border-neutral-700 pt-4 mt-4">
                                 <h4 className="text-sm font-bold mb-3">Heatmap</h4>
                                 <div className="flex items-center mb-3">

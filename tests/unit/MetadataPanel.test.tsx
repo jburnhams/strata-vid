@@ -130,6 +130,40 @@ describe('MetadataPanel', () => {
       expect(useProjectStore.getState().clips['clip-map'].properties.markerStyle?.color).toBe('#00ff00');
   });
 
+  it('toggles the elevation profile checkbox', () => {
+    const clip = {
+        id: 'clip-map',
+        assetId: 'asset-map',
+        trackId: 'track-1',
+        start: 0,
+        duration: 10,
+        offset: 0,
+        type: 'map' as const,
+        properties: {
+            x: 0, y: 0, width: 100, height: 100, rotation: 0, opacity: 1, zIndex: 0,
+            showElevationProfile: false,
+        }
+    };
+
+    useProjectStore.setState({
+        selectedClipId: 'clip-map',
+        clips: { 'clip-map': clip }
+    });
+
+    const { rerender } = render(<MetadataPanel assets={[]} selectedAssetId={null} settings={mockSettings} setSettings={mockSetSettings} />);
+
+    const checkbox = screen.getByTestId('show-elevation-checkbox');
+    expect(checkbox).not.toBeChecked();
+
+    fireEvent.click(checkbox);
+
+    // This is a bit of a hacky way to test this, since the store update isn't synchronous.
+    // In a real app, you'd want to use `waitFor` or something similar.
+    rerender(<MetadataPanel assets={[]} selectedAssetId={null} settings={mockSettings} setSettings={mockSetSettings} />);
+
+    expect(useProjectStore.getState().clips['clip-map'].properties.showElevationProfile).toBe(true);
+  });
+
   it('renders KeyframeList for animatable properties of a selected clip', () => {
     const clip = {
       id: 'clip-1',

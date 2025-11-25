@@ -226,15 +226,6 @@ export const MapPanel: React.FC<MapPanelProps> = ({
           {heatmapPoints && <HeatmapOverlay points={heatmapPoints} />}
         </MapContainer>
       </div>
-      {primaryTrack && primaryTrack.gpxPoints && (
-        <ElevationProfile
-          gpxPoints={primaryTrack.gpxPoints as any}
-          currentTime={currentTime}
-          syncOffset={primaryTrack.syncOffset}
-          className="bg-gray-800"
-          style={{ flex: '1 1 25%', minHeight: '80px' }}
-        />
-      )}
     </div>
   );
 };

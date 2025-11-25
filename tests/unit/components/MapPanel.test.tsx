@@ -26,9 +26,6 @@ jest.mock('../../../src/utils/gpxParser', () => ({
   }),
 }));
 
-// Mock ElevationProfile
-jest.mock('../../../src/components/preview/ElevationProfile', () => () => <div data-testid="elevation-profile" />);
-
 describe('MapPanel', () => {
   it('renders map container', () => {
     render(<MapPanel />);
@@ -64,20 +61,6 @@ describe('MapPanel', () => {
 
     const currentPosMarker = markers.find(m => m.getAttribute('data-position') === JSON.stringify([10, 10]));
     expect(currentPosMarker).toBeInTheDocument();
-  });
-
-  it('renders ElevationProfile when gpxPoints are provided', () => {
-    const points: GpxPoint[] = [
-      { time: 1000, lat: 10, lon: 10, ele: 5 },
-      { time: 2000, lat: 20, lon: 20, ele: 15 },
-    ];
-    render(<MapPanel gpxPoints={points} />);
-    expect(screen.getByTestId('elevation-profile')).toBeInTheDocument();
-  });
-
-  it('does not render ElevationProfile when gpxPoints are missing', () => {
-    render(<MapPanel />);
-    expect(screen.queryByTestId('elevation-profile')).not.toBeInTheDocument();
   });
 
   it('applies styling properties', () => {

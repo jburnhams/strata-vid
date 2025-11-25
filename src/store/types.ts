@@ -1,4 +1,4 @@
-import { Asset, Clip, Track, ProjectSettings, DeserializedState, Transition } from '../types';
+import { Asset, Clip, Track, ProjectSettings, DeserializedState, Transition, Marker, Keyframe } from '../types';
 
 export interface ProjectSlice {
   id: string;
@@ -11,6 +11,7 @@ export interface AssetsSlice {
   assets: Record<string, Asset>;
   selectedAssetId: string | null;
   addAsset: (asset: Asset) => void;
+  updateAsset: (id: string, asset: Partial<Asset>) => void;
   removeAsset: (id: string) => void;
   selectAsset: (id: string | null) => void;
 }
@@ -19,9 +20,13 @@ export interface TimelineSlice {
   tracks: Record<string, Track>;
   clips: Record<string, Clip>;
   trackOrder: string[]; // Array of Track IDs to maintain order
+  markers: Marker[];
   selectedClipId: string | null;
   addTrack: (track: Track) => void;
   removeTrack: (id: string) => void;
+  addMarker: (marker: Marker) => void;
+  removeMarker: (id: string) => void;
+  updateMarker: (id: string, marker: Partial<Marker>) => void;
   addClip: (clip: Clip) => void;
   removeClip: (id: string) => void;
   selectClip: (id: string | null) => void;
@@ -32,7 +37,11 @@ export interface TimelineSlice {
   rippleDeleteClip: (id: string) => void;
   addTransition: (id: string, transition: Transition) => void;
   updateClipSyncOffset: (id: string, syncOffset: number) => void;
+  updateClipPlaybackRate: (id: string, playbackRate: number) => void;
   updateClipProperties: (id: string, properties: any) => void; // Partial<OverlayProperties> but using any to avoid circular dep issues in types for now if needed, or import it.
+  addKeyframe: (clipId: string, property: string, keyframe: Keyframe) => void;
+  removeKeyframe: (clipId: string, property: string, keyframeId: string) => void;
+  updateKeyframe: (clipId: string, property: string, keyframeId: string, update: Partial<Omit<Keyframe, 'id'>>) => void;
 }
 
 export interface PlaybackSlice {

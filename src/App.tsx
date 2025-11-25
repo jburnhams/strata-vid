@@ -32,6 +32,7 @@ function App() {
     tracks: tracksRecord,
     selectedAssetId,
     addAsset,
+    updateAsset,
     selectAsset,
     addClip,
     addTrack,
@@ -61,7 +62,18 @@ function App() {
       const newAssets = (await Promise.all(newAssetsPromises)).filter((a): a is Asset => a !== null);
 
       newAssets.forEach(asset => {
+          // Add basic asset immediately (with duration but no thumbnail)
           addAsset(asset);
+
+          // Lazy load thumbnail
+          if (asset.type === 'video' && asset.file) {
+              AssetLoader.loadThumbnail(asset.file).then(thumbnail => {
+                  updateAsset(asset.id, { thumbnail });
+              }).catch(e => {
+                  console.warn(`Failed to generate thumbnail for ${asset.name}`, e);
+              });
+          }
+
           if (asset.type === 'video') {
                // Find or create a video track
                let trackId = tracks.find(t => t.type === 'video')?.id;
@@ -161,7 +173,7 @@ function App() {
       </div>
 
       {/* Library */}
-      <div className="[grid-area:library] border-r border-neutral-700 bg-neutral-800 flex flex-col overflow-hidden">
+      <div className="[grid-area:library] border-r border-neutral-700 bg-neutral-800 flex flex-col overflow-hidden" data-testid="library-panel-container">
         <LibraryPanel
             assets={assets}
             selectedAssetId={selectedAssetId}
@@ -176,7 +188,7 @@ function App() {
       </div>
 
       {/* Metadata */}
-      <div className="[grid-area:metadata] border-l border-neutral-700 bg-neutral-800 flex flex-col overflow-hidden">
+      <div className="[grid-area:metadata] border-l border-neutral-700 bg-neutral-800 flex flex-col overflow-hidden" data-testid="metadata-panel-container">
         <MetadataPanel activeAsset={activeAsset} />
       </div>
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { Asset } from '../types';
 import { useProjectStore } from '../store/useProjectStore';
 import { MapSyncControl } from './MapSyncControl';
+import { KeyframeList } from './KeyframeList';
 
 interface MetadataPanelProps {
   activeAsset: Asset | null;
@@ -45,8 +46,9 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ activeAsset }) => 
                                     min="1" max="18"
                                     value={activeClip.properties.mapZoom || 13}
                                     onChange={(e) => updateClipProperties(activeClip.id, { mapZoom: parseInt(e.target.value) })}
-                                    className="w-full h-2 bg-neutral-900 rounded-lg appearance-none cursor-pointer"
+                                    className="w-full h-2 bg-neutral-900 rounded-lg appearance-none cursor-pointer mb-2"
                                  />
+                                 <KeyframeList clipId={activeClip.id} property="mapZoom" label="Zoom Animation" step={0.1} />
                              </div>
 
                              <div className="mb-3">
@@ -107,8 +109,66 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ activeAsset }) => 
                 )}
 
                 {activeClip.type !== 'map' && (
-                     <div className="text-sm text-gray-500 italic">
-                         Generic properties...
+                     <div className="space-y-6">
+                         <div>
+                            <div className="flex justify-between mb-1">
+                                <label className="text-xs text-gray-500">Opacity</label>
+                                <span className="text-xs text-gray-400">{Math.round(activeClip.properties.opacity * 100)}%</span>
+                            </div>
+                            <input
+                                type="range"
+                                min="0" max="1" step="0.01"
+                                value={activeClip.properties.opacity}
+                                onChange={(e) => updateClipProperties(activeClip.id, { opacity: parseFloat(e.target.value) })}
+                                className="w-full mb-2 bg-neutral-900 h-2 rounded-lg appearance-none cursor-pointer"
+                            />
+                            <KeyframeList clipId={activeClip.id} property="opacity" label="Opacity Animation" step={0.01} />
+                         </div>
+
+                         <div>
+                            <div className="flex justify-between mb-1">
+                                <label className="text-xs text-gray-500">Rotation</label>
+                                <span className="text-xs text-gray-400">{Math.round(activeClip.properties.rotation)}°</span>
+                            </div>
+                            <input
+                                type="range"
+                                min="0" max="360" step="1"
+                                value={activeClip.properties.rotation}
+                                onChange={(e) => updateClipProperties(activeClip.id, { rotation: parseInt(e.target.value) })}
+                                className="w-full mb-2 bg-neutral-900 h-2 rounded-lg appearance-none cursor-pointer"
+                            />
+                            <KeyframeList clipId={activeClip.id} property="rotation" label="Rotation Animation" step={1} />
+                         </div>
+
+                         <div>
+                             <div className="flex justify-between mb-1">
+                                <label className="text-xs text-gray-500">Position X (%)</label>
+                                <span className="text-xs text-gray-400">{Math.round(activeClip.properties.x)}%</span>
+                             </div>
+                             <input
+                                type="range"
+                                min="0" max="100" step="1"
+                                value={activeClip.properties.x}
+                                onChange={(e) => updateClipProperties(activeClip.id, { x: parseFloat(e.target.value) })}
+                                className="w-full mb-2 bg-neutral-900 h-2 rounded-lg appearance-none cursor-pointer"
+                             />
+                             <KeyframeList clipId={activeClip.id} property="x" label="X Animation" step={1} />
+                         </div>
+
+                         <div>
+                             <div className="flex justify-between mb-1">
+                                <label className="text-xs text-gray-500">Position Y (%)</label>
+                                <span className="text-xs text-gray-400">{Math.round(activeClip.properties.y)}%</span>
+                             </div>
+                             <input
+                                type="range"
+                                min="0" max="100" step="1"
+                                value={activeClip.properties.y}
+                                onChange={(e) => updateClipProperties(activeClip.id, { y: parseFloat(e.target.value) })}
+                                className="w-full mb-2 bg-neutral-900 h-2 rounded-lg appearance-none cursor-pointer"
+                             />
+                             <KeyframeList clipId={activeClip.id} property="y" label="Y Animation" step={1} />
+                         </div>
                      </div>
                 )}
             </div>

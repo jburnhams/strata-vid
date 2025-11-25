@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { useProjectStore } from '../store/useProjectStore';
 import { serializeProject, deserializeProject } from '../utils/projectSerializer';
+import { AssetLoader } from '../services/AssetLoader';
 
 export const ProjectMenu: React.FC = () => {
   const store = useProjectStore();
@@ -12,6 +13,9 @@ export const ProjectMenu: React.FC = () => {
             return;
         }
     }
+
+    // Cleanup assets
+    Object.values(store.assets).forEach(asset => AssetLoader.revokeAsset(asset));
 
     // Clear existing project
     Object.keys(store.assets).forEach(id => store.removeAsset(id));
@@ -35,6 +39,11 @@ export const ProjectMenu: React.FC = () => {
   const handleLoadProject = (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       if (!file) return;
+
+      if (Object.keys(store.assets).length > 0) {
+        // Cleanup existing assets before loading new ones
+        Object.values(store.assets).forEach(asset => AssetLoader.revokeAsset(asset));
+      }
 
       const reader = new FileReader();
       reader.onload = (e) => {

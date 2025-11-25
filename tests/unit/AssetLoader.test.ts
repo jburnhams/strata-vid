@@ -122,7 +122,13 @@ describe('AssetLoader', () => {
     expect(asset.duration).toBe(120);
     expect(asset.resolution).toEqual({ width: 1920, height: 1080 });
     expect(mockInput.dispose).toHaveBeenCalled();
-    expect(asset.thumbnail).toBe('blob:test');
+    // Thumbnail should NOT be loaded automatically anymore (lazy loading)
+    expect(asset.thumbnail).toBeUndefined();
+  });
+
+  it('should load thumbnail separately via loadThumbnail', async () => {
+      const thumbUrl = await AssetLoader.loadThumbnail(mockFile);
+      expect(thumbUrl).toBe('blob:test');
   });
 
   it('should load a video asset with metadata using mediabunny (getFormat)', async () => {
@@ -224,5 +230,20 @@ describe('AssetLoader', () => {
     expect(asset.stats).toBeUndefined();
     expect(consoleSpy).toHaveBeenCalledWith('Failed to parse GPX', expect.any(Error));
     consoleSpy.mockRestore();
+  });
+
+  it('should revoke object URLs on cleanup', () => {
+      // Use explicit global mock for safety, although setUp already did it, doing it again here ensures test isolation
+      global.URL.revokeObjectURL = jest.fn();
+
+      const asset = {
+          src: 'blob:video',
+          thumbnail: 'blob:thumb'
+      } as any;
+
+      AssetLoader.revokeAsset(asset);
+
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:video');
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:thumb');
   });
 });

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, within } from '@testing-library/react';
 import { MetadataPanel } from '../../src/components/MetadataPanel';
 import { Asset } from '../../src/types';
 import { useProjectStore } from '../../src/store/useProjectStore';
@@ -68,7 +68,8 @@ describe('MetadataPanel', () => {
       render(<MetadataPanel activeAsset={null} />);
 
       expect(screen.getByText('Clip Properties')).toBeInTheDocument();
-      expect(screen.getByText('Generic properties...')).toBeInTheDocument();
+      expect(screen.getByText('Opacity')).toBeInTheDocument();
+      expect(screen.getByText('Rotation')).toBeInTheDocument();
   });
 
   it('renders Map Styling controls when a map clip is selected', () => {
@@ -119,5 +120,38 @@ describe('MetadataPanel', () => {
       const markerColorInput = screen.getByLabelText(/Marker Color/);
       fireEvent.change(markerColorInput, { target: { value: '#00ff00' } });
       expect(useProjectStore.getState().clips['clip-map'].properties.markerStyle?.color).toBe('#00ff00');
+  });
+
+  it('renders KeyframeList for animatable properties of a selected clip', () => {
+    const clip = {
+      id: 'clip-1',
+      assetId: 'asset-1',
+      trackId: 'track-1',
+      start: 0,
+      duration: 10,
+      offset: 0,
+      type: 'video' as const,
+      properties: { x: 0, y: 0, width: 100, height: 100, rotation: 0, opacity: 1, zIndex: 0 },
+      keyframes: {
+        opacity: [
+          { id: 'k1', time: 0, value: 0, easing: 'linear' },
+        ],
+      },
+    };
+
+    useProjectStore.setState({
+      selectedClipId: 'clip-1',
+      clips: { 'clip-1': clip },
+    });
+
+    render(<MetadataPanel activeAsset={null} />);
+
+    // Check that the KeyframeList for Opacity is rendered and displays a keyframe
+    const keyframeList = screen.getByTestId('keyframe-list-opacity');
+    expect(keyframeList).toBeInTheDocument();
+
+    // Check for an element that would be inside KeyframeList, like the value input
+    const input = within(keyframeList).getByDisplayValue('0');
+    expect(input).toBeInTheDocument();
   });
 });

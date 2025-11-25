@@ -12,6 +12,7 @@ export const createTimelineSlice: StateCreator<
   tracks: {},
   clips: {},
   trackOrder: [],
+  markers: [],
   selectedClipId: null,
   addTrack: (track) =>
     set((state) => {
@@ -34,6 +35,21 @@ export const createTimelineSlice: StateCreator<
       // Note: This logic is tricky if the removed track contained the selected clip.
       // We should check if selectedClipId is among the removed clips.
       // But for now, we leave it or rely on the fact that the clip is gone from 'clips'
+    }),
+  addMarker: (marker) =>
+    set((state) => {
+      state.markers.push(marker);
+    }),
+  removeMarker: (id) =>
+    set((state) => {
+      state.markers = state.markers.filter((m) => m.id !== id);
+    }),
+  updateMarker: (id, marker) =>
+    set((state) => {
+      const index = state.markers.findIndex((m) => m.id === id);
+      if (index !== -1) {
+        state.markers[index] = { ...state.markers[index], ...marker };
+      }
     }),
   addClip: (clip) =>
     set((state) => {
@@ -252,6 +268,18 @@ export const createTimelineSlice: StateCreator<
         }
       }
     }),
+  updateClipPlaybackRate: (id, playbackRate) =>
+    set((state) => {
+      const clip = state.clips[id];
+      if (clip) {
+        const currentRate = clip.playbackRate || 1;
+        const sourceDuration = clip.duration * currentRate;
+        const newDuration = sourceDuration / playbackRate;
+
+        clip.playbackRate = playbackRate;
+        clip.duration = newDuration;
+      }
+    }),
   updateClipSyncOffset: (id, syncOffset) =>
     set((state) => {
       const clip = state.clips[id];
@@ -269,6 +297,35 @@ export const createTimelineSlice: StateCreator<
         // But properties might be nested (trackStyle).
         // Let's do a shallow merge of the top level properties object, which is standard for Partial<OverlayProperties>
         Object.assign(clip.properties, properties);
+      }
+    }),
+  addKeyframe: (clipId, property, keyframe) =>
+    set((state) => {
+      const clip = state.clips[clipId];
+      if (!clip) return;
+      if (!clip.keyframes) clip.keyframes = {};
+      if (!clip.keyframes[property]) clip.keyframes[property] = [];
+      clip.keyframes[property].push(keyframe);
+      // Sort by time
+      clip.keyframes[property].sort((a, b) => a.time - b.time);
+    }),
+  removeKeyframe: (clipId, property, keyframeId) =>
+    set((state) => {
+      const clip = state.clips[clipId];
+      if (!clip || !clip.keyframes || !clip.keyframes[property]) return;
+      clip.keyframes[property] = clip.keyframes[property].filter((k) => k.id !== keyframeId);
+    }),
+  updateKeyframe: (clipId, property, keyframeId, update) =>
+    set((state) => {
+      const clip = state.clips[clipId];
+      if (!clip || !clip.keyframes || !clip.keyframes[property]) return;
+      const index = clip.keyframes[property].findIndex((k) => k.id === keyframeId);
+      if (index !== -1) {
+        Object.assign(clip.keyframes[property][index], update);
+        // Resort if time changed
+        if (update.time !== undefined) {
+          clip.keyframes[property].sort((a, b) => a.time - b.time);
+        }
       }
     }),
 });

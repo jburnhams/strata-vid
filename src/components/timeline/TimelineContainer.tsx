@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -12,7 +12,8 @@ import {
   DropAnimation,
 } from '@dnd-kit/core';
 
-import { Track, Clip, Asset, ProjectSettings, Transition } from '../../types';
+import { Track, Clip, Asset, ProjectSettings, Transition, Marker } from '../../types';
+import { Marker as MarkerComponent } from './Marker';
 import { TrackLane } from './TrackLane';
 import { TrackHeader } from './TrackHeader';
 import { Ruler } from './Ruler';
@@ -45,10 +46,13 @@ interface TimelineContainerProps {
   onRippleDeleteClip: (id: string) => void;
   onAddTransition: (id: string, transition: Transition) => void;
   onAddTrack?: () => void;
+  onAddMarker?: () => void;
   selectedClipId?: string | null;
   onClipSelect?: (id: string | null) => void;
   currentTime: number;
   isPlaying: boolean;
+  markers?: Marker[];
+  onMarkerClick?: (id: string) => void;
 }
 
 const dropAnimation: DropAnimation = {
@@ -80,10 +84,13 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
   onRippleDeleteClip,
   onAddTransition,
   onAddTrack,
+  onAddMarker,
   selectedClipId,
   onClipSelect,
   currentTime,
   isPlaying,
+  markers,
+  onMarkerClick,
 }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [snapLine, setSnapLine] = useState<number | null>(null);
@@ -100,6 +107,33 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
       },
     })
   );
+
+  // J1: Calculate total duration for container width
+  const totalDuration = useMemo(() => {
+    let max = 0;
+    Object.values(clips).forEach(c => {
+      const end = c.start + c.duration;
+      if (end > max) max = end;
+    });
+    return max;
+  }, [clips]);
+
+  // Ensure container width accommodates all clips plus some buffer
+  const contentWidth = Math.max(containerWidth, totalDuration * zoomLevel + 200);
+
+  // J1: Virtualization - Visible time range
+  // Render clips that are within the viewport + buffer
+  const visibleStartTime = scrollLeft / zoomLevel;
+  const visibleEndTime = (scrollLeft + containerWidth) / zoomLevel;
+  const bufferPixels = 500; // Render extra pixels outside viewport
+  const bufferTime = bufferPixels / zoomLevel;
+
+  const isClipVisible = (clip: Clip) => {
+    if (activeId === clip.id) return true; // Always render dragging clip
+    const clipEnd = clip.start + clip.duration;
+    // Check overlap: clip starts before view ends AND clip ends after view starts
+    return clip.start <= (visibleEndTime + bufferTime) && clipEnd >= (visibleStartTime - bufferTime);
+  };
 
   // Handle Wheel Zoom
   const handleWheel = (e: React.WheelEvent) => {
@@ -369,6 +403,13 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
         <div className="h-10 bg-gray-900 border-b border-gray-700 flex items-center px-4 justify-between sticky top-0 z-30">
            <div className="flex items-center gap-4">
                <div className="text-xs text-gray-500 font-medium uppercase tracking-wider">TIMELINE</div>
+               <button
+                   className="px-2 py-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-[10px] text-gray-300 transition-colors"
+                   onClick={onAddMarker}
+                   title="Add Marker at Playhead"
+               >
+                   + Marker
+               </button>
                <div className="flex items-center gap-3 border-l border-gray-700 pl-4">
                   <label className="flex items-center gap-1 text-xs text-gray-400 hover:text-white cursor-pointer select-none">
                     <input
@@ -431,7 +472,7 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
             onScroll={handleScroll}
             onClick={() => onClipSelect?.(null)}
           >
-             <div className="min-w-full relative" style={{ width: 'max-content' }}>
+             <div className="min-w-full relative" style={{ width: `${contentWidth}px` }}>
                 <Playhead zoomLevel={zoomLevel} />
 
                 {/* Ruler */}
@@ -441,6 +482,14 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
                     scrollLeft={scrollLeft}
                     containerWidth={containerWidth}
                   />
+                  {markers?.map((marker) => (
+                    <MarkerComponent
+                      key={marker.id}
+                      marker={marker}
+                      zoomLevel={zoomLevel}
+                      onClick={onMarkerClick}
+                    />
+                  ))}
                 </div>
 
                 {/* Snap Line */}
@@ -459,7 +508,8 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
 
                     const trackClips = track.clips
                         .map(clipId => clips[clipId])
-                        .filter(Boolean);
+                        .filter(Boolean)
+                        .filter(isClipVisible);
 
                     return (
                         <TrackLane

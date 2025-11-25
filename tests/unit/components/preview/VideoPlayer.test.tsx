@@ -239,4 +239,86 @@ describe('VideoPlayer', () => {
     // 50% wipe
     expect(video.style.clipPath).toBe('polygon(0 0, 50% 0, 50% 100%, 0 100%)');
   });
+
+  it('updates video playbackRate based on global rate and clip rate', () => {
+    const clipWithRate = { ...mockClip, playbackRate: 2 };
+    const { container } = render(
+      <VideoPlayer
+        clip={clipWithRate}
+        asset={mockAsset}
+        currentTime={0}
+        isPlaying={false}
+        playbackRate={1.5}
+      />
+    );
+
+    const video = container.querySelector('video') as HTMLVideoElement;
+    // 1.5 * 2 = 3
+    expect(video.playbackRate).toBe(3);
+  });
+
+  it('calculates seek time correctly with clip playbackRate', () => {
+    const clipWithRate = { ...mockClip, start: 10, offset: 5, playbackRate: 2 };
+
+    const { container } = render(
+      <VideoPlayer
+        clip={clipWithRate}
+        asset={mockAsset}
+        currentTime={12} // 2 seconds into clip
+        isPlaying={false}
+        playbackRate={1}
+      />
+    );
+
+    const video = container.querySelector('video') as HTMLVideoElement;
+    // Expected video time = (Current - Start) * Rate + Offset
+    // (12 - 10) * 2 + 5 = 4 + 5 = 9
+    expect(video.currentTime).toBe(9);
+  });
+
+  it('applies filter style', () => {
+    const clipWithFilter = {
+      ...mockClip,
+      properties: { ...mockClip.properties, filter: 'blur(5px)' },
+    };
+
+    const { container } = render(
+      <VideoPlayer
+        clip={clipWithFilter}
+        asset={mockAsset}
+        currentTime={0}
+        isPlaying={false}
+        playbackRate={1}
+      />
+    );
+
+    const video = container.querySelector('video') as HTMLVideoElement;
+    expect(video.style.filter).toBe('blur(5px)');
+  });
+
+  it('interpolates properties based on keyframes', () => {
+    const clipWithKeyframes: Clip = {
+      ...mockClip,
+      keyframes: {
+        opacity: [
+          { id: 'k1', time: 0, value: 0, easing: 'linear' },
+          { id: 'k2', time: 5, value: 1, easing: 'linear' },
+        ],
+      },
+    };
+
+    const { container } = render(
+      <VideoPlayer
+        clip={clipWithKeyframes}
+        asset={mockAsset}
+        currentTime={2.5} // 2.5s into a 10s clip, 50% progress
+        isPlaying={false}
+        playbackRate={1}
+      />
+    );
+
+    const video = container.querySelector('video') as HTMLVideoElement;
+    // (2.5s is halfway between time 0 and 5, so opacity should be 0.5)
+    expect(video.style.opacity).toBe('0.5');
+  });
 });

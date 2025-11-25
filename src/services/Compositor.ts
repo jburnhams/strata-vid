@@ -1,6 +1,7 @@
-import { Asset, Clip, ProjectSettings, Track, TextStyle, TrackStyle, MarkerStyle } from '../types';
+import { Asset, Clip, ProjectSettings, Track, TextStyle, TrackStyle, MarkerStyle, OverlayProperties } from '../types';
 import { getGpxPositionAtTime, lat2tile, lon2tile, getTileUrl, TILE_SIZE } from '../utils/mapUtils';
 import { Feature, LineString } from 'geojson';
+import { interpolateValue } from '../utils/animationUtils';
 
 export class Compositor {
   private videoPool: Map<string, HTMLVideoElement> = new Map();
@@ -95,7 +96,8 @@ export class Compositor {
     transitionProgress: number = 1,
     allAssets?: Record<string, Asset>
   ) {
-    const localTime = globalTime - clip.start + clip.offset;
+    const clipRate = clip.playbackRate || 1;
+    const localTime = (globalTime - clip.start) * clipRate + clip.offset;
 
     // Save context state
     ctx.save();
@@ -104,7 +106,20 @@ export class Compositor {
     const cw = ctx.canvas.width;
     const ch = ctx.canvas.height;
 
-    const { x, y, width, height, rotation, opacity } = clip.properties;
+    const getValue = (prop: keyof OverlayProperties, defaultValue: any) => {
+        if (typeof defaultValue === 'number' && clip.keyframes && clip.keyframes[prop]) {
+             return interpolateValue(clip.keyframes[prop], globalTime - clip.start, defaultValue);
+        }
+        return defaultValue;
+    };
+
+    const x = getValue('x', clip.properties.x);
+    const y = getValue('y', clip.properties.y);
+    const width = getValue('width', clip.properties.width);
+    const height = getValue('height', clip.properties.height);
+    const rotation = getValue('rotation', clip.properties.rotation);
+    const opacity = getValue('opacity', clip.properties.opacity);
+    const mapZoom = getValue('mapZoom', clip.properties.mapZoom);
 
     // Convert % to pixels
     const w = (width / 100) * cw;
@@ -120,6 +135,11 @@ export class Compositor {
       }
     }
     ctx.globalAlpha = effectiveOpacity;
+
+    // Apply Filter
+    if (clip.properties.filter) {
+      ctx.filter = clip.properties.filter;
+    }
 
     // Apply Transform: Translate to center of clip, then rotate
     const centerX = px + w / 2;
@@ -150,7 +170,7 @@ export class Compositor {
         } else if (clip.type === 'text') {
             this.drawText(ctx, clip, w, h);
         } else if (clip.type === 'map' && asset && asset.type === 'gpx') {
-            await this.drawMap(ctx, clip, asset, localTime, w, h, allAssets);
+            await this.drawMap(ctx, clip, asset, localTime, w, h, allAssets, mapZoom);
         }
     } catch (e) {
         console.error(`Error drawing clip ${clip.id}`, e);
@@ -258,11 +278,13 @@ export class Compositor {
     time: number,
     dstW: number,
     dstH: number,
-    allAssets?: Record<string, Asset>
+    allAssets?: Record<string, Asset>,
+    zoomOverride?: number
   ) {
     if (!asset.geoJson) return;
 
-    const zoom = clip.properties.mapZoom || 13;
+    // Use clip zoom or default
+    const zoom = zoomOverride !== undefined ? zoomOverride : (clip.properties.mapZoom || 13);
 
     // 1. Get current position for center (Primary) using proper sync logic
     const props = asset.geoJson.features[0].properties;

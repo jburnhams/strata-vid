@@ -1,6 +1,7 @@
 import React from 'react';
-import { Clip, Asset } from '../../types';
 import { MapPanel, MapTrackData } from '../MapPanel';
+import { Clip, Asset, OverlayProperties } from '../../types';
+import { interpolateValue } from '../../utils/animationUtils';
 
 interface OverlayRendererProps {
   clip: Clip;
@@ -10,8 +11,24 @@ interface OverlayRendererProps {
 }
 
 export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, currentTime, allAssets }) => {
+  // Helper to get animated value
+  const getValue = (prop: keyof OverlayProperties, defaultValue: any) => {
+    if (typeof defaultValue === 'number' && clip.keyframes && clip.keyframes[prop]) {
+      return interpolateValue(clip.keyframes[prop], currentTime - clip.start, defaultValue);
+    }
+    return defaultValue;
+  };
+
+  const x = getValue('x', clip.properties.x);
+  const y = getValue('y', clip.properties.y);
+  const width = getValue('width', clip.properties.width);
+  const height = getValue('height', clip.properties.height);
+  const rotation = getValue('rotation', clip.properties.rotation);
+  const opacity = getValue('opacity', clip.properties.opacity);
+  const mapZoom = getValue('mapZoom', clip.properties.mapZoom);
+
   // Transition Logic
-  let effectiveOpacity = clip.properties.opacity;
+  let effectiveOpacity = opacity;
   let clipPath: string | undefined;
 
   if (clip.transitionIn) {
@@ -29,16 +46,17 @@ export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, c
 
   const style: React.CSSProperties = {
     position: 'absolute',
-    left: `${clip.properties.x}%`,
-    top: `${clip.properties.y}%`,
-    width: `${clip.properties.width}%`,
-    height: `${clip.properties.height}%`,
-    transform: `rotate(${clip.properties.rotation}deg)`,
+    left: `${x}%`,
+    top: `${y}%`,
+    width: `${width}%`,
+    height: `${height}%`,
+    transform: `rotate(${rotation}deg)`,
     opacity: effectiveOpacity,
     zIndex: clip.properties.zIndex,
     overflow: 'hidden',
     pointerEvents: 'none',
     clipPath,
+    filter: clip.properties.filter,
   };
 
   if (clip.type === 'text') {
@@ -123,6 +141,8 @@ export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, c
                 // View settings come from the primary clip properties
                 mapStyle={clip.properties.mapStyle}
                 zoom={clip.properties.mapZoom}
+                trackStyle={clip.properties.trackStyle}
+                markerStyle={clip.properties.markerStyle}
               />
           </div>
       );

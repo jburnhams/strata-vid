@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { Clip, Asset } from '../../types';
+import { Clip, Asset, OverlayProperties } from '../../types';
+import { interpolateValue } from '../../utils/animationUtils';
 
 interface VideoPlayerProps {
   clip: Clip;
@@ -19,15 +20,17 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Calculate where the video should be in its own timeline
-  const expectedVideoTime = Math.max(0, currentTime - clip.start + clip.offset);
+  const clipRate = clip.playbackRate || 1;
+  const expectedVideoTime = Math.max(0, (currentTime - clip.start) * clipRate + clip.offset);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     // Sync Playback Rate
-    if (Math.abs(video.playbackRate - playbackRate) > 0.01) {
-      video.playbackRate = playbackRate;
+    const effectiveRate = playbackRate * clipRate;
+    if (Math.abs(video.playbackRate - effectiveRate) > 0.01) {
+      video.playbackRate = effectiveRate;
     }
 
     // Sync Time
@@ -55,8 +58,23 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [currentTime, isPlaying, playbackRate, expectedVideoTime, asset.src]);
 
+  // Helper to get animated value
+  const getValue = (prop: keyof OverlayProperties, defaultValue: any) => {
+      if (typeof defaultValue === 'number' && clip.keyframes && clip.keyframes[prop]) {
+          return interpolateValue(clip.keyframes[prop], currentTime - clip.start, defaultValue);
+      }
+      return defaultValue;
+  };
+
+  const x = getValue('x', clip.properties.x);
+  const y = getValue('y', clip.properties.y);
+  const width = getValue('width', clip.properties.width);
+  const height = getValue('height', clip.properties.height);
+  const rotation = getValue('rotation', clip.properties.rotation);
+  const opacity = getValue('opacity', clip.properties.opacity);
+
   // Transition Logic
-  let effectiveOpacity = clip.properties.opacity;
+  let effectiveOpacity = opacity;
   let clipPath: string | undefined;
 
   if (clip.transitionIn) {
@@ -74,16 +92,17 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   const style: React.CSSProperties = {
     position: 'absolute',
-    left: `${clip.properties.x}%`,
-    top: `${clip.properties.y}%`,
-    width: `${clip.properties.width}%`,
-    height: `${clip.properties.height}%`,
-    transform: `rotate(${clip.properties.rotation}deg)`,
+    left: `${x}%`,
+    top: `${y}%`,
+    width: `${width}%`,
+    height: `${height}%`,
+    transform: `rotate(${rotation}deg)`,
     opacity: effectiveOpacity,
     zIndex: clip.properties.zIndex,
     objectFit: 'cover',
     pointerEvents: 'none',
     clipPath,
+    filter: clip.properties.filter,
   };
 
   return (

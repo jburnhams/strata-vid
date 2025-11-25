@@ -74,6 +74,7 @@ export interface OverlayProperties {
     enabled: boolean;
     dataSource: 'speed' | 'elevation';
   };
+  showElevationProfile?: boolean;
 }
 
 export interface TextStyle {

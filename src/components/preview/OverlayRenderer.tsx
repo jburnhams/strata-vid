@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { MapPanel, MapTrackData } from '../MapPanel';
 import DataOverlay from './DataOverlay';
+import ElevationProfile from './ElevationProfile';
 import { Clip, Asset, OverlayProperties, GpxPoint } from '../../types';
 import { interpolateValue } from '../../utils/animationUtils';
 import { getCoordinateAtTime } from '../../utils/gpxParser';
@@ -155,6 +156,14 @@ export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, c
                 <DataOverlay
                   gpxData={currentGpxPoint}
                   className="absolute bottom-4 left-4 z-10"
+                />
+              )}
+              {clip.properties.showElevationProfile && asset.gpxPoints && (
+                <ElevationProfile
+                  gpxPoints={asset.gpxPoints}
+                  currentTime={currentTime - clip.start}
+                  syncOffset={clip.syncOffset}
+                  className="absolute bottom-0 left-0 w-full h-1/4 bg-black bg-opacity-50 p-2 z-20"
                 />
               )}
           </div>

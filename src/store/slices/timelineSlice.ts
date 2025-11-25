@@ -291,12 +291,7 @@ export const createTimelineSlice: StateCreator<
     set((state) => {
       const clip = state.clips[id];
       if (clip) {
-        // Deep merge properties
-        // clip.properties = { ...clip.properties, ...properties };
-        // Since we use immer, we can assign directly?
-        // But properties might be nested (trackStyle).
-        // Let's do a shallow merge of the top level properties object, which is standard for Partial<OverlayProperties>
-        Object.assign(clip.properties, properties);
+        clip.properties = { ...clip.properties, ...properties };
       }
     }),
   addKeyframe: (clipId, property, keyframe) =>

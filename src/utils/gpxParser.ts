@@ -1,10 +1,21 @@
-import { parseGPX } from '@we-gold/gpxjs';
+import { parseGPX, parseGPXWithCustomParser } from '@we-gold/gpxjs';
 import { FeatureCollection, Geometry, GeoJsonProperties } from 'geojson';
 import { GpxStats, GpxPoint } from '../types';
+import { DOMParser } from 'xmldom-qsa';
 
 export const parseGpxFile = async (file: File): Promise<{ geoJson: FeatureCollection<Geometry, GeoJsonProperties>; stats: GpxStats | undefined; points: GpxPoint[] }> => {
   const text = await file.text();
-  const [parsedGpx, error] = parseGPX(text);
+  let parsedGpx, error;
+
+  // JSDOM does not have a full DOMParser implementation, so we use a custom one for tests.
+  if (process.env.NODE_ENV === 'test') {
+    const customParseMethod = (txt: string): Document | null => {
+        return new DOMParser().parseFromString(txt, "text/xml")
+    }
+    [parsedGpx, error] = parseGPXWithCustomParser(text, customParseMethod);
+  } else {
+    [parsedGpx, error] = parseGPX(text);
+  }
 
   if (error) {
     throw new Error(`Error parsing GPX: ${error.message}`);
@@ -12,6 +23,17 @@ export const parseGpxFile = async (file: File): Promise<{ geoJson: FeatureCollec
 
   if (!parsedGpx) {
     throw new Error('No GPX data found');
+  }
+
+  // The library can "succeed" on invalid text by returning an empty structure.
+  // A valid GPX file will start with XML declaration or a GPX tag.
+  // If we have no tracks and the file doesn't look like XML, it's an error.
+  if (
+    parsedGpx.tracks.length === 0 &&
+    !text.trim().startsWith('<?xml') &&
+    !text.trim().startsWith('<gpx')
+  ) {
+    throw new Error('Invalid GPX content');
   }
 
   const geoJson = parsedGpx.toGeoJSON();

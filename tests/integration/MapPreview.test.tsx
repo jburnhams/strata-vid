@@ -117,4 +117,92 @@ describe('MapPreview Integration', () => {
         marker = await findByTestId('marker');
         expect(marker).toHaveAttribute('data-position', JSON.stringify([20, 20]));
     });
+
+    it('toggles elevation profile and seeks timeline on click', async () => {
+        const gpxStartTime = new Date('2023-01-01T10:00:00Z').getTime();
+        const gpxPoints = [
+            { time: gpxStartTime, lat: 10, lon: 10, dist: 0, ele: 100 },
+            { time: gpxStartTime + 10000, lat: 20, lon: 20, dist: 1000, ele: 200 },
+        ];
+
+        const asset: Asset = {
+            id: 'asset-gpx',
+            name: 'test.gpx',
+            type: 'gpx',
+            src: 'blob:gpx',
+            gpxPoints: gpxPoints,
+            geoJson: { type: 'FeatureCollection', features: [] }
+        };
+
+        const clip: Clip = {
+            id: 'clip-map',
+            trackId: 'track-1',
+            assetId: 'asset-gpx',
+            start: 0,
+            duration: 10,
+            offset: 0,
+            type: 'map',
+            syncOffset: gpxStartTime,
+            properties: {
+                x: 0, y: 0, width: 100, height: 100, rotation: 0, opacity: 1, zIndex: 1,
+                showElevationProfile: false
+            }
+        };
+
+        const track: Track = {
+            id: 'track-1',
+            type: 'overlay',
+            label: 'Map Track',
+            isMuted: false,
+            isLocked: false,
+            clips: ['clip-map']
+        };
+
+        act(() => {
+             useProjectStore.setState({
+                 assets: { 'asset-gpx': asset },
+                 clips: { 'clip-map': clip },
+                 tracks: { 'track-1': track },
+                 trackOrder: ['track-1'],
+                 currentTime: 0
+             });
+        });
+
+        const { findByTitle, findByText, queryByText } = render(<PreviewPanel />);
+
+        // Profile should be hidden initially
+        expect(queryByText('Elevation Profile')).not.toBeInTheDocument();
+
+        // Toggle profile on
+        const toggleButton = await findByTitle('Toggle Elevation Profile');
+        act(() => {
+            toggleButton.click();
+        });
+
+        // Profile should now be visible
+        await findByText('Elevation Profile');
+
+        // Simulate click on profile to seek
+        const svg = document.querySelector('svg.w-full.h-24'); // Use specific class for profile SVG
+        if (svg) {
+            // Mock the geometry properties for the SVG element in JSDOM
+            Object.defineProperty(svg, 'clientWidth', { value: 200, configurable: true });
+            Object.defineProperty(svg, 'getBoundingClientRect', {
+                value: () => ({ left: 10, top: 10, width: 200, height: 100, right: 210, bottom: 110, x: 10, y: 10, toJSON: () => '' }),
+                configurable: true
+            });
+
+            act(() => {
+                // Simulate a click half-way through the profile (clientX 110 = 50% progress)
+                const clickEvent = new MouseEvent('click', { bubbles: true, clientX: 110 });
+                svg.dispatchEvent(clickEvent);
+            });
+        }
+
+        // Check if the current time has updated
+        // Note: The click handler in ElevationProfile calculates a time ratio.
+        // For a click at 50%, the time should be 50% of the clip duration (10s), so ~5s.
+        // We'll check if it's close to 5.
+        expect(useProjectStore.getState().currentTime).toBeCloseTo(5, 0);
+    });
 });

@@ -132,6 +132,13 @@ export const PreviewPanel: React.FC = () => {
                                 asset={asset}
                                 currentTime={currentTime}
                                 allAssets={assets}
+                                onToggleElevationProfile={() => {
+                                    const updateClip = useProjectStore.getState().updateClip;
+                                    updateClip(clip.id, { properties: { ...clip.properties, showElevationProfile: !clip.properties.showElevationProfile } });
+                                }}
+                                onSeek={(time) => {
+                                    useProjectStore.getState().setPlaybackState({ currentTime: clip.start + time });
+                                }}
                             />
                         );
                     }

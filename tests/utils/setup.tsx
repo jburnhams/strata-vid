@@ -186,6 +186,40 @@ if (isJSDOM) {
     // Mock scrollTo
     Element.prototype.scrollTo = jest.fn();
 
+    // Mock SVG geometry APIs for JSDOM
+    if (typeof window !== 'undefined' && window.SVGElement) {
+        if (window.SVGElement.prototype.getScreenCTM === undefined) {
+            window.SVGElement.prototype.getScreenCTM = function() {
+                const rect = this.getBoundingClientRect();
+                return {
+                    a: 1, b: 0, c: 0, d: 1, e: rect.left, f: rect.top,
+                    inverse: () => ({
+                        a: 1, b: 0, c: 0, d: 1, e: -rect.left, f: -rect.top,
+                        multiply: (pt: any) => pt,
+                        transformPoint: (pt: any) => ({ x: pt.x - rect.left, y: pt.y - rect.top })
+                    }),
+                    multiply: (pt: any) => pt,
+                    transformPoint: (pt: any) => pt
+                } as unknown as DOMMatrix;
+            };
+        }
+        // @ts-ignore
+        if (window.SVGSVGElement.prototype.createSVGPoint === undefined) {
+            // @ts-ignore
+            window.SVGSVGElement.prototype.createSVGPoint = function() {
+                let point = {
+                    x: 0,
+                    y: 0,
+                    matrixTransform: function(matrix: any) {
+                        return { x: this.x + matrix.e, y: this.y + matrix.f };
+                    }
+                };
+                return point as any;
+            }
+        }
+    }
+
+
     // Mock HTMLCanvasElement.getContext (JSDOM canvas)
     // @ts-ignore
     HTMLCanvasElement.prototype.getContext = jest.fn((contextId) => {

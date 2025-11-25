@@ -5,7 +5,7 @@ import L from 'leaflet';
 import ElevationProfile from './preview/ElevationProfile';
 import HeatmapOverlay from './preview/HeatmapOverlay';
 import { FeatureCollection, Geometry, GeoJsonProperties } from 'geojson';
-import { GpxPoint, TrackStyle, MarkerStyle } from '../types';
+import { GpxPoint, TrackStyle, MarkerStyle, Asset, ExtraTrack } from '../types';
 import { getCoordinateAtTime } from '../utils/gpxParser';
 
 // Fix for default marker icon
@@ -47,8 +47,19 @@ interface MapPanelProps {
   trackStyle?: TrackStyle;
   markerStyle?: MarkerStyle;
 
-  // Heatmap
+// Heatmap
   heatmapPoints?: GpxPoint[];
+
+  // Elevation Profile
+  showElevationProfile?: boolean;
+  onToggleElevationProfile?: () => void;
+  onSeek?: (time: number) => void;
+
+  // Data for ElevationProfile
+  gpxAssets?: (Asset | undefined)[];
+  mainAssetId?: string;
+  extraTracks?: ExtraTrack[];
+  clipDuration?: number;
 }
 
 const TILE_PROVIDERS = {
@@ -144,13 +155,22 @@ export const MapPanel: React.FC<MapPanelProps> = ({
 
   tracks,
 
-  // Legacy props
+// Legacy props
   geoJson,
   gpxPoints,
   syncOffset = 0,
   trackStyle,
   markerStyle,
-  heatmapPoints
+  heatmapPoints,
+
+  // Elevation Profile props
+  showElevationProfile,
+  onToggleElevationProfile,
+  onSeek,
+  gpxAssets = [],
+  mainAssetId = '',
+  extraTracks = [],
+  clipDuration = 0
 }) => {
   const tileProvider = TILE_PROVIDERS[mapStyle] || TILE_PROVIDERS.osm;
 
@@ -224,8 +244,35 @@ export const MapPanel: React.FC<MapPanelProps> = ({
           )}
 
           {heatmapPoints && <HeatmapOverlay points={heatmapPoints} />}
+
+          {onToggleElevationProfile && (
+            <div className="leaflet-top leaflet-right">
+              <div className="leaflet-control leaflet-bar">
+                <a
+                  className={`elevation-toggle ${showElevationProfile ? 'active' : ''}`}
+                  href="#"
+                  title="Toggle Elevation Profile"
+                  onClick={(e) => { e.preventDefault(); onToggleElevationProfile(); }}
+                >
+                  🏔️
+                </a>
+              </div>
+            </div>
+          )}
         </MapContainer>
       </div>
+      {showElevationProfile && onSeek && (
+        <div style={{ flex: '0 0 auto', height: '120px' }}>
+          <ElevationProfile
+            gpxAssets={gpxAssets}
+            mainAssetId={mainAssetId}
+            extraTracks={extraTracks}
+            onSeek={onSeek}
+            currentTime={currentTime}
+            clipDuration={clipDuration}
+          />
+        </div>
+      )}
     </div>
   );
 };

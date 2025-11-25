@@ -1,117 +1,137 @@
-import React, { useMemo } from 'react';
-import { getCoordinateAtTime } from '../../utils/gpxParser';
-import { GpxPoint } from '../../types';
+import React, { useState, useMemo, useCallback } from 'react';
+import { GpxPoint, Asset, ExtraTrack } from '../../../types';
+import { useProjectStore } from '../../../store/useProjectStore';
 
 interface ElevationProfileProps {
-  gpxPoints: GpxPoint[];
-  currentTime: number; // in seconds
-  syncOffset?: number; // in milliseconds
-  className?: string;
-  style?: React.CSSProperties;
+  gpxAssets: (Asset | undefined)[];
+  mainAssetId: string;
+  extraTracks: ExtraTrack[];
+  onSeek: (time: number) => void;
+  currentTime: number;
+  clipDuration: number;
 }
 
-const ElevationProfile: React.FC<ElevationProfileProps> = ({
-  gpxPoints,
-  currentTime,
-  syncOffset = 0,
-  className,
-  style,
-}) => {
-  const stats = useMemo(() => {
-    if (!gpxPoints || gpxPoints.length < 2) {
-      return null;
+const ElevationProfile: React.FC<ElevationProfileProps> = ({ gpxAssets, mainAssetId, extraTracks, onSeek, currentTime, clipDuration }) => {
+  const [selectedTrackId, setSelectedTrackId] = useState<string>(mainAssetId);
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; dist: number; ele: number } | null>(null);
+
+  const selectedAsset = useMemo(() => gpxAssets.find(asset => asset?.id === selectedTrackId), [gpxAssets, selectedTrackId]);
+  const points = useMemo(() => selectedAsset?.gpxPoints || [], [selectedAsset]);
+
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    const svg = e.currentTarget;
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX;
+    const cursorPoint = pt.matrixTransform(svg.getScreenCTM()?.inverse());
+
+    if (points.length > 1) {
+      const totalDistance = points[points.length - 1].dist!;
+      const distanceAtCursor = (cursorPoint.x / svg.clientWidth) * totalDistance;
+
+      let closestPoint = points[0];
+      for (const point of points) {
+        if (point.dist! > distanceAtCursor) break;
+        closestPoint = point;
+      }
+
+      setTooltip({
+        x: cursorPoint.x,
+        y: e.clientY - svg.getBoundingClientRect().top,
+        dist: distanceAtCursor,
+        ele: closestPoint.ele!,
+      });
     }
+  };
 
-    let minEle = Infinity;
-    let maxEle = -Infinity;
-    let pointsWithDist: GpxPoint[] = [];
+  const handleMouseLeave = () => setTooltip(null);
 
-    // Check if distance is already provided on the points. A simple check on the last point is sufficient.
-    const hasDist = gpxPoints[gpxPoints.length - 1]?.dist !== undefined && gpxPoints[gpxPoints.length - 1]?.dist! > 0;
+  const handleClick = (e: React.MouseEvent<SVGSVGElement>) => {
+    const svg = e.currentTarget;
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX;
+    const cursorPoint = pt.matrixTransform(svg.getScreenCTM()?.inverse());
 
-    if (hasDist) {
-        pointsWithDist = gpxPoints;
-    } else {
-        // If not, calculate it
-        let cumulativeDist = 0;
-        pointsWithDist = gpxPoints.map((p, i) => {
-            if (i > 0) {
-                const prev = gpxPoints[i-1];
-                const dx = (p.lon - prev.lon) * 40075000 * Math.cos((p.lat + prev.lat) * Math.PI / 360) / 360;
-                const dy = (p.lat - prev.lat) * 111320;
-                cumulativeDist += Math.sqrt(dx*dx + dy*dy);
-            }
-            return { ...p, dist: cumulativeDist };
-        });
+    if (points.length > 0) {
+      const totalDistance = points[points.length - 1].dist!;
+      const totalDuration = points[points.length - 1].time - points[0].time;
+      const distanceAtCursor = (cursorPoint.x / svg.clientWidth) * totalDistance;
+
+      let timeRatio = 0;
+      for (let i = 1; i < points.length; i++) {
+        if (points[i].dist! >= distanceAtCursor) {
+          const prev = points[i-1];
+          const curr = points[i];
+          const segmentDist = curr.dist! - prev.dist!;
+          const distIntoSegment = distanceAtCursor - prev.dist!;
+          const ratio = segmentDist > 0 ? distIntoSegment / segmentDist : 0;
+          const timeInSegment = (curr.time - prev.time) * ratio;
+          timeRatio = (prev.time + timeInSegment - points[0].time) / totalDuration;
+          break;
+        }
+      }
+      onSeek(timeRatio * clipDuration);
     }
+  };
 
-    pointsWithDist.forEach(p => {
-        minEle = Math.min(minEle, p.ele ?? minEle);
-        maxEle = Math.max(maxEle, p.ele ?? maxEle);
-    });
+  const { pathData, minEle, maxEle } = useMemo(() => {
+    if (points.length < 2) return { pathData: '', minEle: 0, maxEle: 0 };
 
-    const totalDist = pointsWithDist[pointsWithDist.length - 1]?.dist ?? 0;
+    const eleValues = points.map(p => p.ele).filter(e => e !== undefined) as number[];
+    const min = Math.min(...eleValues);
+    const max = Math.max(...eleValues);
+    const totalDist = points[points.length - 1].dist!;
 
-    return { minEle, maxEle, totalDist, pointsWithDist };
-  }, [gpxPoints]);
+    const path = points.map((p, i) => {
+      const x = (p.dist! / totalDist) * 100;
+      const y = ((p.ele! - min) / (max - min)) * 100;
+      return `${i === 0 ? 'M' : 'L'} ${x} ${100 - y}`;
+    }).join(' ');
 
-  const currentPos = useMemo(() => {
-    if (!stats) return null;
-    const baseTime = syncOffset || (gpxPoints[0]?.time ?? 0);
-    const targetTime = baseTime + currentTime * 1000;
-    return getCoordinateAtTime(stats.pointsWithDist, targetTime);
-  }, [stats, gpxPoints, currentTime, syncOffset]);
-
-
-  if (!stats) {
-    return (
-        <div className={className} style={style} data-testid="elevation-profile">
-            <div className="flex items-center justify-center h-full text-gray-400">Loading...</div>
-        </div>
-    );
-  }
-
-  const { minEle, maxEle, totalDist, pointsWithDist } = stats;
-
-  const padding = { top: 10, right: 20, bottom: 20, left: 50 };
-  const svgWidth = 800; // Use a fixed aspect ratio for responsiveness
-  const svgHeight = 200;
-
-  const xScale = (dist: number) => padding.left + (dist / totalDist) * (svgWidth - padding.left - padding.right);
-  const yScale = (ele: number) => svgHeight - padding.bottom - ((ele - minEle) / (maxEle - minEle)) * (svgHeight - padding.top - padding.bottom);
-
-  const pathData = pointsWithDist.map((p, i) => {
-    const x = xScale(p.dist ?? 0);
-    const y = yScale(p.ele ?? 0);
-    return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
-  }).join(' ');
-
-  const currentX = currentPos?.dist !== undefined ? xScale(currentPos.dist) : -1;
+    return { pathData: path, minEle: min, maxEle: max };
+  }, [points]);
 
   return (
-    <div className={className} style={style} data-testid="elevation-profile">
-      <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} preserveAspectRatio="none" style={{ width: '100%', height: '100%' }}>
-        {/* Y-axis labels */}
-        <text x={padding.left - 8} y={yScale(maxEle)} dy="0.32em" textAnchor="end" fill="white" fontSize="10">{maxEle.toFixed(0)}m</text>
-        <text x={padding.left - 8} y={yScale(minEle)} dy="0.32em" textAnchor="end" fill="white" fontSize="10">{minEle.toFixed(0)}m</text>
-        <line x1={padding.left} y1={padding.top} x2={padding.left} y2={svgHeight - padding.bottom} stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
-
-        {/* X-axis labels */}
-        <text x={xScale(0)} y={svgHeight - padding.bottom + 15} textAnchor="start" fill="white" fontSize="10">0km</text>
-        <text x={xScale(totalDist)} y={svgHeight - padding.bottom + 15} textAnchor="end" fill="white" fontSize="10">{(totalDist / 1000).toFixed(1)}km</text>
-        <line x1={padding.left} y1={svgHeight - padding.bottom} x2={svgWidth - padding.right} y2={svgHeight - padding.bottom} stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
-
-        {/* Elevation path */}
-        <path d={pathData} fill="none" stroke="#007acc" strokeWidth="2" />
-
-        {/* Current position indicator */}
-        {currentX > 0 && (
-            <g>
-                <line x1={currentX} y1={padding.top} x2={currentX} y2={svgHeight - padding.bottom} stroke="yellow" strokeWidth="1" strokeDasharray="4 2" />
-                {currentPos && <circle cx={currentX} cy={yScale(currentPos.ele ?? 0)} r="4" fill="yellow" />}
-            </g>
+    <div className="bg-gray-800 text-white p-2">
+      <div className="flex justify-between items-center mb-2">
+        <h4 className="text-sm font-bold">Elevation Profile</h4>
+        {extraTracks.length > 0 && (
+          <select
+            value={selectedTrackId}
+            onChange={e => setSelectedTrackId(e.target.value)}
+            className="bg-gray-700 text-white text-xs rounded p-1"
+          >
+            <option value={mainAssetId}>Main Track</option>
+            {extraTracks.map(track => (
+              <option key={track.assetId} value={track.assetId}>
+                {gpxAssets.find(a => a?.id === track.assetId)?.name || track.assetId}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+      <svg
+        className="w-full h-24"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        onClick={handleClick}
+      >
+        <path d={pathData} fill="rgba(107, 114, 128, 0.5)" stroke="#6b7280" strokeWidth="0.5"/>
+        {tooltip && (
+          <line x1={tooltip.x} y1="0" x2={tooltip.x} y2="100" stroke="rgba(250, 204, 21, 0.7)" strokeWidth="0.5" />
         )}
       </svg>
+      {tooltip && (
+        <div className="text-xs absolute" style={{ left: tooltip.x, top: tooltip.y - 30 }}>
+            Dist: {tooltip.dist.toFixed(0)}m, Ele: {tooltip.ele.toFixed(0)}m
+        </div>
+      )}
+      <div className="flex justify-between text-xs text-gray-400 mt-1">
+        <span>{minEle.toFixed(0)}m</span>
+        <span>{(points[points.length-1]?.dist/2 || 0).toFixed(0)}m</span>
+        <span>{maxEle.toFixed(0)}m</span>
+      </div>
     </div>
   );
 };

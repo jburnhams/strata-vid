@@ -7,10 +7,11 @@
 
 ## Tasks
 
-- [ ] **K1: Multiple GPX tracks** (4-5 hours)
+- [x] **K1: Multiple GPX tracks** (4-5 hours)
   - Support multiple GPX overlays via `extraTrackAssets` in Clip
   - Different colors for each
-  - Files: `src/components/MapPanel.tsx`, `src/types.ts`, `src/services/Compositor.ts`
+  - Implemented UI in `MetadataPanel` to add, remove, and style extra tracks.
+  - Files: `src/components/MapPanel.tsx`, `src/types.ts`, `src/services/Compositor.ts`, `src/components/MetadataPanel.tsx`
 
 - [ ] **K2: Elevation profile** (6-8 hours)
   - Display elevation graph below map

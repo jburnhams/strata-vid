@@ -175,7 +175,7 @@ function App() {
       </div>
 
       {/* Library */}
-      <div className="[grid-area:library] border-r border-neutral-700 bg-neutral-800 flex flex-col overflow-hidden" data-testid="library-panel-container">
+      <div className="[grid-area:library] border-r border-neutral-700 bg-neutral-800 flex flex-col overflow-hidden" data-testid="library">
         <LibraryPanel
             assets={assets}
             selectedAssetId={selectedAssetId}
@@ -185,17 +185,17 @@ function App() {
       </div>
 
       {/* Preview */}
-      <div className="[grid-area:preview] bg-black flex items-center justify-center relative overflow-hidden">
+      <div className="[grid-area:preview] bg-black flex items-center justify-center relative overflow-hidden" data-testid="preview">
         <PreviewPanel />
       </div>
 
       {/* Metadata */}
-      <div className="[grid-area:metadata] border-l border-neutral-700 bg-neutral-800 flex flex-col overflow-hidden" data-testid="metadata-panel-container">
+      <div className="[grid-area:metadata] border-l border-neutral-700 bg-neutral-800 flex flex-col overflow-hidden" data-testid="metadata">
         <MetadataPanel assets={assets} selectedAssetId={selectedAssetId} settings={settings} setSettings={setSettings} />
       </div>
 
       {/* Timeline */}
-      <div className="[grid-area:timeline] border-t border-neutral-700 bg-neutral-800 flex flex-col overflow-hidden">
+      <div className="[grid-area:timeline] border-t border-neutral-700 bg-neutral-800 flex flex-col overflow-hidden" data-testid="timeline">
         <TimelinePanel />
       </div>
 

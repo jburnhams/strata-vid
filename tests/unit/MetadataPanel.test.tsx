@@ -162,4 +162,91 @@ describe('MetadataPanel', () => {
     const input = within(keyframeList).getByDisplayValue('0');
     expect(input).toBeInTheDocument();
   });
+
+  describe('Extra Tracks UI', () => {
+    const mapClip = {
+        id: 'clip-map',
+        assetId: 'gpx-1',
+        trackId: 'track-1',
+        start: 0, duration: 10, offset: 0,
+        type: 'map' as const,
+        properties: { x: 0, y: 0, width: 100, height: 100, rotation: 0, opacity: 1, zIndex: 0 },
+        extraTrackAssets: [{ assetId: 'gpx-2', trackStyle: { color: '#ff0000', weight: 3, opacity: 1 } }]
+    };
+    const gpxAssets: Asset[] = [
+        { id: 'gpx-1', name: 'Primary.gpx', type: 'gpx', src: '' },
+        { id: 'gpx-2', name: 'Secondary.gpx', type: 'gpx', src: '' },
+        { id: 'gpx-3', name: 'Another.gpx', type: 'gpx', src: '' },
+    ];
+
+    beforeEach(() => {
+        useProjectStore.setState({
+            selectedClipId: 'clip-map',
+            clips: { 'clip-map': mapClip },
+            assets: gpxAssets.reduce((acc, a) => ({ ...acc, [a.id]: a }), {})
+        });
+    });
+
+    it('renders the extra tracks section and lists existing tracks', () => {
+        render(<MetadataPanel assets={gpxAssets} selectedAssetId={null} settings={mockSettings} setSettings={mockSetSettings} />);
+
+        expect(screen.getByText('Extra Tracks')).toBeInTheDocument();
+        expect(screen.getByText('Secondary.gpx')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Remove/i })).toBeInTheDocument();
+    });
+
+    it('populates the asset dropdown correctly', () => {
+        render(<MetadataPanel assets={gpxAssets} selectedAssetId={null} settings={mockSettings} setSettings={mockSetSettings} />);
+
+        const select = screen.getByLabelText(/select a gpx asset/i);
+
+        // Should contain gpx-3 ('Another.gpx')
+        expect(within(select).getByText('Another.gpx')).toBeInTheDocument();
+
+        // Should NOT contain gpx-1 (primary) or gpx-2 (already added)
+        expect(within(select).queryByText('Primary.gpx')).not.toBeInTheDocument();
+        expect(within(select).queryByText('Secondary.gpx')).not.toBeInTheDocument();
+    });
+
+    it('calls addExtraTrackToClip when Add button is clicked', () => {
+        const addExtraTrackToClip = jest.fn();
+        useProjectStore.setState({ addExtraTrackToClip });
+
+        render(<MetadataPanel assets={gpxAssets} selectedAssetId={null} settings={mockSettings} setSettings={mockSetSettings} />);
+
+        const select = screen.getByLabelText(/select a gpx asset/i);
+        const addButton = screen.getByTestId('add-extra-track-button');
+
+        fireEvent.change(select, { target: { value: 'gpx-3' } });
+        fireEvent.click(addButton);
+
+        expect(addExtraTrackToClip).toHaveBeenCalledWith('clip-map', 'gpx-3');
+    });
+
+    it('calls removeExtraTrackFromClip when Remove button is clicked', () => {
+        const removeExtraTrackFromClip = jest.fn();
+        useProjectStore.setState({ removeExtraTrackFromClip });
+
+        render(<MetadataPanel assets={gpxAssets} selectedAssetId={null} settings={mockSettings} setSettings={mockSetSettings} />);
+
+        const removeButton = screen.getByRole('button', { name: /Remove/i });
+        fireEvent.click(removeButton);
+
+        expect(removeExtraTrackFromClip).toHaveBeenCalledWith('clip-map', 'gpx-2');
+    });
+
+    it('calls updateExtraTrackOnClip when track style is changed', () => {
+        const updateExtraTrackOnClip = jest.fn();
+        useProjectStore.setState({ updateExtraTrackOnClip });
+
+        render(<MetadataPanel assets={gpxAssets} selectedAssetId={null} settings={mockSettings} setSettings={mockSetSettings} />);
+
+        const colorInput = screen.getByLabelText('Color');
+        fireEvent.change(colorInput, { target: { value: '#00ff00' } });
+
+        expect(updateExtraTrackOnClip).toHaveBeenCalledWith('clip-map', 'gpx-2', {
+            trackStyle: { color: '#00ff00', weight: 3, opacity: 1 }
+        });
+    });
+  });
 });

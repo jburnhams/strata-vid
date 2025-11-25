@@ -25,7 +25,7 @@ export const LibraryPanel: React.FC<LibraryPanelProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full" data-testid="library-panel">
       <div className="flex justify-between items-center p-4 border-b border-neutral-700 bg-neutral-800">
         <span className="font-bold text-sm text-neutral-300">Library</span>
         <Tooltip content="Add video or GPX files" position="bottom">
@@ -63,6 +63,7 @@ export const LibraryPanel: React.FC<LibraryPanelProps> = ({
                       onAssetSelect(asset.id);
                   }
               }}
+              data-testid={`asset-item-${asset.id}`}
             >
               {asset.thumbnail && (
                 <div className="w-16 h-10 bg-black rounded overflow-hidden flex-shrink-0">

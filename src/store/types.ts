@@ -29,6 +29,7 @@ export interface TimelineSlice {
   updateMarker: (id: string, marker: Partial<Marker>) => void;
   addClip: (clip: Clip) => void;
   removeClip: (id: string) => void;
+  updateClip: (id: string, clip: Partial<Clip>) => void;
   selectClip: (id: string | null) => void;
   moveClip: (id: string, newStart: number, newTrackId?: string) => void;
   resizeClip: (id: string, newDuration: number, newOffset?: number) => void;

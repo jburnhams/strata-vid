@@ -11,9 +11,11 @@ interface OverlayRendererProps {
   asset?: Asset;
   currentTime: number;
   allAssets?: Record<string, Asset>;
+  onToggleElevationProfile?: () => void;
+  onSeek?: (time: number) => void;
 }
 
-export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, currentTime, allAssets }) => {
+export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, currentTime, allAssets, onToggleElevationProfile, onSeek }) => {
   // Helper to get animated value
   const getValue = (prop: keyof OverlayProperties, defaultValue: any) => {
     if (typeof defaultValue === 'number' && clip.keyframes && clip.keyframes[prop]) {
@@ -151,19 +153,18 @@ export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, c
                 mapStyle={clip.properties.mapStyle}
                 zoom={mapZoom}
                 heatmapPoints={clip.properties.heatmap?.enabled ? asset.gpxPoints : undefined}
+                showElevationProfile={clip.properties.showElevationProfile}
+                onToggleElevationProfile={onToggleElevationProfile}
+                onSeek={onSeek}
+                gpxAssets={Object.values(allAssets || {}).filter(a => a.type === 'gpx')}
+                mainAssetId={asset.id}
+                extraTracks={clip.extraTrackAssets}
+                 clipDuration={clip.duration}
               />
               {currentGpxPoint && (
                 <DataOverlay
                   gpxData={currentGpxPoint}
                   className="absolute bottom-4 left-4 z-10"
-                />
-              )}
-              {clip.properties.showElevationProfile && asset.gpxPoints && (
-                <ElevationProfile
-                  gpxPoints={asset.gpxPoints}
-                  currentTime={currentTime - clip.start}
-                  syncOffset={clip.syncOffset}
-                  className="absolute bottom-0 left-0 w-full h-1/4 bg-black bg-opacity-50 p-2 z-20"
                 />
               )}
           </div>

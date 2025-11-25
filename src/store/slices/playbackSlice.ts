@@ -11,7 +11,8 @@ export const createPlaybackSlice: StateCreator<
   isPlaying: false,
   playbackRate: 1,
   setPlaybackState: (newState) =>
-    set((state) => {
-      Object.assign(state, newState);
-    }),
+    set((state) => ({
+        ...state,
+        ...newState
+    })),
 });

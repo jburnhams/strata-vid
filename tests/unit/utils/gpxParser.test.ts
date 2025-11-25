@@ -1,4 +1,4 @@
-import { parseGpxFile, simplifyTrack, getCoordinateAtTime } from '../../../src/utils/gpxParser';
+import { parseGpxFile, simplifyTrack, getCoordinateAtTime, haversineDistance } from '../../../src/utils/gpxParser';
 import { GpxPoint } from '../../../src/types';
 
 describe('gpxParser', () => {
@@ -107,6 +107,40 @@ describe('gpxParser', () => {
     it('returns start/end point when time is out of bounds', () => {
         expect(getCoordinateAtTime(points, 500)).toEqual(points[0]);
         expect(getCoordinateAtTime(points, 2500)).toEqual(points[1]);
+    });
+  });
+
+  describe('haversineDistance', () => {
+    it('should calculate the distance between two points correctly', () => {
+        const dist = haversineDistance(45.0, -75.0, 45.001, -75.001);
+        expect(dist).toBeCloseTo(136.18, 1);
+    });
+  });
+
+  describe('cumulative distance calculation', () => {
+    it('should calculate cumulative distance for each point', async () => {
+      const gpxContent = `
+        <?xml version="1.0" encoding="UTF-8"?>
+        <gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Strata-Vid-Test">
+          <trk>
+            <name>Test Track</name>
+            <trkseg>
+              <trkpt lat="0" lon="0"><time>2025-11-25T00:00:00Z</time></trkpt>
+              <trkpt lat="0" lon="1"><time>2025-11-25T00:00:10Z</time></trkpt>
+              <trkpt lat="1" lon="1"><time>2025-11-25T00:00:20Z</time></trkpt>
+            </trkseg>
+          </trk>
+        </gpx>
+      `;
+      const file = new File([gpxContent], 'test.gpx', { type: 'application/gpx+xml' });
+      file.text = jest.fn().mockResolvedValue(gpxContent);
+
+      const { points } = await parseGpxFile(file);
+
+      expect(points.length).toBe(3);
+      expect(points[0].dist).toBe(0);
+      expect(points[1].dist).toBeCloseTo(111194.92, 1);
+      expect(points[2].dist).toBeCloseTo(222389.85, 1);
     });
   });
 });

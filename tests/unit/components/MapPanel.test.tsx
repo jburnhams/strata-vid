@@ -84,4 +84,15 @@ describe('MapPanel', () => {
       const tileLayer = screen.getByTestId('tile-layer');
       expect(tileLayer).toHaveAttribute('data-url', expect.stringContaining('openstreetmap'));
   });
+
+  it('renders elevation profile toggle and handles click', () => {
+    const onToggle = jest.fn();
+    render(<MapPanel onToggleElevationProfile={onToggle} />);
+
+    const toggleButton = screen.getByTitle('Toggle Elevation Profile');
+    expect(toggleButton).toBeInTheDocument();
+
+    toggleButton.click();
+    expect(onToggle).toHaveBeenCalledTimes(1);
+  });
 });

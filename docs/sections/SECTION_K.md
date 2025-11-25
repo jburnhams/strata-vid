@@ -13,10 +13,11 @@
   - Implemented UI in `MetadataPanel` to add, remove, and style extra tracks.
   - Files: `src/components/MapPanel.tsx`, `src/types.ts`, `src/services/Compositor.ts`, `src/components/MetadataPanel.tsx`
 
-- [ ] **K2: Elevation profile** (6-8 hours)
+- [x] **K2: Elevation profile** (6-8 hours)
   - Display elevation graph below map
   - Highlight current position
-  - Files: `src/components/preview/ElevationProfile.tsx` (new), `src/components/MapPanel.tsx` (updated)
+  - Implemented as a toggleable component within `MapPanel`. Supports track selection, hover tooltips, and click-to-seek.
+  - Files: `src/components/preview/ElevationProfile.tsx` (new), `src/components/MapPanel.tsx` (updated), `src/components/PreviewPanel.tsx` (updated)
 
 - [ ] **K3: Data overlays on video** (5-6 hours)
   - Display speed, distance, elevation as text

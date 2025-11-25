@@ -73,6 +73,13 @@ export const createTimelineSlice: StateCreator<
         state.selectedClipId = null;
       }
     }),
+  updateClip: (id, clipUpdate) =>
+    set((state) => {
+      const clip = state.clips[id];
+      if (clip) {
+        state.clips[id] = { ...clip, ...clipUpdate };
+      }
+    }),
   selectClip: (id) =>
     set((state) => {
       state.selectedClipId = id;

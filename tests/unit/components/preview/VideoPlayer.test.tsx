@@ -295,4 +295,30 @@ describe('VideoPlayer', () => {
     const video = container.querySelector('video') as HTMLVideoElement;
     expect(video.style.filter).toBe('blur(5px)');
   });
+
+  it('interpolates properties based on keyframes', () => {
+    const clipWithKeyframes: Clip = {
+      ...mockClip,
+      keyframes: {
+        opacity: [
+          { id: 'k1', time: 0, value: 0, easing: 'linear' },
+          { id: 'k2', time: 5, value: 1, easing: 'linear' },
+        ],
+      },
+    };
+
+    const { container } = render(
+      <VideoPlayer
+        clip={clipWithKeyframes}
+        asset={mockAsset}
+        currentTime={2.5} // 2.5s into a 10s clip, 50% progress
+        isPlaying={false}
+        playbackRate={1}
+      />
+    );
+
+    const video = container.querySelector('video') as HTMLVideoElement;
+    // (2.5s is halfway between time 0 and 5, so opacity should be 0.5)
+    expect(video.style.opacity).toBe('0.5');
+  });
 });

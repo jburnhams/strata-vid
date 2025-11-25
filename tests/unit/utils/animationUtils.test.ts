@@ -44,6 +44,20 @@ describe('interpolateValue', () => {
     expect(interpolateValue(kf, 5, 0)).toBe(75);
   });
 
+  it('handles ease-in-out', () => {
+    const kf: Keyframe[] = [
+      { id: '1', time: 0, value: 0, easing: 'ease-in-out' },
+      { id: '2', time: 10, value: 100, easing: 'linear' },
+    ];
+    // At 25% time (progress=0.25), should be ease-in half (2*t*t = 2*0.25*0.25 = 0.125)
+    expect(interpolateValue(kf, 2.5, 0)).toBe(12.5);
+    // At 50% time (progress=0.5), should be exactly halfway
+    expect(interpolateValue(kf, 5, 0)).toBe(50);
+    // At 75% time (progress=0.75), should be ease-out half
+    // -1 + (4 - 2*t)*t = -1 + (4 - 1.5)*0.75 = -1 + 2.5 * 0.75 = -1 + 1.875 = 0.875
+    expect(interpolateValue(kf, 7.5, 0)).toBe(87.5);
+  });
+
   it('handles zero duration between keyframes', () => {
     const kf: Keyframe[] = [
         { id: '1', time: 0, value: 0, easing: 'linear' },

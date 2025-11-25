@@ -1,4 +1,4 @@
-import { Asset, Clip, Track, ProjectSettings, DeserializedState, Transition, Marker, Keyframe } from '../types';
+import { Asset, Clip, Track, ProjectSettings, DeserializedState, Transition, Marker, Keyframe, ExtraTrack } from '../types';
 
 export interface ProjectSlice {
   id: string;
@@ -42,6 +42,9 @@ export interface TimelineSlice {
   addKeyframe: (clipId: string, property: string, keyframe: Keyframe) => void;
   removeKeyframe: (clipId: string, property: string, keyframeId: string) => void;
   updateKeyframe: (clipId: string, property: string, keyframeId: string, update: Partial<Omit<Keyframe, 'id'>>) => void;
+  addExtraTrackToClip: (clipId: string, assetId: string) => void;
+  removeExtraTrackFromClip: (clipId: string, assetId: string) => void;
+  updateExtraTrackOnClip: (clipId: string, assetId: string, update: Partial<Omit<ExtraTrack, 'assetId'>>) => void;
 }
 
 export interface PlaybackSlice {

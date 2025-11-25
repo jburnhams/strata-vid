@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Asset, ProjectSettings } from '../types';
 import { useProjectStore } from '../store/useProjectStore';
 import { MapSyncControl } from './MapSyncControl';
@@ -17,9 +17,13 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
     selectedClipId,
     clips,
     updateClipProperties,
+    addExtraTrackToClip,
+    removeExtraTrackFromClip,
+    updateExtraTrackOnClip,
   } = useProjectStore();
 
   const activeClip = selectedClipId ? clips[selectedClipId] : null;
+  const addTrackSelectRef = useRef<HTMLSelectElement>(null);
 
   // Determine what to show
   // If a clip is selected, show clip metadata + sync controls
@@ -104,7 +108,7 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                              </div>
 
                              <div className="border-t border-neutral-700 pt-4 mt-4">
-                                <h4 className="text-sm font-bold mb-3">Track Styling</h4>
+                                <h4 className="text-sm font-bold mb-3">Primary Track Styling</h4>
                                 <div className="mb-3">
                                  <label htmlFor="track-color" className="text-xs text-gray-500 block mb-1">Track Color</label>
                                  <input
@@ -141,6 +145,69 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                                     })}
                                     className="w-full h-8 bg-neutral-900 border border-neutral-700 rounded cursor-pointer"
                                  />
+                                </div>
+                            </div>
+
+                            <div className="border-t border-neutral-700 pt-4 mt-4">
+                                <h4 className="text-sm font-bold mb-3">Extra Tracks</h4>
+                                <div className="space-y-2 mb-4">
+                                    {(activeClip.extraTrackAssets || []).map((extraTrack) => {
+                                        const extraAsset = assets.find(a => a.id === extraTrack.assetId);
+                                        return (
+                                            <div key={extraTrack.assetId} className="bg-neutral-900 p-2 rounded border border-neutral-700">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <p className="text-xs truncate" title={extraAsset?.name}>{extraAsset?.name || 'Unknown Asset'}</p>
+                                                    <button
+                                                        onClick={() => removeExtraTrackFromClip(activeClip.id, extraTrack.assetId)}
+                                                        className="text-red-500 hover:text-red-400 text-xs font-bold"
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                                <div className="flex items-center space-x-2">
+                                                    <label htmlFor={`extra-track-color-${extraTrack.assetId}`} className="text-xs text-gray-500">Color</label>
+                                                    <input
+                                                        id={`extra-track-color-${extraTrack.assetId}`}
+                                                        type="color"
+                                                        value={extraTrack.trackStyle?.color || '#ff0000'}
+                                                        onChange={(e) => updateExtraTrackOnClip(activeClip.id, extraTrack.assetId, {
+                                                            trackStyle: {
+                                                                color: e.target.value,
+                                                                weight: extraTrack.trackStyle?.weight || 4,
+                                                                opacity: extraTrack.trackStyle?.opacity || 1,
+                                                            }
+                                                        })}
+                                                        className="w-6 h-6 bg-neutral-800 border-neutral-700 rounded cursor-pointer"
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <div className="flex space-x-2">
+                                    <select
+                                        ref={addTrackSelectRef}
+                                        id="add-extra-track-select"
+                                        aria-label="Select a GPX asset to add"
+                                        className="flex-1 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
+                                    >
+                                        <option value="">Select a GPX asset...</option>
+                                        {assets
+                                            .filter(a => a.type === 'gpx' && a.id !== activeClip.assetId && !(activeClip.extraTrackAssets || []).some(et => et.assetId === a.id))
+                                            .map(a => <option key={a.id} value={a.id}>{a.name}</option>)
+                                        }
+                                    </select>
+                                    <button
+                                        data-testid="add-extra-track-button"
+                                        onClick={() => {
+                                            if (addTrackSelectRef.current?.value) {
+                                                addExtraTrackToClip(activeClip.id, addTrackSelectRef.current.value);
+                                            }
+                                        }}
+                                        className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-1 px-3 rounded text-sm"
+                                    >
+                                        Add
+                                    </button>
                                 </div>
                             </div>
                         </div>

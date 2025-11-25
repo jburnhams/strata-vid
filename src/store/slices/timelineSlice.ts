@@ -328,4 +328,38 @@ export const createTimelineSlice: StateCreator<
         }
       }
     }),
+  addExtraTrackToClip: (clipId, assetId) =>
+    set((state) => {
+      const clip = state.clips[clipId];
+      if (clip && clip.type === 'map') {
+        if (!clip.extraTrackAssets) {
+          clip.extraTrackAssets = [];
+        }
+        // Avoid duplicates
+        if (!clip.extraTrackAssets.some((t) => t.assetId === assetId)) {
+          clip.extraTrackAssets.push({ assetId });
+        }
+      }
+    }),
+  removeExtraTrackFromClip: (clipId, assetId) =>
+    set((state) => {
+      const clip = state.clips[clipId];
+      if (clip && clip.type === 'map' && clip.extraTrackAssets) {
+        clip.extraTrackAssets = clip.extraTrackAssets.filter(
+          (t) => t.assetId !== assetId
+        );
+      }
+    }),
+  updateExtraTrackOnClip: (clipId, assetId, update) =>
+    set((state) => {
+      const clip = state.clips[clipId];
+      if (clip && clip.type === 'map' && clip.extraTrackAssets) {
+        const track = clip.extraTrackAssets.find(
+          (t) => t.assetId === assetId
+        );
+        if (track) {
+          Object.assign(track, update);
+        }
+      }
+    }),
 });

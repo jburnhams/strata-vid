@@ -68,7 +68,8 @@ describe('MetadataPanel', () => {
       render(<MetadataPanel activeAsset={null} />);
 
       expect(screen.getByText('Clip Properties')).toBeInTheDocument();
-      expect(screen.getByText('Generic properties...')).toBeInTheDocument();
+      expect(screen.getByText('Opacity')).toBeInTheDocument();
+      expect(screen.getByText('Rotation')).toBeInTheDocument();
   });
 
   it('renders Map Styling controls when a map clip is selected', () => {

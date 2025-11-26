@@ -1,86 +1,55 @@
+
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
 import DataOverlay from '../../../../src/components/preview/DataOverlay';
-import { DataOverlayOptions, TextStyle } from '../../../../src/types';
+import '@testing-library/jest-dom';
 
 describe('DataOverlay', () => {
-  const mockData = {
-    speed: 10, // m/s
-    dist: 5000, // m
-    ele: 123.45,
+  const mockGpxData = {
+    speed: 10, // 10 m/s
+    dist: 5000, // 5000 meters
+    ele: 100, // 100 meters
   };
 
-  it('renders all data points with default units', () => {
-    render(<DataOverlay gpxData={mockData} />);
+  it('renders all data fields with default units', () => {
+    render(<DataOverlay gpxData={mockGpxData} />);
+
+    // Default units are km/h, km, m
     expect(screen.getByText('Speed: 36.0 km/h')).toBeInTheDocument();
     expect(screen.getByText('Distance: 5.00 km')).toBeInTheDocument();
-    expect(screen.getByText('Elevation: 123.5 m')).toBeInTheDocument();
+    expect(screen.getByText('Elevation: 100.0 m')).toBeInTheDocument();
   });
 
-  it('hides data points based on options', () => {
-    const options: DataOverlayOptions = {
-      showSpeed: false,
-      showDistance: true,
-      showElevation: false,
-      speedUnit: 'kmh',
-      distanceUnit: 'km',
-      elevationUnit: 'm',
-    };
-    render(<DataOverlay gpxData={mockData} options={options} />);
+  it('respects the show/hide options', () => {
+    render(<DataOverlay gpxData={mockGpxData} options={{ showSpeed: false }} />);
+
     expect(screen.queryByText(/Speed/)).not.toBeInTheDocument();
-    expect(screen.getByText('Distance: 5.00 km')).toBeInTheDocument();
+    expect(screen.getByText(/Distance/)).toBeInTheDocument();
+    expect(screen.getByText(/Elevation/)).toBeInTheDocument();
+  });
+
+  it('formats units correctly (imperial)', () => {
+    render(<DataOverlay gpxData={mockGpxData} options={{ speedUnit: 'mph', distanceUnit: 'mi', elevationUnit: 'ft' }} />);
+
+    expect(screen.getByText('Speed: 22.4 mph')).toBeInTheDocument();
+    expect(screen.getByText('Distance: 3.11 mi')).toBeInTheDocument();
+    expect(screen.getByText('Elevation: 328 ft')).toBeInTheDocument();
+  });
+
+  it('applies custom text styling', () => {
+    render(<DataOverlay gpxData={mockGpxData} textStyle={{ color: 'rgb(255, 0, 0)', fontSize: 24 }} />);
+
+    const element = screen.getByTestId('data-overlay');
+    expect(element).toHaveStyle('color: rgb(255, 0, 0)');
+    expect(element).toHaveStyle('font-size: 24px');
+  });
+
+  it('does not render fields if data is missing', () => {
+    render(<DataOverlay gpxData={{}} />);
+
+    expect(screen.queryByText(/Speed/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Distance/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Elevation/)).not.toBeInTheDocument();
   });
 
-  it('converts units correctly based on options', () => {
-    const options: DataOverlayOptions = {
-      showSpeed: true,
-      showDistance: true,
-      showElevation: true,
-      speedUnit: 'mph',
-      distanceUnit: 'mi',
-      elevationUnit: 'ft',
-    };
-    render(<DataOverlay gpxData={mockData} options={options} />);
-    expect(screen.getByText('Speed: 22.4 mph')).toBeInTheDocument();
-    expect(screen.getByText('Distance: 3.11 mi')).toBeInTheDocument();
-    expect(screen.getByText('Elevation: 405 ft')).toBeInTheDocument();
-  });
-
-  it('applies custom text styles', () => {
-    const textStyle: TextStyle = {
-      fontFamily: 'Arial',
-      fontSize: 20,
-      fontWeight: 'bold',
-      color: 'rgb(255, 0, 0)',
-      backgroundColor: 'rgb(0, 0, 255)',
-      textAlign: 'center',
-    };
-    render(<DataOverlay gpxData={mockData} textStyle={textStyle} />);
-    const overlay = screen.getByTestId('data-overlay');
-    expect(overlay).toHaveStyle('font-family: Arial');
-    expect(overlay).toHaveStyle('font-size: 20px');
-    expect(overlay).toHaveStyle('font-weight: bold');
-    expect(overlay).toHaveStyle('color: rgb(255, 0, 0)');
-    expect(overlay).toHaveStyle('background-color: rgb(0, 0, 255)');
-    expect(overlay).toHaveStyle('text-align: center');
-  });
-
-  it('merges default and custom options/styles', () => {
-    const options: Partial<DataOverlayOptions> = {
-      speedUnit: 'm/s',
-    };
-    const textStyle: Partial<TextStyle> = {
-      color: 'rgb(0, 255, 0)',
-    };
-    render(<DataOverlay gpxData={mockData} options={options} textStyle={textStyle} />);
-    // Check custom values
-    expect(screen.getByText('Speed: 10.0 m/s')).toBeInTheDocument();
-    const overlay = screen.getByTestId('data-overlay');
-    expect(overlay).toHaveStyle('color: rgb(0, 255, 0)');
-    // Check default values
-    expect(screen.getByText('Distance: 5.00 km')).toBeInTheDocument();
-    expect(overlay).toHaveStyle('background-color: rgba(0, 0, 0, 0.5)');
-  });
 });

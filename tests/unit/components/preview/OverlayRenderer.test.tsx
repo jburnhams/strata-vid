@@ -1,109 +1,108 @@
+
 import React from 'react';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { OverlayRenderer } from '../../../../src/components/preview/OverlayRenderer';
 import { Clip, Asset } from '../../../../src/types';
 
-// Mock MapPanel since it uses Leaflet which requires window/canvas mocks
+// Mock child components
+const mockMapPanel = jest.fn();
 jest.mock('../../../../src/components/MapPanel', () => ({
-  MapPanel: () => <div data-testid="map-panel" />
+  MapPanel: (props: any) => {
+      mockMapPanel(props);
+      return <div data-testid="map-panel" />;
+  },
+}));
+jest.mock('../../../../src/components/preview/DataOverlay', () => ({
+  __esModule: true,
+  default: (props: any) => <div data-testid="data-overlay" {...props} />,
 }));
 
+const mockTextClip: Clip = {
+  id: 'clip1', type: 'text', content: 'Hello World', start: 0, end: 5, trackId: 't1', assetId: 'a1',
+  properties: { x: 10, y: 10, width: 80, height: 10, rotation: 0, opacity: 1 },
+  textStyle: { fontSize: 24, color: '#ff0000' },
+};
+
+const mockImageClip: Clip = {
+  id: 'clip2', type: 'image', start: 5, end: 10, trackId: 't1', assetId: 'a2',
+  properties: { x: 0, y: 0, width: 100, height: 100, rotation: 0, opacity: 1 },
+};
+const mockImageAsset: Asset = { id: 'a2', name: 'img', type: 'image', src: 'image.png', source: '' };
+
+const mockMapClip: Clip = {
+  id: 'clip3', type: 'map', start: 10, end: 20, trackId: 't1', assetId: 'a3',
+  properties: { x: 0, y: 0, width: 100, height: 100, rotation: 0, opacity: 1, mapZoom: 12 },
+  syncOffset: 0, extraTrackAssets: [{ assetId: 'a4', syncOffset: 0 }],
+};
+const mockMapAsset: Asset = { id: 'a3', name: 'map', type: 'gpx', geoJson: { type: 'FeatureCollection', features: [] }, gpxPoints: [], source: '' };
+const mockExtraMapAsset: Asset = { id: 'a4', name: 'extra_map', type: 'gpx', geoJson: { type: 'FeatureCollection', features: [] }, gpxPoints: [], source: '' };
+
+const mockDataClip: Clip = {
+  id: 'clip4', type: 'data', start: 20, end: 30, trackId: 't1', assetId: 'a3',
+  properties: { x: 0, y: 0, width: 100, height: 100, rotation: 0, opacity: 1 },
+};
+
+const allAssets = {
+    [mockImageAsset.id]: mockImageAsset,
+    [mockMapAsset.id]: mockMapAsset,
+    [mockExtraMapAsset.id]: mockExtraMapAsset,
+};
+
 describe('OverlayRenderer', () => {
-  const baseClip: Clip = {
-    id: 'clip1',
-    assetId: 'asset1',
-    trackId: 'track1',
-    start: 0,
-    duration: 10,
-    offset: 0,
-    type: 'text',
-    properties: { x: 10, y: 10, width: 50, height: 50, rotation: 0, opacity: 0.5, zIndex: 2 }
-  };
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
 
-  it('renders text overlay', () => {
-    const clip = { ...baseClip, type: 'text' as const, content: 'Hello World' };
-    const { getByText, container } = render(
-      <OverlayRenderer clip={clip} currentTime={0} />
-    );
-    expect(getByText('Hello World')).toBeInTheDocument();
-
-    // Check styles
-    const div = container.firstChild as HTMLElement;
-    expect(div).toHaveStyle('left: 10%');
-    expect(div).toHaveStyle('opacity: 0.5');
+  it('renders a text overlay', () => {
+    render(<OverlayRenderer clip={mockTextClip} currentTime={1} />);
+    const textElement = screen.getByText('Hello World');
+    expect(textElement).toBeInTheDocument();
+    expect(textElement).toHaveStyle('color: rgb(255, 0, 0)');
   });
 
-  it('renders text overlay with custom styles', () => {
-    const clip: Clip = {
-      ...baseClip,
-      type: 'text',
-      content: 'Styled Text',
-      textStyle: {
-        fontFamily: 'Arial',
-        fontSize: 40,
-        fontWeight: 'bold',
-        color: '#ff0000',
-        textAlign: 'right',
-        backgroundColor: '#000000'
-      }
-    };
-    const { getByText } = render(
-      <OverlayRenderer clip={clip} currentTime={0} />
-    );
-    const textElement = getByText('Styled Text');
-
-    expect(textElement).toHaveStyle('font-family: Arial');
-    expect(textElement).toHaveStyle('font-size: 40px');
-    expect(textElement).toHaveStyle('color: #ff0000');
-    expect(textElement).toHaveStyle('text-align: right');
+  it('renders an image overlay', () => {
+    render(<OverlayRenderer clip={mockImageClip} asset={mockImageAsset} currentTime={6} />);
+    const img = screen.getByRole('img');
+    expect(img).toHaveAttribute('src', 'image.png');
   });
 
-  it('renders image overlay', () => {
-    const clip = { ...baseClip, type: 'image' as const };
-    const asset: Asset = { id: 'a1', name: 'img.png', type: 'image', src: 'img.png' };
-
-    const { getByAltText } = render(
-      <OverlayRenderer clip={clip} asset={asset} currentTime={0} />
-    );
-    const img = getByAltText('clip1');
-    expect(img).toHaveAttribute('src', 'img.png');
+  it('renders a map overlay with multiple tracks', () => {
+    render(<OverlayRenderer clip={mockMapClip} asset={mockMapAsset} currentTime={12} allAssets={allAssets}/>);
+    expect(screen.getByTestId('map-panel')).toBeInTheDocument();
+    expect(mockMapPanel).toHaveBeenCalled();
+    const mapPanelProps = mockMapPanel.mock.calls[0][0];
+    expect(mapPanelProps.tracks).toHaveLength(2);
+    expect(mapPanelProps.zoom).toBe(12);
   });
 
-  it('renders map overlay', () => {
-    const clip = { ...baseClip, type: 'map' as const };
-    const asset: Asset = {
-        id: 'a1',
-        name: 'track.gpx',
-        type: 'gpx',
-        src: 'track.gpx',
-        geoJson: { type: 'FeatureCollection', features: [] }
-    };
-
-    const { getByTestId } = render(
-      <OverlayRenderer clip={clip} asset={asset} currentTime={0} />
-    );
-    expect(getByTestId('map-panel')).toBeInTheDocument();
+  it('renders a data overlay', () => {
+    // Need gpxPoints for getCoordinateAtTime to work
+    const assetWithPoints = { ...mockMapAsset, gpxPoints: [{ lat: 0, lon: 0, ele: 0, time: 0 }] };
+    render(<OverlayRenderer clip={mockDataClip} asset={assetWithPoints} currentTime={21} />);
+    expect(screen.getByTestId('data-overlay')).toBeInTheDocument();
   });
 
-  it('interpolates properties based on keyframes', () => {
-    const clipWithKeyframes: Clip = {
-      ...baseClip,
-      type: 'text',
-      content: 'Animating',
-      keyframes: {
-        x: [
-          { id: 'k1', time: 0, value: 10, easing: 'linear' },
-          { id: 'k2', time: 10, value: 60, easing: 'linear' },
-        ],
-      },
-    };
+  it('applies crossfade transition', () => {
+    const clipWithTransition = { ...mockTextClip, transitionIn: { type: 'crossfade', duration: 2 } };
+    const { rerender } = render(<OverlayRenderer clip={clipWithTransition} currentTime={0.5} />);
+    // Opacity should be progress * original opacity
+    expect(screen.getByText('Hello World').parentElement).toHaveStyle('opacity: 0.25');
 
-    const { container } = render(
-      <OverlayRenderer clip={clipWithKeyframes} currentTime={5} /> // 5s into 10s clip
-    );
+    rerender(<OverlayRenderer clip={clipWithTransition} currentTime={1} />);
+    expect(screen.getByText('Hello World').parentElement).toHaveStyle('opacity: 0.5');
+  });
 
-    const div = container.firstChild as HTMLElement;
-    // 5s is halfway, so x should be halfway between 10 and 60 -> 35
-    expect(div).toHaveStyle('left: 35%');
+  it('applies wipe transition', () => {
+    const clipWithTransition = { ...mockTextClip, transitionIn: { type: 'wipe', duration: 2 } };
+    render(<OverlayRenderer clip={clipWithTransition} currentTime={1} />);
+    expect(screen.getByText('Hello World').parentElement).toHaveStyle('clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%)');
+  });
+
+  it('applies keyframe animations', () => {
+    const clipWithKeyframes = { ...mockTextClip, keyframes: {
+        opacity: [{ id: 'k1', time: 0, value: 0 }, { id: 'k2', time: 2, value: 1 }],
+    }};
+    render(<OverlayRenderer clip={clipWithKeyframes} currentTime={1} />);
+    expect(screen.getByText('Hello World').parentElement).toHaveStyle('opacity: 0.5');
   });
 });

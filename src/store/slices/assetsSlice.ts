@@ -7,7 +7,7 @@ export const createAssetsSlice: StateCreator<
   [['zustand/immer', never]],
   [],
   AssetsSlice
-> = (set) => ({
+> = (set, get) => ({
   assets: {},
   selectedAssetId: null,
   addAsset: (asset) =>
@@ -33,7 +33,7 @@ export const createAssetsSlice: StateCreator<
       state.selectedAssetId = id;
     }),
   reprocessGpxAsset: async (id, tolerance) => {
-    const asset = useProjectStore.getState().assets[id];
+    const asset = get().assets[id];
     if (asset && asset.type === 'gpx') {
       try {
         const updatedData = await AssetLoader.reprocessGpxAsset(asset, tolerance);
@@ -49,7 +49,3 @@ export const createAssetsSlice: StateCreator<
     }
   },
 });
-
-// Need to import useProjectStore at the end to avoid circular dependency issues
-// during store initialization.
-import { useProjectStore } from '../useProjectStore';

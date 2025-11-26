@@ -367,10 +367,11 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                      <div className="space-y-6">
                          <div>
                             <div className="flex justify-between mb-1">
-                                <label className="text-xs text-gray-500">Opacity</label>
+                                <label htmlFor="opacity-slider" className="text-xs text-gray-500">Opacity</label>
                                 <span className="text-xs text-gray-400">{Math.round(activeClip.properties.opacity * 100)}%</span>
                             </div>
                             <input
+                                id="opacity-slider"
                                 type="range"
                                 min="0" max="1" step="0.01"
                                 value={activeClip.properties.opacity}
@@ -382,10 +383,11 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
 
                          <div>
                             <div className="flex justify-between mb-1">
-                                <label className="text-xs text-gray-500">Rotation</label>
+                                <label htmlFor="rotation-slider" className="text-xs text-gray-500">Rotation</label>
                                 <span className="text-xs text-gray-400">{Math.round(activeClip.properties.rotation)}°</span>
                             </div>
                             <input
+                                id="rotation-slider"
                                 type="range"
                                 min="0" max="360" step="1"
                                 value={activeClip.properties.rotation}
@@ -397,10 +399,11 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
 
                          <div>
                              <div className="flex justify-between mb-1">
-                                <label className="text-xs text-gray-500">Position X (%)</label>
+                                <label htmlFor="pos-x-slider" className="text-xs text-gray-500">Position X (%)</label>
                                 <span className="text-xs text-gray-400">{Math.round(activeClip.properties.x)}%</span>
                              </div>
                              <input
+                                id="pos-x-slider"
                                 type="range"
                                 min="0" max="100" step="1"
                                 value={activeClip.properties.x}
@@ -412,10 +415,11 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
 
                          <div>
                              <div className="flex justify-between mb-1">
-                                <label className="text-xs text-gray-500">Position Y (%)</label>
+                                <label htmlFor="pos-y-slider" className="text-xs text-gray-500">Position Y (%)</label>
                                 <span className="text-xs text-gray-400">{Math.round(activeClip.properties.y)}%</span>
                              </div>
                              <input
+                                id="pos-y-slider"
                                 type="range"
                                 min="0" max="100" step="1"
                                 value={activeClip.properties.y}

@@ -27,7 +27,7 @@ const mockMapClip: Clip = {
     start: 0,
     end: 10,
     type: 'map',
-    properties: { mapZoom: 13, showElevationProfile: true, trackStyle: { color: '#ff0000', weight: 3 } },
+    properties: { mapZoom: 13, showElevationProfile: true, trackStyle: { color: '#ff0000', weight: 3 }, heatmap: { enabled: false } },
     extraTrackAssets: [],
 };
 
@@ -141,5 +141,30 @@ describe('MetadataPanel', () => {
         const opacitySlider = screen.getByLabelText('Opacity');
         fireEvent.change(opacitySlider, { target: { value: '0.5' } });
         expect(mockUpdateClipProperties).toHaveBeenCalledWith('clip3', { opacity: 0.5 });
+    });
+
+    it('should handle heatmap controls for a map clip', () => {
+        // Set up the store with the map clip selected
+        (useProjectStore as unknown as jest.Mock).mockReturnValue({ ...useProjectStore(), selectedClipId: 'clip1' });
+        render(<MetadataPanel assets={mockAssets} selectedAssetId="asset2" settings={mockSettings} setSettings={mockSetSettings} />);
+
+        // 1. Check and click the "Enable Heatmap" checkbox
+        const heatmapCheckbox = screen.getByLabelText('Enable Heatmap');
+        expect(heatmapCheckbox).not.toBeChecked();
+        fireEvent.click(heatmapCheckbox);
+        expect(mockUpdateClipProperties).toHaveBeenCalledWith('clip1', { heatmap: { enabled: true } });
+
+        // 2. Re-render with the heatmap enabled to show the data source dropdown
+        (useProjectStore as unknown as jest.Mock).mockReturnValue({
+            ...useProjectStore(),
+            selectedClipId: 'clip1',
+            clips: { [mockMapClip.id]: { ...mockMapClip, properties: { ...mockMapClip.properties, heatmap: { enabled: true, dataSource: 'speed' } } } },
+        });
+        render(<MetadataPanel assets={mockAssets} selectedAssetId="asset2" settings={mockSettings} setSettings={mockSetSettings} />);
+
+        // 3. Find and change the "Data Source" select
+        const dataSourceSelect = screen.getByLabelText('Data Source');
+        fireEvent.change(dataSourceSelect, { target: { value: 'elevation' } });
+        expect(mockUpdateClipProperties).toHaveBeenCalledWith('clip1', { heatmap: { enabled: true, dataSource: 'elevation' } });
     });
 });

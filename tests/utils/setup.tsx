@@ -190,32 +190,6 @@ if (isJSDOM) {
       })(),
     }));
 
-    jest.mock('leaflet', () => {
-        const L = jest.requireActual('leaflet');
-        // A simple placeholder mock for Leaflet's L.CanvasLayer
-        L.CanvasLayer = L.Layer.extend({
-            onAdd: jest.fn(),
-            onRemove: jest.fn(),
-            draw: jest.fn(),
-        });
-        L.canvasLayer = () => new L.CanvasLayer();
-        return L;
-    });
-
-    // A simple placeholder mock for Leaflet's L.CanvasLayer
-    jest.mock('leaflet', () => {
-        const L = jest.requireActual('leaflet');
-        L.CanvasLayer = L.Layer.extend({
-            onAdd: jest.fn(),
-            onRemove: jest.fn(),
-            draw: jest.fn(),
-        });
-        L.canvasLayer = () => new L.CanvasLayer();
-        return L;
-    });
-
-    jest.mock('../../src/components/preview/HeatmapOverlay', () => () => <div data-testid="heatmap-overlay-mock" />);
-
     afterEach(() => {
       cleanup();
     });

@@ -14,6 +14,7 @@ export interface AssetsSlice {
   updateAsset: (id: string, asset: Partial<Asset>) => void;
   removeAsset: (id: string) => void;
   selectAsset: (id: string | null) => void;
+  reprocessGpxAsset: (id: string, tolerance: number) => Promise<void>;
 }
 
 export interface TimelineSlice {

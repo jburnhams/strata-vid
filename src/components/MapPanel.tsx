@@ -43,12 +43,14 @@ interface MapPanelProps {
   syncOffset?: number; // Offset in ms between video time 0 and GPX time
 
   // Styling
-  mapStyle?: 'osm' | 'mapbox' | 'satellite';
+  mapStyle?: 'osm' | 'mapbox' | 'satellite' | 'dark' | 'custom';
+  customMapStyleUrl?: string;
   trackStyle?: TrackStyle;
   markerStyle?: MarkerStyle;
 
 // Heatmap
   heatmapPoints?: GpxPoint[];
+  heatmapDataSource?: 'speed' | 'elevation';
 
   // Elevation Profile
   showElevationProfile?: boolean;
@@ -75,6 +77,14 @@ const TILE_PROVIDERS = {
     satellite: {
         url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
         attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    },
+    dark: {
+        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    },
+    custom: {
+        url: '', // This will be replaced by the customMapStyleUrl prop
+        attribution: 'Custom Tile Layer'
     }
 };
 
@@ -152,6 +162,7 @@ export const MapPanel: React.FC<MapPanelProps> = ({
   className,
   currentTime = 0,
   mapStyle = 'osm',
+  customMapStyleUrl,
 
   tracks,
 
@@ -162,6 +173,7 @@ export const MapPanel: React.FC<MapPanelProps> = ({
   trackStyle,
   markerStyle,
   heatmapPoints,
+  heatmapDataSource,
 
   // Elevation Profile props
   showElevationProfile,
@@ -172,7 +184,13 @@ export const MapPanel: React.FC<MapPanelProps> = ({
   extraTracks = [],
   clipDuration = 0
 }) => {
-  const tileProvider = TILE_PROVIDERS[mapStyle] || TILE_PROVIDERS.osm;
+  const tileProvider = useMemo(() => {
+    const provider = TILE_PROVIDERS[mapStyle] || TILE_PROVIDERS.osm;
+    if (mapStyle === 'custom' && customMapStyleUrl) {
+      return { ...provider, url: customMapStyleUrl };
+    }
+    return provider;
+  }, [mapStyle, customMapStyleUrl]);
 
   // normalize tracks
   const effectiveTracks = useMemo(() => {
@@ -242,7 +260,7 @@ export const MapPanel: React.FC<MapPanelProps> = ({
               <FitBounds geoJson={primaryTrack.geoJson} />
           )}
 
-          {heatmapPoints && <HeatmapOverlay points={heatmapPoints} />}
+          {heatmapPoints && <HeatmapOverlay points={heatmapPoints} dataSource={heatmapDataSource} />}
 
           {onToggleElevationProfile && (
             <div className="leaflet-top leaflet-right">

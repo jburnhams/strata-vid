@@ -155,23 +155,67 @@ if (isJSDOM) {
       Marker: ({ position }: { position: any }) => <div data-testid="marker" data-position={JSON.stringify(position)} />,
       Popup: ({ children }: { children: React.ReactNode }) => <div data-testid="popup">{children}</div>,
       GeoJSON: ({ data, style }: { data: any, style: any }) => <div data-testid="geojson" data-style={JSON.stringify(style)} />,
-      useMap: () => ({
-        setView: jest.fn(),
-        flyTo: jest.fn(),
-        fitBounds: jest.fn(),
-        getPanes: () => ({
+      useMap: (() => {
+        // Create a singleton instance of the map mock to be shared across all calls in a test.
+        const panes = {
           overlayPane: {
-            appendChild: jest.fn(),
+            appendChild: jest.fn((el) => {
+              // Add a parentNode property to the appended element
+              Object.defineProperty(el, 'parentNode', {
+                value: panes.overlayPane,
+                configurable: true,
+              });
+            }),
             removeChild: jest.fn(),
           },
-        }),
-        on: jest.fn(),
-        off: jest.fn(),
-        getBounds: () => ({ getNorthWest: () => ({ lat: 0, lng: 0 }) }),
-        latLngToLayerPoint: () => ({ x: 0, y: 0 }),
-        getSize: () => ({ x: 100, y: 100 }),
-      }),
+        };
+        const mapMock: any = {};
+        Object.assign(mapMock, {
+          setView: jest.fn(),
+          flyTo: jest.fn(),
+          fitBounds: jest.fn(),
+          addLayer: jest.fn((layer: any) => { if (layer.onAdd) layer.onAdd(mapMock); }),
+          removeLayer: jest.fn((layer: any) => { if (layer.onRemove) layer.onRemove(mapMock); }),
+          getPanes: () => panes,
+          on: jest.fn(),
+          off: jest.fn(),
+          getBounds: () => ({ getNorthWest: () => ({ lat: 0, lng: 0 }) }),
+          latLngToLayerPoint: () => ({ x: 0, y: 0 }),
+          containerPointToLayerPoint: () => ({ x: 0, y: 0 }),
+          latLngToContainerPoint: () => ({ x: 0, y: 0 }),
+          getSize: () => ({ x: 100, y: 100 }),
+          options: { zoomAnimation: true },
+        });
+        return () => mapMock;
+      })(),
     }));
+
+    jest.mock('leaflet', () => {
+        const L = jest.requireActual('leaflet');
+        // A simple placeholder mock for Leaflet's L.CanvasLayer
+        L.CanvasLayer = L.Layer.extend({
+            onAdd: jest.fn(),
+            onRemove: jest.fn(),
+            draw: jest.fn(),
+        });
+        L.canvasLayer = () => new L.CanvasLayer();
+        return L;
+    });
+
+    // A simple placeholder mock for Leaflet's L.CanvasLayer
+    jest.mock('leaflet', () => {
+        const L = jest.requireActual('leaflet');
+        L.CanvasLayer = L.Layer.extend({
+            onAdd: jest.fn(),
+            onRemove: jest.fn(),
+            draw: jest.fn(),
+        });
+        L.canvasLayer = () => new L.CanvasLayer();
+        return L;
+    });
+
+    jest.mock('../../src/components/preview/HeatmapOverlay', () => () => <div data-testid="heatmap-overlay-mock" />);
+
     afterEach(() => {
       cleanup();
     });
@@ -222,9 +266,10 @@ if (isJSDOM) {
 
     // Mock HTMLCanvasElement.getContext (JSDOM canvas)
     // @ts-ignore
-    HTMLCanvasElement.prototype.getContext = jest.fn((contextId) => {
+    HTMLCanvasElement.prototype.getContext = jest.fn(function(contextId) {
       if (contextId === '2d') {
         const mockContext = {
+          canvas: this, // Add back-reference to the canvas element
           clearRect: jest.fn(),
           fillRect: jest.fn(),
           strokeRect: jest.fn(),

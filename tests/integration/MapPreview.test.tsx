@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, act } from '@testing-library/react';
+import { render, act, waitFor } from '@testing-library/react';
 import { PreviewPanel } from '../../src/components/PreviewPanel';
 import { useProjectStore } from '../../src/store/useProjectStore';
 import '@testing-library/jest-dom';
@@ -205,4 +205,60 @@ describe('MapPreview Integration', () => {
         // We'll check if it's close to 5.
         expect(useProjectStore.getState().currentTime).toBeCloseTo(5, 0);
     });
+
+    it('updates map style when clip properties change', async () => {
+        const asset: Asset = { id: 'asset-gpx', name: 'test.gpx', type: 'gpx', src: 'blob:gpx', geoJson: { type: 'FeatureCollection', features: [] } };
+        const clip: Clip = {
+            id: 'clip-map',
+            trackId: 'track-1',
+            assetId: 'asset-gpx',
+            start: 0,
+            duration: 10,
+            offset: 0,
+            type: 'map',
+            properties: { x: 0, y: 0, width: 100, height: 100, rotation: 0, opacity: 1, zIndex: 1, mapStyle: 'osm' }
+        };
+        const track: Track = { id: 'track-1', type: 'overlay', label: 'Map Track', isMuted: false, isLocked: false, clips: ['clip-map'] };
+
+        act(() => {
+            useProjectStore.setState({
+                assets: { 'asset-gpx': asset },
+                clips: { 'clip-map': clip },
+                tracks: { 'track-1': track },
+                trackOrder: ['track-1']
+            });
+        });
+
+        const { findByTestId } = render(<PreviewPanel />);
+
+        // 1. Check initial style (OSM)
+        let tileLayer = await findByTestId('tile-layer');
+        expect(tileLayer).toHaveAttribute('data-url', expect.stringContaining('openstreetmap'));
+
+        // 2. Change style to Satellite
+        act(() => {
+            useProjectStore.getState().updateClipProperties('clip-map', { mapStyle: 'satellite' });
+        });
+
+        tileLayer = await findByTestId('tile-layer');
+        expect(tileLayer).toHaveAttribute('data-url', expect.stringContaining('arcgisonline'));
+
+        // 3. Change style to Dark
+        act(() => {
+            useProjectStore.getState().updateClipProperties('clip-map', { mapStyle: 'dark' });
+        });
+
+        tileLayer = await findByTestId('tile-layer');
+        expect(tileLayer).toHaveAttribute('data-url', expect.stringContaining('cartocdn'));
+
+        // 4. Change to Custom URL
+        const customUrl = 'https://my-tiles.com/{z}/{x}/{y}';
+        act(() => {
+            useProjectStore.getState().updateClipProperties('clip-map', { mapStyle: 'custom', customMapStyleUrl: customUrl });
+        });
+
+        tileLayer = await findByTestId('tile-layer');
+        expect(tileLayer).toHaveAttribute('data-url', customUrl);
+    });
+
 });

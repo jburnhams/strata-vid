@@ -66,7 +66,8 @@ export interface OverlayProperties {
   zIndex: number;
   filter?: string; // CSS filter string
   // Map specific properties
-  mapStyle?: 'osm' | 'mapbox' | 'satellite';
+  mapStyle?: 'osm' | 'mapbox' | 'satellite' | 'dark' | 'custom';
+  customMapStyleUrl?: string;
   mapZoom?: number;
   trackStyle?: TrackStyle;
   markerStyle?: MarkerStyle;

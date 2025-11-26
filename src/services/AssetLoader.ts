@@ -60,6 +60,26 @@ export class AssetLoader {
     }
   }
 
+  /**
+   * Re-processes a GPX asset with a new simplification tolerance.
+   */
+  static async reprocessGpxAsset(asset: Asset, tolerance: number): Promise<Pick<Asset, 'geoJson' | 'stats' | 'gpxPoints'>> {
+    if (asset.type !== 'gpx' || !asset.file) {
+      throw new Error('Asset is not a valid GPX asset with a source file.');
+    }
+
+    const { geoJson, stats, points } = await parseGpxFile(asset.file);
+    const simplifiedPoints = simplifyTrack(points, tolerance);
+
+    console.log(`Re-processed GPX track from ${points.length} to ${simplifiedPoints.length} points with tolerance ${tolerance}.`);
+
+    return {
+      geoJson,
+      stats,
+      gpxPoints: simplifiedPoints,
+    };
+  }
+
   public static determineType(file: File): AssetType {
     if (file.type.startsWith('video/')) return 'video';
     if (file.type.startsWith('image/')) return 'image';

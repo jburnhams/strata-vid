@@ -137,5 +137,12 @@ export default HeatmapOverlay;
 
 // Augment the Leaflet namespace to make TypeScript aware of our custom layer
 declare module 'leaflet' {
-    export function canvasLayer(): any;
+    class CanvasLayer extends Layer {
+        // Define the methods and properties that your layer has
+        onAdd(map: Map): this;
+        onRemove(map: Map): this;
+        getCanvas(): HTMLCanvasElement | undefined;
+        draw(): void;
+    }
+    export function canvasLayer(): CanvasLayer;
 }

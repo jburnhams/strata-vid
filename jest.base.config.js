@@ -4,6 +4,7 @@ const baseConfig = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
     '^(\\.{1,2}/.*)\\.js$': '$1',
+    '^.+/utils/workerUtils$': '<rootDir>/tests/utils/workerUtilsMock.js',
     '^.+\\.(css|less|scss|sass)$': '<rootDir>/tests/utils/styleMock.js',
     '^.+\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': '<rootDir>/tests/utils/fileMock.js',
   },

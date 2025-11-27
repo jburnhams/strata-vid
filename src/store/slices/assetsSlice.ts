@@ -21,13 +21,19 @@ export const createAssetsSlice: StateCreator<
         Object.assign(asset, updates);
       }
     }),
-  removeAsset: (id) =>
+  removeAsset: (id) => {
+    // J5: Fix memory leak by revoking blobs before removing from store
+    const asset = get().assets[id];
+    if (asset) {
+      AssetLoader.revokeAsset(asset);
+    }
     set((state) => {
       delete state.assets[id];
       if (state.selectedAssetId === id) {
         state.selectedAssetId = null;
       }
-    }),
+    });
+  },
   selectAsset: (id) =>
     set((state) => {
       state.selectedAssetId = id;

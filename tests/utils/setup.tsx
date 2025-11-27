@@ -37,6 +37,20 @@ global.OffscreenCanvas = Canvas;
 // @ts-ignore
 global.Image = Image;
 
+// Polyfill createImageBitmap
+if (!global.createImageBitmap) {
+    // @ts-ignore
+    global.createImageBitmap = async (blob: Blob | Image) => {
+        return {
+            width: 100,
+            height: 100,
+            close: () => {},
+            displayHeight: 100,
+            displayWidth: 100
+        };
+    };
+}
+
 // Add TextEncoder/TextDecoder to global for jsdom/node
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder as any;

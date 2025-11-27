@@ -32,7 +32,7 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
 
   if (activeClip) {
       return (
-          <div className="metadata h-full flex flex-col">
+          <div className="metadata h-full flex flex-col" data-testid="metadata-panel-clip">
             <div className="p-2 bg-neutral-800 border-b border-neutral-700 font-bold text-sm">
                 Clip Properties
             </div>

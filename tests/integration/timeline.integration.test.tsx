@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { describe, it, expect } from '@jest/globals';
 import { render, screen, waitFor, act } from '@testing-library/react';
@@ -11,6 +12,9 @@ global.URL.revokeObjectURL = jest.fn();
 
 // Mock AssetLoader without factory
 jest.mock('../../src/services/AssetLoader');
+
+// Mock HeatmapOverlay to prevent it from being loaded
+jest.mock('../../src/components/preview/HeatmapOverlay', () => () => <div data-testid="heatmap-overlay-mock" />);
 
 // Mock leaflet completely to avoid JSDOM issues
 jest.mock('leaflet', () => ({

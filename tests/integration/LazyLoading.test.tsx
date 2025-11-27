@@ -1,24 +1,49 @@
-import { render, screen, waitFor, act } from '@testing-library/react';
+
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import React from 'react';
 import App from '../../src/App';
 import { AssetLoader } from '../../src/services/AssetLoader';
 import { useProjectStore } from '../../src/store/useProjectStore';
+import '@testing-library/jest-dom';
 
 // Manual mocks
 jest.mock('../../src/services/AssetLoader');
 
 // Mock leaflet completely
-jest.mock('leaflet', () => ({
-    icon: jest.fn(),
-    divIcon: jest.fn(),
-    Marker: {
-        prototype: {
-            options: {}
+jest.mock('leaflet', () => {
+    const L = jest.requireActual('leaflet');
+    // Mock L.Layer and its extend method
+    L.Layer = class {
+        static extend(props: any) {
+            return class {
+                constructor() {
+                    Object.assign(this, props);
+                }
+                onAdd() {}
+                onRemove() {}
+            };
         }
-    },
-    Map: jest.fn(),
-    TileLayer: jest.fn(),
+    } as any;
+
+    return {
+        ...L,
+        icon: jest.fn(),
+        divIcon: jest.fn(),
+        canvasLayer: jest.fn(() => ({
+            draw: jest.fn(),
+            addTo: jest.fn(),
+            getCanvas: jest.fn(() => ({ getContext: () => ({ clearRect: jest.fn() }) })),
+        })),
+    };
+});
+
+
+// Mock worker-timers to prevent errors in JSDOM
+jest.mock('worker-timers', () => ({
+    setInterval: (callback: () => void, interval: number) => setInterval(callback, interval),
+    clearInterval: (id: any) => clearInterval(id),
 }));
+
 
 // Mock react-leaflet
 jest.mock('react-leaflet', () => ({
@@ -27,7 +52,7 @@ jest.mock('react-leaflet', () => ({
     Marker: () => <div>Marker</div>,
     Popup: () => <div>Popup</div>,
     GeoJSON: () => <div>GeoJSON</div>,
-    useMap: () => ({ fitBounds: jest.fn() }),
+    useMap: () => ({ fitBounds: jest.fn(), removeLayer: jest.fn() }),
 }));
 
 describe('App Integration - Lazy Asset Loading', () => {
@@ -37,7 +62,7 @@ describe('App Integration - Lazy Asset Loading', () => {
         const store = useProjectStore.getState();
         store.loadProject({
             id: 'test',
-            settings: { width: 1920, height: 1080, fps: 30, duration: 60, previewQuality: 'high', snapToGrid: true, allowOverlaps: false },
+            settings: { width: 1920, height: 1080, fps: 30, duration: 60, previewQuality: 'high', snapToGrid: true, allowOverlaps: false, simplificationTolerance: 0.0001 },
             assets: {},
             tracks: {},
             clips: {},
@@ -45,54 +70,42 @@ describe('App Integration - Lazy Asset Loading', () => {
         });
 
         // Default mock implementation
-        (AssetLoader.loadAsset as jest.Mock).mockImplementation(async (file) => ({
+        (AssetLoader.loadAsset as jest.Mock).mockImplementation(async (file, options) => ({
             id: 'asset-1',
             name: file.name,
             type: 'video',
-            src: 'blob:video',
+            source: 'blob:video',
             duration: 10,
-            file
+            file // Ensure the file is returned
         }));
 
         (AssetLoader.loadThumbnail as jest.Mock).mockResolvedValue('blob:thumbnail');
         (AssetLoader.revokeAsset as jest.Mock).mockImplementation(() => {});
-        (AssetLoader.determineType as jest.Mock).mockReturnValue('video');
     });
 
     it('should add asset immediately and load thumbnail lazily', async () => {
-        const { container } = render(<App />);
+        render(<App />);
 
-        // Find file input inside LibraryPanel
-        const libInput = container.querySelector('input[accept*="video"]') as HTMLInputElement;
-        expect(libInput).toBeInTheDocument();
-
+        const fileInput = screen.getByTestId('add-asset-input');
         const file = new File([''], 'video.mp4', { type: 'video/mp4' });
 
-        // Trigger change wrapped in act
-        await act(async () => {
-            Object.defineProperty(libInput, 'files', {
-                value: [file]
-            });
-            const event = new Event('change', { bubbles: true });
-            libInput.dispatchEvent(event);
-        });
+        fireEvent.change(fileInput, { target: { files: [file] } });
 
-        // 1. Verify AssetLoader.loadAsset was called
+        // 1. Verify AssetLoader.loadAsset was called with simplification tolerance
         await waitFor(() => {
-            expect(AssetLoader.loadAsset).toHaveBeenCalled();
+            expect(AssetLoader.loadAsset).toHaveBeenCalledWith(file, { simplificationTolerance: 0.0001 });
         });
 
         // 2. Verify asset appears in the list (LibraryPanel)
-        // Use getAllByText and check the first one, or use a more specific selector
         await waitFor(() => {
-            // The LibraryPanel items have role="button"
-            const items = screen.getAllByRole('button');
-            const assetItem = items.find(item => item.textContent?.includes('video.mp4'));
+            const assetItem = screen.getByRole('button', { name: /video.mp4/ });
             expect(assetItem).toBeInTheDocument();
         });
 
-        // 3. Verify AssetLoader.loadThumbnail was called
-        expect(AssetLoader.loadThumbnail).toHaveBeenCalledWith(file);
+        // 3. Verify AssetLoader.loadThumbnail was called with correct args
+        await waitFor(() => {
+            expect(AssetLoader.loadThumbnail).toHaveBeenCalledWith(file, "video");
+        });
 
         // 4. Verify thumbnail eventually appears
         await waitFor(() => {

@@ -1,3 +1,4 @@
+
 import { AssetLoader } from '../../src/services/AssetLoader';
 import { parseGpxFile, simplifyTrack } from '../../src/utils/gpxParser';
 import { Input } from 'mediabunny';
@@ -130,7 +131,7 @@ describe('AssetLoader', () => {
   });
 
   it('should load thumbnail separately via loadThumbnail', async () => {
-      const thumbUrl = await AssetLoader.loadThumbnail(mockFile);
+      const thumbUrl = await AssetLoader.loadThumbnail(mockFile, 'video');
       expect(thumbUrl).toBe('blob:test');
   });
 

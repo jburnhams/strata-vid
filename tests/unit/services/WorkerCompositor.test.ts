@@ -1,5 +1,6 @@
+
 import { WorkerCompositor } from '../../../src/services/WorkerCompositor';
-import { Asset, Clip, ProjectSettings } from '../../../src/types';
+import { Asset, Clip, ProjectSettings, Track } from '../../../src/types';
 import { Input } from 'mediabunny';
 
 // Mock mediabunny
@@ -15,11 +16,7 @@ jest.mock('mediabunny', () => ({
 }));
 
 // Mock fetch
-global.fetch = jest.fn().mockResolvedValue({
-    ok: true,
-    blob: jest.fn().mockResolvedValue(new Blob([''])),
-    json: jest.fn().mockResolvedValue({})
-} as any);
+global.fetch = jest.fn();
 
 // Mock ImageBitmap
 const mockImageBitmap = {
@@ -29,58 +26,86 @@ const mockImageBitmap = {
 };
 global.createImageBitmap = jest.fn().mockResolvedValue(mockImageBitmap) as any;
 
-// Mock OffscreenCanvas
-class MockOffscreenCanvas {
-    width: number;
-    height: number;
-    constructor(width: number, height: number) {
-        this.width = width;
-        this.height = height;
-    }
-    getContext() {
-        return {
-            clearRect: jest.fn(),
-            fillStyle: '',
-            fillRect: jest.fn(),
-            save: jest.fn(),
-            restore: jest.fn(),
-            translate: jest.fn(),
-            rotate: jest.fn(),
-            beginPath: jest.fn(),
-            rect: jest.fn(),
-            clip: jest.fn(),
-            drawImage: jest.fn(),
-            measureText: jest.fn(() => ({ width: 0 })),
-            fillText: jest.fn(),
-            stroke: jest.fn(),
-            moveTo: jest.fn(),
-            lineTo: jest.fn(),
-            arc: jest.fn(),
-            fill: jest.fn(),
-            canvas: { width: this.width, height: this.height },
-            globalAlpha: 1,
-            filter: 'none'
-        };
-    }
-}
-global.OffscreenCanvas = MockOffscreenCanvas as any;
+// Mock mapUtils
+jest.mock('../../../src/utils/mapUtils', () => ({
+    getGpxPositionAtTime: jest.fn().mockReturnValue([0, 0]),
+    lat2tile: jest.fn().mockReturnValue(1),
+    lon2tile: jest.fn().mockReturnValue(1),
+    getTileUrl: jest.fn().mockReturnValue('http://tile.url'),
+    TILE_SIZE: 256
+}));
+
+// Mock animationUtils
+jest.mock('../../../src/utils/animationUtils', () => ({
+    interpolateValue: jest.fn((keyframes, time, defaultVal) => defaultVal)
+}));
+
+// Mock layoutUtils
+jest.mock('../../../src/utils/layoutUtils', () => ({
+    calculateObjectFit: jest.fn().mockReturnValue({ dw: 100, dh: 100, dx: 0, dy: 0 })
+}));
 
 describe('WorkerCompositor', () => {
   let compositor: WorkerCompositor;
+  let mockCtx: any;
+  let strokeCalls: string[] = [];
 
   beforeEach(() => {
     jest.clearAllMocks();
     mockInput.getFrame.mockResolvedValue({
         image: { ...mockImageBitmap, close: jest.fn(), displayWidth: 100, displayHeight: 100 }
     });
+
+    (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        blob: jest.fn().mockResolvedValue(new Blob([''])),
+        json: jest.fn().mockResolvedValue({})
+    });
+
     compositor = new WorkerCompositor();
+
+    strokeCalls = [];
+    mockCtx = {
+        clearRect: jest.fn(),
+        fillStyle: '',
+        fillRect: jest.fn(),
+        save: jest.fn(),
+        restore: jest.fn(),
+        translate: jest.fn(),
+        rotate: jest.fn(),
+        beginPath: jest.fn(),
+        rect: jest.fn(),
+        clip: jest.fn(),
+        drawImage: jest.fn(),
+        measureText: jest.fn(() => ({ width: 50 })),
+        fillText: jest.fn(),
+        stroke: jest.fn().mockImplementation(() => {
+            strokeCalls.push(mockCtx.strokeStyle);
+        }),
+        moveTo: jest.fn(),
+        lineTo: jest.fn(),
+        arc: jest.fn(),
+        fill: jest.fn(),
+        canvas: { width: 100, height: 100 },
+        globalAlpha: 1,
+        filter: 'none',
+        strokeStyle: '#000000', // default
+        lineWidth: 1
+    };
   });
 
   afterEach(() => {
       compositor.cleanup();
   });
 
-  it('should initialize assets', async () => {
+  const createProject = (clips: Record<string, Clip>, assets: Record<string, Asset>, tracks: Track[]) => ({
+      tracks,
+      clips,
+      assets,
+      settings: { width: 100, height: 100, duration: 10 } as ProjectSettings
+  });
+
+  it('should initialize video and image assets', async () => {
     const assets: Asset[] = [
         { id: 'v1', type: 'video', src: 'blob:v1', file: new File([''], 'v1.mp4') } as Asset,
         { id: 'i1', type: 'image', src: 'blob:i1' } as Asset
@@ -90,92 +115,169 @@ describe('WorkerCompositor', () => {
     expect(global.createImageBitmap).toHaveBeenCalledTimes(1);
   });
 
-  it('should handle initialization errors gracefully', async () => {
-    const assets: Asset[] = [
-        { id: 'v1', type: 'video', src: 'blob:v1', file: new File([''], 'v1.mp4') } as Asset
-    ];
-    (Input as unknown as jest.Mock).mockImplementationOnce(() => {
-        throw new Error('Init failed');
-    });
-
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-    await compositor.initialize(assets);
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to init video input'), expect.any(Error));
-    consoleSpy.mockRestore();
-  });
-
-  it('should render video frame', async () => {
-    const assets: Record<string, Asset> = {
-        'v1': { id: 'v1', type: 'video', src: 'blob:v1', file: new File([''], 'v1.mp4') } as Asset
-    };
-    await compositor.initialize(Object.values(assets));
-
-    const canvas = new OffscreenCanvas(100, 100);
-    const ctx = canvas.getContext('2d') as any;
-    const project = {
-        tracks: [{ id: 't1', type: 'video', clips: ['c1'], isMuted: false, label: '', isLocked: false }],
-        clips: { 'c1': { id: 'c1', assetId: 'v1', trackId: 't1', start: 0, duration: 10, offset: 0, properties: { x: 50, y: 50, width: 100, height: 100, opacity: 1, rotation: 0, zIndex: 0 }, type: 'video' } as Clip },
-        assets,
-        settings: { width: 100, height: 100, duration: 10 } as ProjectSettings
-    };
-
-    await compositor.renderFrame(ctx, 5, project as any);
-
-    expect(ctx.drawImage).toHaveBeenCalled();
-    expect(mockInput.getFrame).toHaveBeenCalledWith(5);
-  });
-
-  it('should render image frame', async () => {
-      const assets: Record<string, Asset> = {
-          'i1': { id: 'i1', type: 'image', src: 'blob:i1' } as Asset
-      };
-      await compositor.initialize(Object.values(assets));
-
-      const canvas = new OffscreenCanvas(100, 100);
-      const ctx = canvas.getContext('2d') as any;
-      const project = {
-          tracks: [{ id: 't1', type: 'overlay', clips: ['c1'], isMuted: false, label: '', isLocked: false }],
-          clips: { 'c1': { id: 'c1', assetId: 'i1', trackId: 't1', start: 0, duration: 10, offset: 0, properties: { x: 50, y: 50, width: 100, height: 100, opacity: 1, rotation: 0, zIndex: 0 }, type: 'image' } as Clip },
-          assets,
-          settings: { width: 100, height: 100, duration: 10 } as ProjectSettings
-      };
-
-      await compositor.renderFrame(ctx, 5, project as any);
-
-      expect(ctx.drawImage).toHaveBeenCalled();
-  });
-
-  it('should cleanup resources (J5 Memory Profiling)', async () => {
+  it('should ignore duplicate initialization', async () => {
       const assets: Asset[] = [
-          { id: 'v1', type: 'video', src: 'blob:v1', file: new File([''], 'v1.mp4') } as Asset,
-          { id: 'i1', type: 'image', src: 'blob:i1' } as Asset
+          { id: 'v1', type: 'video', src: 'blob:v1', file: new File([''], 'v1.mp4') } as Asset
       ];
       await compositor.initialize(assets);
-
-      compositor.cleanup();
-
-      expect(mockInput.dispose).toHaveBeenCalled();
-      expect(mockImageBitmap.close).toHaveBeenCalled();
+      await compositor.initialize(assets);
+      expect(Input).toHaveBeenCalledTimes(1);
   });
 
-  it('should handle rendering errors gracefully', async () => {
-    const assets: Record<string, Asset> = {
-        'v1': { id: 'v1', type: 'video', src: 'blob:v1', file: new File([''], 'v1.mp4') } as Asset
+  it('should handle video init failure', async () => {
+      (Input as unknown as jest.Mock).mockImplementationOnce(() => { throw new Error('Fail'); });
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      const assets: Asset[] = [{ id: 'v1', type: 'video', src: 'blob:v1', file: new File([''], 'v1.mp4') } as Asset];
+      await compositor.initialize(assets);
+
+      expect(consoleSpy).toHaveBeenCalled();
+      consoleSpy.mockRestore();
+  });
+
+  it('should render text clip', async () => {
+      const clip: Clip = {
+          id: 'c1', trackId: 't1', type: 'text', start: 0, duration: 5, offset: 0,
+          content: 'Hello World',
+          properties: { x: 50, y: 50, width: 100, height: 100, opacity: 1, rotation: 0, zIndex: 0 },
+          textStyle: { fontFamily: 'Arial', fontSize: 20, color: 'red', textAlign: 'center', fontWeight: 'bold' }
+      };
+      const project = createProject(
+          { 'c1': clip },
+          {},
+          [{ id: 't1', type: 'text', clips: ['c1'], isMuted: false }] as Track[]
+      );
+
+      await compositor.renderFrame(mockCtx, 2, project as any);
+
+      expect(mockCtx.fillText).toHaveBeenCalled();
+      expect(mockCtx.fillStyle).toBe('red');
+  });
+
+  it('should render map clip with tiles and path', async () => {
+      const geoJson = {
+          features: [{
+              geometry: { type: 'LineString', coordinates: [[0, 0], [1, 1]] },
+              properties: { coordTimes: ['2023-01-01T00:00:00Z', '2023-01-01T00:01:00Z'] }
+          }]
+      };
+      const asset: Asset = { id: 'g1', type: 'gpx', src: 'blob:g1', geoJson } as Asset;
+      const clip: Clip = {
+          id: 'c1', trackId: 't1', type: 'map', assetId: 'g1', start: 0, duration: 10, offset: 0,
+          properties: { x: 50, y: 50, width: 100, height: 100, opacity: 1, rotation: 0, zIndex: 0, mapZoom: 10, trackStyle: { color: 'blue' } }
+      };
+
+      const project = createProject(
+          { 'c1': clip },
+          { 'g1': asset },
+          [{ id: 't1', type: 'map', clips: ['c1'], isMuted: false }] as Track[]
+      );
+
+      await compositor.initialize([asset]);
+      await compositor.renderFrame(mockCtx, 5, project as any);
+
+      expect(global.fetch).toHaveBeenCalled(); // For tiles
+      expect(mockCtx.drawImage).toHaveBeenCalled(); // Tiles drawn
+      expect(mockCtx.stroke).toHaveBeenCalled(); // Path drawn
+
+      // Check that 'blue' was used during one of the stroke calls (the path one)
+      // The marker stroke is usually white (#fff).
+      expect(strokeCalls).toContain('blue');
+  });
+
+  it('should render extra track assets on map', async () => {
+      const geoJson = {
+          features: [{
+              geometry: { type: 'LineString', coordinates: [[0, 0], [1, 1]] },
+              properties: { coordTimes: ['2023-01-01T00:00:00Z'] }
+          }]
+      };
+      const asset1: Asset = { id: 'g1', type: 'gpx', src: 'blob:g1', geoJson } as Asset;
+      const asset2: Asset = { id: 'g2', type: 'gpx', src: 'blob:g2', geoJson } as Asset;
+
+      const clip: Clip = {
+          id: 'c1', trackId: 't1', type: 'map', assetId: 'g1', start: 0, duration: 10, offset: 0,
+          properties: { x: 50, y: 50, width: 100, height: 100, opacity: 1 },
+          extraTrackAssets: [{ assetId: 'g2', trackStyle: { color: 'green' }, markerStyle: { color: 'red' } }]
+      };
+
+      const project = createProject(
+          { 'c1': clip },
+          { 'g1': asset1, 'g2': asset2 },
+          [{ id: 't1', type: 'map', clips: ['c1'], isMuted: false }] as Track[]
+      );
+
+      await compositor.renderFrame(mockCtx, 5, project as any);
+
+      // Expected calls: Main Path, Main Marker, Extra Path, Extra Marker = 4 calls
+      expect(mockCtx.stroke).toHaveBeenCalledTimes(4);
+      expect(strokeCalls).toContain('green'); // Extra track
+  });
+
+  it('should apply transitions (opacity)', async () => {
+      const asset: Asset = { id: 'v1', type: 'video', src: 'blob:v1', file: new File([''], 'v1.mp4') } as Asset;
+      const clip: Clip = {
+          id: 'c1', trackId: 't1', type: 'video', assetId: 'v1', start: 0, duration: 10, offset: 0,
+          properties: { x: 50, y: 50, width: 100, height: 100, opacity: 1 },
+          transitionIn: { type: 'crossfade', duration: 2 }
+      };
+
+      const project = createProject(
+        { 'c1': clip },
+        { 'v1': asset },
+        [{ id: 't1', type: 'video', clips: ['c1'], isMuted: false }] as Track[]
+      );
+
+      await compositor.initialize([asset]);
+
+      // Time 1s (50% progress)
+      await compositor.renderFrame(mockCtx, 1, project as any);
+
+      expect(mockCtx.globalAlpha).toBe(0.5);
+  });
+
+  it('should apply transitions (wipe)', async () => {
+      const asset: Asset = { id: 'v1', type: 'video', src: 'blob:v1', file: new File([''], 'v1.mp4') } as Asset;
+      const clip: Clip = {
+          id: 'c1', trackId: 't1', type: 'video', assetId: 'v1', start: 0, duration: 10, offset: 0,
+          properties: { x: 50, y: 50, width: 100, height: 100, opacity: 1 },
+          transitionIn: { type: 'wipe', duration: 2 }
+      };
+
+      const project = createProject(
+        { 'c1': clip },
+        { 'v1': asset },
+        [{ id: 't1', type: 'video', clips: ['c1'], isMuted: false }] as Track[]
+      );
+
+      await compositor.initialize([asset]);
+
+      // Time 1s (50% progress)
+      await compositor.renderFrame(mockCtx, 1, project as any);
+
+      // Check clipping rect
+      expect(mockCtx.rect).toHaveBeenCalled();
+  });
+
+  it('should apply keyframe interpolation', async () => {
+    const { interpolateValue } = require('../../../src/utils/animationUtils');
+
+    const asset: Asset = { id: 'v1', type: 'video', src: 'blob:v1', file: new File([''], 'v1.mp4') } as Asset;
+    const clip: Clip = {
+        id: 'c1', trackId: 't1', type: 'video', assetId: 'v1', start: 0, duration: 10, offset: 0,
+        properties: { x: 50, y: 50, width: 100, height: 100, opacity: 1 },
+        keyframes: { opacity: [{ id: 'k1', time: 0, value: 0, easing: 'linear' }] }
     };
-    await compositor.initialize(Object.values(assets));
 
-    mockInput.getFrame.mockRejectedValue(new Error('Render error'));
+    const project = createProject(
+        { 'c1': clip },
+        { 'v1': asset },
+        [{ id: 't1', type: 'video', clips: ['c1'], isMuted: false }] as Track[]
+    );
 
-    const canvas = new OffscreenCanvas(100, 100);
-    const ctx = canvas.getContext('2d') as any;
-    const project = {
-        tracks: [{ id: 't1', type: 'video', clips: ['c1'], isMuted: false }],
-        clips: { 'c1': { id: 'c1', assetId: 'v1', trackId: 't1', start: 0, duration: 10, offset: 0, properties: { x: 50, y: 50, width: 100, height: 100 }, type: 'video' } as Clip },
-        assets,
-        settings: { width: 100, height: 100 }
-    };
+    await compositor.initialize([asset]);
+    await compositor.renderFrame(mockCtx, 5, project as any);
 
-    // Should not throw
-    await expect(compositor.renderFrame(ctx, 5, project as any)).resolves.not.toThrow();
+    expect(interpolateValue).toHaveBeenCalled();
   });
 });

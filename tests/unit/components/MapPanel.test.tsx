@@ -110,4 +110,21 @@ describe('MapPanel', () => {
     const tileLayer = screen.getByTestId('tile-layer');
     expect(tileLayer).toHaveAttribute('data-url', expect.stringContaining('cartocdn'));
   });
+
+  it('renders multiple GeoJSON layers for multiple tracks', () => {
+    const tracks = [
+      { geoJson: { type: 'FeatureCollection', features: [] }, trackStyle: { color: 'red', weight: 4 } },
+      { geoJson: { type: 'FeatureCollection', features: [] }, trackStyle: { color: 'blue', weight: 2 } },
+      { geoJson: { type: 'FeatureCollection', features: [] }, trackStyle: { color: 'green', weight: 5 } },
+    ];
+    render(<MapPanel tracks={tracks} />);
+
+    const geoJsonElements = screen.getAllByTestId('geojson');
+    expect(geoJsonElements).toHaveLength(3);
+
+    const styles = geoJsonElements.map(el => JSON.parse(el.getAttribute('data-style') || '{}'));
+    expect(styles).toContainEqual({ color: 'red', weight: 4, opacity: 1 });
+    expect(styles).toContainEqual({ color: 'blue', weight: 2, opacity: 1 });
+    expect(styles).toContainEqual({ color: 'green', weight: 5, opacity: 1 });
+  });
 });

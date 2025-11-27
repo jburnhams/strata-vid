@@ -40,11 +40,15 @@ export class AssetLoader {
   }
 
   /**
-   * Generates a thumbnail for a video file.
+   * Generates a thumbnail for an asset file.
    * Uses a concurrency limiter to prevent overwhelming the browser.
    */
-  static async loadThumbnail(file: File): Promise<string> {
-    return this.thumbnailLimiter.execute(() => this.generateVideoThumbnail(file));
+  static async loadThumbnail(file: File, assetType: AssetType): Promise<string> {
+    if (assetType === 'video') {
+      return this.thumbnailLimiter.execute(() => this.generateVideoThumbnail(file));
+    }
+    // Placeholder for other asset type thumbnails (e.g., GPX static map)
+    return Promise.resolve('');
   }
 
   /**

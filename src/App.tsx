@@ -68,8 +68,8 @@ function App() {
           addAsset(asset);
 
           // Lazy load thumbnail
-          if (asset.type === 'video' && asset.file) {
-              AssetLoader.loadThumbnail(asset.file).then(thumbnail => {
+          if (asset.file) {
+              AssetLoader.loadThumbnail(asset.file, asset.type).then(thumbnail => {
                   updateAsset(asset.id, { thumbnail });
               }).catch(e => {
                   console.warn(`Failed to generate thumbnail for ${asset.name}`, e);

@@ -61,10 +61,12 @@
     "jest-environment-jsdom": "^29.7.0",
     "jsdom": "^27.0.1",
     "postcss": "^8.5.6",
+    "recharts": "^3.5.0",
     "tailwindcss": "^4.1.17",
     "ts-jest": "^29.2.5",
     "typescript": "~5.9.3",
     "vite": "^7.1.12",
+    "worker-timers": "^8.0.25",
     "xmldom-qsa": "^1.1.3"
   }
 }

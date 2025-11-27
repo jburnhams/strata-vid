@@ -110,6 +110,7 @@ const ElevationProfile: React.FC<ElevationProfileProps> = ({ gpxAssets, mainAsse
         )}
       </div>
       <svg
+        data-testid="elevation-profile-svg"
         className="w-full h-24"
         viewBox="0 0 100 100"
         preserveAspectRatio="none"

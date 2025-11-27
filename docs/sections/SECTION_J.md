@@ -18,7 +18,7 @@
   - Implemented `ConcurrencyLimiter` for thumbnail generation
   - Files: `src/services/AssetLoader.ts`, `src/utils/concurrency.ts`
 
-- [ ] **J3: Web Worker for export** (8-10 hours)
+- [x] **J3: Web Worker for export** (8-10 hours)
   - Offload export to Worker
   - Keep UI responsive
   - Files: `src/workers/exportWorker.ts` (new)

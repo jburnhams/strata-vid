@@ -1,64 +1,80 @@
+
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ZoomControls } from '../../../../src/components/timeline/ZoomControls';
 
 describe('ZoomControls', () => {
-  const defaultProps = {
-    zoomLevel: 10,
-    setZoomLevel: jest.fn(),
-    min: 1,
-    max: 200,
-  };
+  const setZoomLevel = jest.fn();
+  const onZoomToFit = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('renders correctly', () => {
-    render(<ZoomControls {...defaultProps} />);
+  it('renders zoom controls', () => {
+    render(
+      <ZoomControls
+        zoomLevel={50}
+        setZoomLevel={setZoomLevel}
+        onZoomToFit={onZoomToFit}
+      />
+    );
     expect(screen.getByTitle('Zoom In')).toBeInTheDocument();
     expect(screen.getByTitle('Zoom Out')).toBeInTheDocument();
-    expect(screen.getByText('10px')).toBeInTheDocument();
+    expect(screen.getByTitle('Zoom to Fit')).toBeInTheDocument();
+    expect(screen.getByText('50px')).toBeInTheDocument();
   });
 
-  it('calls setZoomLevel when input changes', () => {
-    render(<ZoomControls {...defaultProps} />);
+  it('handles slider change', () => {
+    render(<ZoomControls zoomLevel={50} setZoomLevel={setZoomLevel} />);
     const slider = screen.getByRole('slider');
-    fireEvent.change(slider, { target: { value: '20' } });
-    expect(defaultProps.setZoomLevel).toHaveBeenCalledWith(20);
+    fireEvent.change(slider, { target: { value: '75' } });
+    expect(setZoomLevel).toHaveBeenCalledWith(75);
   });
 
-  it('increases zoom on plus button click', () => {
-    render(<ZoomControls {...defaultProps} />);
-    const zoomInBtn = screen.getByTitle('Zoom In');
-    fireEvent.click(zoomInBtn);
-    // 10 + (10 * 0.1) = 11. Delta = 1.
-    expect(defaultProps.setZoomLevel).toHaveBeenCalledWith(11);
+  it('decreases zoom on minus click', () => {
+    // Current 50. Decrease by max(1, 50 * 0.1) = 5. Result 45.
+    render(<ZoomControls zoomLevel={50} setZoomLevel={setZoomLevel} />);
+    fireEvent.click(screen.getByTitle('Zoom Out'));
+    expect(setZoomLevel).toHaveBeenCalledWith(45);
   });
 
-  it('decreases zoom on minus button click', () => {
-    render(<ZoomControls {...defaultProps} />);
-    const zoomOutBtn = screen.getByTitle('Zoom Out');
-    fireEvent.click(zoomOutBtn);
-    // 10 - (10 * 0.1) = 9. Delta = 1.
-    expect(defaultProps.setZoomLevel).toHaveBeenCalledWith(9);
+  it('decreases zoom clamped to min', () => {
+    // Current 1. Decrease by 0.1. Result < 1. Clamp to 1 (default min).
+    // Logic: delta = max(1, 1*0.1) = 1. New = 1 - 1 = 0. Min 1.
+    render(<ZoomControls zoomLevel={1} setZoomLevel={setZoomLevel} min={1} />);
+    fireEvent.click(screen.getByTitle('Zoom Out'));
+    expect(setZoomLevel).toHaveBeenCalledWith(1);
   });
 
-  it('respects min limit', () => {
-    render(<ZoomControls {...defaultProps} zoomLevel={1} />);
-    const zoomOutBtn = screen.getByTitle('Zoom Out');
-    fireEvent.click(zoomOutBtn);
-    // Should clamp to min 1
-    // 1 - (1 * 0.1) = 0.9. Min is 1.
-    expect(defaultProps.setZoomLevel).toHaveBeenCalledWith(1);
+  it('increases zoom on plus click', () => {
+    // Current 50. Increase by 5. Result 55.
+    render(<ZoomControls zoomLevel={50} setZoomLevel={setZoomLevel} />);
+    fireEvent.click(screen.getByTitle('Zoom In'));
+    expect(setZoomLevel).toHaveBeenCalledWith(55);
   });
 
-  it('respects max limit', () => {
-    render(<ZoomControls {...defaultProps} zoomLevel={200} />);
-    const zoomInBtn = screen.getByTitle('Zoom In');
-    fireEvent.click(zoomInBtn);
-    // Should clamp to max 200
-    // 200 + (200 * 0.1) = 220. Max is 200.
-    expect(defaultProps.setZoomLevel).toHaveBeenCalledWith(200);
+  it('increases zoom clamped to max', () => {
+    // Current 200. Increase by 20. Result 220. Max 200.
+    render(<ZoomControls zoomLevel={200} setZoomLevel={setZoomLevel} max={200} />);
+    fireEvent.click(screen.getByTitle('Zoom In'));
+    expect(setZoomLevel).toHaveBeenCalledWith(200);
+  });
+
+  it('calls onZoomToFit when clicked', () => {
+    render(
+      <ZoomControls
+        zoomLevel={50}
+        setZoomLevel={setZoomLevel}
+        onZoomToFit={onZoomToFit}
+      />
+    );
+    fireEvent.click(screen.getByTitle('Zoom to Fit'));
+    expect(onZoomToFit).toHaveBeenCalled();
+  });
+
+  it('does not render zoom to fit button if handler not provided', () => {
+      render(<ZoomControls zoomLevel={50} setZoomLevel={setZoomLevel} />);
+      expect(screen.queryByTitle('Zoom to Fit')).not.toBeInTheDocument();
   });
 });

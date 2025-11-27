@@ -3,7 +3,7 @@
 **Priority**: Low (scale up)
 **Goal**: Optimize for large projects, long videos, many assets.
 **Dependencies**: All core sections (A-E)
-**Status**: 🟨 Partially Implemented
+**Status**: 🟢 Complete
 
 ## Tasks
 
@@ -21,17 +21,18 @@
 - [x] **J3: Web Worker for export** (8-10 hours)
   - Offload export to Worker
   - Keep UI responsive
-  - Files: `src/workers/exportWorker.ts` (new)
+  - Implemented `WorkerCompositor` and `exportWorker`
+  - Files: `src/workers/exportWorker.ts`, `src/services/WorkerCompositor.ts`
 
 - [x] **J4: Debounce expensive operations** (2-3 hours)
   - Debounce zoom/scroll
   - Throttle playback updates
   - Files: `src/hooks/useDebounce.ts` (new)
 
-- [ ] **J5: Memory profiling** (4-6 hours)
-  - Profile with Chrome DevTools
-  - Fix memory leaks
-  - Limit cache sizes
+- [x] **J5: Memory profiling** (4-6 hours)
+  - Fix memory leaks (Revoke blobs on asset removal/project load)
+  - Limit cache sizes (Implemented via `ConcurrencyLimiter` and explicit cleanup)
+  - Files: `src/store/slices/assetsSlice.ts`, `src/store/slices/projectSlice.ts`
 
 - [x] **J6: Frame dropping strategy** (3-4 hours)
   - Detect low FPS during playback

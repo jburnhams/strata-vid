@@ -1,63 +1,64 @@
-import { Asset, Clip, ProjectSettings, Track, TextStyle, TrackStyle, MarkerStyle, OverlayProperties } from '../types';
+import { Asset, Clip, ProjectSettings, Track, OverlayProperties, TextStyle, TrackStyle, MarkerStyle } from '../types';
 import { getGpxPositionAtTime, lat2tile, lon2tile, getTileUrl, TILE_SIZE } from '../utils/mapUtils';
-import { Feature, LineString } from 'geojson';
 import { interpolateValue } from '../utils/animationUtils';
 import { calculateObjectFit } from '../utils/layoutUtils';
+// @ts-ignore
+import { Input, BlobSource, ALL_FORMATS } from 'mediabunny';
+import { Feature, LineString } from 'geojson';
 
-export class Compositor {
-  private videoPool: Map<string, HTMLVideoElement> = new Map();
-  private imageCache: Map<string, HTMLImageElement> = new Map();
-  private tileCache: Map<string, HTMLImageElement> = new Map();
+export class WorkerCompositor {
+  private videoPool: Map<string, any> = new Map(); // Input instance
+  private imageCache: Map<string, ImageBitmap> = new Map();
+  private tileCache: Map<string, ImageBitmap> = new Map();
 
   constructor() {}
 
   public async initialize(assets: Asset[]) {
-    // Pre-load video elements and images
     for (const asset of assets) {
       if (asset.type === 'video' && !this.videoPool.has(asset.id)) {
-        const video = document.createElement('video');
-        video.src = asset.src;
-        video.crossOrigin = 'anonymous';
-        video.muted = true;
-        video.playsInline = true;
-        // Trigger load
-        video.load();
-        this.videoPool.set(asset.id, video);
+        if (asset.file) {
+           try {
+             const source = new BlobSource(asset.file);
+             const input = new Input({ source, formats: ALL_FORMATS });
+             this.videoPool.set(asset.id, input);
+           } catch (e) {
+             console.error(`Failed to init video input for ${asset.id}`, e);
+           }
+        }
       } else if (asset.type === 'image' && !this.imageCache.has(asset.id)) {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        // Wait for load to ensure dimensions are available
-        await new Promise<void>((resolve) => {
-          img.onload = () => resolve();
-          img.onerror = () => {
-            console.warn(`Failed to load image asset ${asset.id}`);
-            resolve();
-          };
-          img.src = asset.src;
-        });
-        this.imageCache.set(asset.id, img);
+        try {
+            // In worker, we fetch the blob URL and create ImageBitmap
+            const response = await fetch(asset.src);
+            const blob = await response.blob();
+            const bitmap = await createImageBitmap(blob);
+            this.imageCache.set(asset.id, bitmap);
+        } catch (e) {
+            console.error(`Failed to load image asset ${asset.id}`, e);
+        }
       }
     }
   }
 
   public cleanup() {
-    this.videoPool.forEach((v) => {
-      v.src = '';
-      v.remove();
+    this.videoPool.forEach((input) => {
+        if (input.dispose) input.dispose();
     });
     this.videoPool.clear();
+
+    this.imageCache.forEach(bmp => bmp.close());
     this.imageCache.clear();
+
+    this.tileCache.forEach(bmp => bmp.close());
     this.tileCache.clear();
   }
 
   public async renderFrame(
-    ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D,
+    ctx: OffscreenCanvasRenderingContext2D,
     time: number,
     project: { tracks: Track[]; clips: Record<string, Clip>; assets: Record<string, Asset>; settings: ProjectSettings }
   ) {
     const { width, height } = project.settings;
 
-    // Clear canvas
     ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, width, height);
@@ -65,7 +66,6 @@ export class Compositor {
     for (const track of project.tracks) {
       if (track.isMuted) continue;
 
-      // Find all active clips (handling overlapping transitions)
       const activeClips = track.clips
         .map((id) => project.clips[id])
         .filter((clip) => clip && time >= clip.start && time < clip.start + clip.duration)
@@ -73,9 +73,7 @@ export class Compositor {
 
       for (const clip of activeClips) {
         const asset = project.assets[clip.assetId];
-        // Text clips might not have an asset, but others must
         if (clip.type === 'text' || asset) {
-          // Calculate transition progress
           let transitionProgress = 1;
           if (clip.transitionIn) {
             const transitionTime = time - clip.start;
@@ -90,7 +88,7 @@ export class Compositor {
   }
 
   private async drawClip(
-    ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D,
+    ctx: OffscreenCanvasRenderingContext2D,
     clip: Clip,
     asset: Asset | undefined,
     globalTime: number,
@@ -100,10 +98,8 @@ export class Compositor {
     const clipRate = clip.playbackRate || 1;
     const localTime = (globalTime - clip.start) * clipRate + clip.offset;
 
-    // Save context state
     ctx.save();
 
-    // 1. Calculate dimensions and transform
     const cw = ctx.canvas.width;
     const ch = ctx.canvas.height;
 
@@ -122,13 +118,11 @@ export class Compositor {
     const opacity = getValue('opacity', clip.properties.opacity);
     const mapZoom = getValue('mapZoom', clip.properties.mapZoom);
 
-    // Convert % to pixels
     const w = (width / 100) * cw;
     const h = (height / 100) * ch;
     const px = (x / 100) * cw;
     const py = (y / 100) * ch;
 
-    // Apply Opacity (Transition)
     let effectiveOpacity = opacity;
     if (clip.transitionIn) {
       if (clip.transitionIn.type === 'crossfade' || clip.transitionIn.type === 'fade') {
@@ -137,30 +131,23 @@ export class Compositor {
     }
     ctx.globalAlpha = effectiveOpacity;
 
-    // Apply Filter
     if (clip.properties.filter) {
       ctx.filter = clip.properties.filter;
     }
 
-    // Apply Transform: Translate to center of clip, then rotate
     const centerX = px + w / 2;
     const centerY = py + h / 2;
 
     ctx.translate(centerX, centerY);
     ctx.rotate((rotation * Math.PI) / 180);
 
-    // Clip to bounding box (overflow: hidden)
     ctx.beginPath();
-
-    // Handle Wipe Transition
     if (clip.transitionIn && clip.transitionIn.type === 'wipe') {
       const visibleWidth = w * transitionProgress;
-      // Wipe left to right
       ctx.rect(-w / 2, -h / 2, visibleWidth, h);
     } else {
       ctx.rect(-w / 2, -h / 2, w, h);
     }
-
     ctx.clip();
 
     try {
@@ -181,36 +168,40 @@ export class Compositor {
   }
 
   private async drawVideo(
-    ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D,
+    ctx: OffscreenCanvasRenderingContext2D,
     clip: Clip,
     asset: Asset,
     time: number,
     dstW: number,
     dstH: number
   ) {
-    const video = this.videoPool.get(asset.id);
-    if (!video) return;
+    const input = this.videoPool.get(asset.id);
+    if (!input) return;
 
-    if (Math.abs(video.currentTime - time) > 0.001) {
-        video.currentTime = time;
-        await new Promise<void>((resolve) => {
-            const onSeeked = () => {
-                video.removeEventListener('seeked', onSeeked);
-                resolve();
-            };
-            video.addEventListener('seeked', onSeeked, { once: true });
-        });
+    // TODO: Verify mediabunny Input API for getting a frame at specific time
+    // Assuming input.getFrame(time) exists and returns { image: ImageBitmap | VideoFrame }
+    // If not, we might need a workaround.
+    try {
+        // @ts-ignore
+        const frameData = await input.getFrame(time);
+        if (frameData && frameData.image) {
+             const image = frameData.image; // ImageBitmap or VideoFrame
+             const srcW = image.displayWidth || image.width;
+             const srcH = image.displayHeight || image.height;
+
+             const { dw, dh, dx, dy } = calculateObjectFit(srcW, srcH, dstW, dstH, 'cover');
+             ctx.drawImage(image, dx, dy, dw, dh);
+
+             // Close frame if needed? Depends on API.
+             if (image.close) image.close();
+        }
+    } catch (e) {
+        // Fallback or ignore
     }
-
-    const srcW = video.videoWidth || 1280;
-    const srcH = video.videoHeight || 720;
-    const { dw, dh, dx, dy } = calculateObjectFit(srcW, srcH, dstW, dstH, 'cover');
-
-    ctx.drawImage(video, dx, dy, dw, dh);
   }
 
   private drawImage(
-    ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D,
+    ctx: OffscreenCanvasRenderingContext2D,
     asset: Asset,
     dstW: number,
     dstH: number
@@ -223,7 +214,7 @@ export class Compositor {
   }
 
   private drawText(
-      ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D,
+      ctx: OffscreenCanvasRenderingContext2D,
       clip: Clip,
       dstW: number,
       dstH: number
@@ -273,7 +264,7 @@ export class Compositor {
   }
 
   private async drawMap(
-    ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D,
+    ctx: OffscreenCanvasRenderingContext2D,
     clip: Clip,
     asset: Asset,
     time: number,
@@ -284,10 +275,7 @@ export class Compositor {
   ) {
     if (!asset.geoJson) return;
 
-    // Use clip zoom or default
     const zoom = zoomOverride !== undefined ? zoomOverride : (clip.properties.mapZoom || 13);
-
-    // 1. Get current position for center (Primary) using proper sync logic
     const props = asset.geoJson.features[0].properties;
     const startTime = props && props.coordTimes ? new Date(props.coordTimes[0]).getTime() : 0;
     const syncBase = clip.syncOffset !== undefined ? clip.syncOffset : startTime;
@@ -299,7 +287,6 @@ export class Compositor {
     if (!center) return;
 
     const [lon, lat] = center;
-
     const centerTx = lon2tile(lon, zoom);
     const centerTy = lat2tile(lat, zoom);
     const centerPx = centerTx * TILE_SIZE;
@@ -307,19 +294,17 @@ export class Compositor {
 
     const halfW = dstW / 2;
     const halfH = dstH / 2;
-
     const viewLeft = centerPx - halfW;
     const viewTop = centerPy - halfH;
     const viewRight = centerPx + halfW;
     const viewBottom = centerPy + halfH;
 
-    // Determine tiles to load
     const minTx = Math.floor(viewLeft / TILE_SIZE);
     const maxTx = Math.floor(viewRight / TILE_SIZE);
     const minTy = Math.floor(viewTop / TILE_SIZE);
     const maxTy = Math.floor(viewBottom / TILE_SIZE);
 
-    const promises: Promise<{ img: HTMLImageElement; x: number; y: number } | null>[] = [];
+    const promises: Promise<{ img: ImageBitmap; x: number; y: number } | null>[] = [];
 
     for (let tx = minTx; tx <= maxTx; tx++) {
         for (let ty = minTy; ty <= maxTy; ty++) {
@@ -339,29 +324,22 @@ export class Compositor {
         ctx.drawImage(img, drawX, drawY, TILE_SIZE, TILE_SIZE);
     }
 
-    // Draw Primary Path & Marker
     this.drawGpxPath(ctx, clip.properties.trackStyle, asset.geoJson, zoom, viewLeft, viewTop, halfW, halfH);
-    this.drawMarker(ctx, clip.properties.markerStyle, 0, 0); // 0,0 is center (since we centered on this)
+    this.drawMarker(ctx, clip.properties.markerStyle, 0, 0);
 
-    // Draw Extra Tracks
     if (clip.extraTrackAssets && allAssets) {
         for (const extra of clip.extraTrackAssets) {
             const extraAsset = allAssets[extra.assetId];
             if (extraAsset && extraAsset.geoJson) {
-                // Calculate position for extra track
-                // It needs its own sync logic
                 const extraProps = extraAsset.geoJson.features[0].properties;
                 const extraStartTime = extraProps && extraProps.coordTimes ? new Date(extraProps.coordTimes[0]).getTime() : 0;
                 const extraSyncBase = extra.syncOffset !== undefined ? extra.syncOffset : extraStartTime;
                 const extraTargetTimestamp = extraSyncBase + (time * 1000);
                 const extraOffsetSeconds = (extraTargetTimestamp - extraStartTime) / 1000;
-
                 const extraPos = getGpxPositionAtTime(extraAsset.geoJson.features[0] as Feature<LineString>, extraOffsetSeconds);
 
-                // Draw path
                 this.drawGpxPath(ctx, extra.trackStyle, extraAsset.geoJson, zoom, viewLeft, viewTop, halfW, halfH);
 
-                // Draw Marker if we have a position
                 if (extraPos) {
                     const [exLon, exLat] = extraPos;
                     const exTx = lon2tile(exLon, zoom);
@@ -370,7 +348,6 @@ export class Compositor {
                     const exPy = exTy * TILE_SIZE;
                     const exDrawX = exPx - viewLeft - halfW;
                     const exDrawY = exPy - viewTop - halfH;
-
                     this.drawMarker(ctx, extra.markerStyle, exDrawX, exDrawY);
                 }
             }
@@ -378,27 +355,27 @@ export class Compositor {
     }
   }
 
-  private loadTile(x: number, y: number, z: number): Promise<HTMLImageElement | null> {
+  private loadTile(x: number, y: number, z: number): Promise<ImageBitmap | null> {
       const url = getTileUrl(x, y, z);
-      if (this.tileCache.has(url)) {
-          return Promise.resolve(this.tileCache.get(url)!);
+      const cacheKey = url; // or `${x}/${y}/${z}`
+      if (this.tileCache.has(cacheKey)) {
+          return Promise.resolve(this.tileCache.get(cacheKey)!);
       }
-      return new Promise((resolve) => {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.onload = () => {
-              this.tileCache.set(url, img);
-              resolve(img);
-          };
-          img.onerror = () => {
-              resolve(null);
-          };
-          img.src = url;
-      });
+      return fetch(url)
+        .then(res => {
+            if (!res.ok) throw new Error('Fetch failed');
+            return res.blob();
+        })
+        .then(blob => createImageBitmap(blob))
+        .then(bmp => {
+            this.tileCache.set(cacheKey, bmp);
+            return bmp;
+        })
+        .catch(() => null);
   }
 
   private drawGpxPath(
-      ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D,
+      ctx: OffscreenCanvasRenderingContext2D,
       style: TrackStyle | undefined,
       geoJson: any,
       zoom: number,
@@ -438,11 +415,11 @@ export class Compositor {
           }
       }
       ctx.stroke();
-      ctx.globalAlpha = 1; // Reset
+      ctx.globalAlpha = 1;
   }
 
   private drawMarker(
-      ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D,
+      ctx: OffscreenCanvasRenderingContext2D,
       style: MarkerStyle | undefined,
       x: number,
       y: number
@@ -459,7 +436,6 @@ export class Compositor {
           ctx.lineWidth = 2;
           ctx.stroke();
       } else {
-           // Simple pin shape fallback
           ctx.fillStyle = color;
           ctx.beginPath();
           ctx.moveTo(x, y);
@@ -467,5 +443,4 @@ export class Compositor {
           ctx.fill();
       }
   }
-
 }

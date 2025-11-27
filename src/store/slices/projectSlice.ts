@@ -1,12 +1,13 @@
 import { StateCreator } from 'zustand';
 import { ProjectSlice, StoreState } from '../types';
+import { AssetLoader } from '../../services/AssetLoader';
 
 export const createProjectSlice: StateCreator<
   StoreState,
   [['zustand/immer', never]],
   [],
   ProjectSlice
-> = (set) => ({
+> = (set, get) => ({
   id: 'project-1',
   settings: {
     width: 1920,
@@ -22,7 +23,15 @@ export const createProjectSlice: StateCreator<
     set((state) => {
       Object.assign(state.settings, newSettings);
     }),
-  loadProject: (project) =>
+  loadProject: (project) => {
+    // J5: Revoke existing assets to prevent memory leaks
+    const currentAssets = get().assets;
+    if (currentAssets) {
+        Object.values(currentAssets).forEach((asset) => {
+            if (asset) AssetLoader.revokeAsset(asset);
+        });
+    }
+
     set((state) => {
       // Load project ID and settings
       state.id = project.id;
@@ -49,5 +58,6 @@ export const createProjectSlice: StateCreator<
       // Reset Playback
       state.currentTime = 0;
       state.isPlaying = false;
-    }),
+    });
+  },
 });

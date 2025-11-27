@@ -1,55 +1,16 @@
 import { ExportManager } from '../../../src/services/ExportManager';
 import { ProjectSettings } from '../../../src/types';
+import { createExportWorker } from '../../../src/utils/workerUtils';
 
-jest.mock('mediabunny', () => ({
-  Output: jest.fn().mockImplementation(() => ({
-    addVideoTrack: jest.fn(),
-    start: jest.fn(),
-    finalize: jest.fn(),
-    target: { buffer: new ArrayBuffer(10) }
-  })),
-  Mp4OutputFormat: jest.fn(),
-  BufferTarget: jest.fn(),
-  CanvasSource: jest.fn().mockImplementation(() => ({
-      addFrame: jest.fn(),
-      add: jest.fn(), // legacy
-  })),
-}));
+// Mock workerUtils
+jest.mock('../../../src/utils/workerUtils');
 
-// Mock Compositor
-jest.mock('../../../src/services/Compositor', () => ({
-  Compositor: jest.fn().mockImplementation(() => ({
-    initialize: jest.fn(),
-    renderFrame: jest.fn(),
-    cleanup: jest.fn(),
-  }))
-}));
-
-// Mock OffscreenCanvas
-global.OffscreenCanvas = class {
-    width: number;
-    height: number;
-    constructor(w: number, h: number) { this.width = w; this.height = h; }
-    getContext() {
-        return {
-            canvas: this,
-            clearRect: jest.fn(),
-            fillStyle: '',
-            fillRect: jest.fn()
-        };
-    }
-} as any;
-
-// Mock VideoEncoder
-global.VideoEncoder = class {
-    configure() {}
-    encode() {}
-    close() {}
-    flush() { return Promise.resolve(); }
-} as any;
+// Mock VideoEncoder for WebCodecs check
+global.VideoEncoder = class {} as any;
 
 describe('ExportManager', () => {
   let exportManager: ExportManager;
+  let mockWorker: any;
   const mockProject = {
       id: 'p1',
       settings: { width: 100, height: 100, fps: 30, duration: 1 } as ProjectSettings,
@@ -63,45 +24,92 @@ describe('ExportManager', () => {
   beforeEach(() => {
     exportManager = new ExportManager();
     jest.clearAllMocks();
+
+    mockWorker = {
+        postMessage: jest.fn(),
+        terminate: jest.fn(),
+        onmessage: null,
+        onerror: null
+    };
+
+    (createExportWorker as jest.Mock).mockReturnValue(mockWorker);
   });
 
-  it('should run export loop successfully', async () => {
+  it('should run export successfully', async () => {
+    mockWorker.postMessage.mockImplementation((msg: any) => {
+         if (msg.type === 'start') {
+             // Simulate worker flow
+             setTimeout(() => {
+                 mockWorker.onmessage({ data: { type: 'progress', progress: { status: 'initializing' } } });
+                 mockWorker.onmessage({ data: { type: 'progress', progress: { status: 'rendering', percentage: 50 } } });
+                 mockWorker.onmessage({ data: { type: 'complete', blob: new Blob(['video'], {type: 'video/mp4'}) } });
+             }, 0);
+         }
+    });
+
     const onProgress = jest.fn();
     const result = await exportManager.exportProject(mockProject, mockExportSettings, onProgress);
 
     expect(result).toBeInstanceOf(Blob);
     expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({ status: 'completed' }));
+    expect(mockWorker.terminate).toHaveBeenCalled();
   });
 
-  it('should handle cancellation mid-export', async () => {
+  it('should handle cancellation', async () => {
+    mockWorker.postMessage.mockImplementation((msg: any) => {
+         if (msg.type === 'start') {
+             setTimeout(() => {
+                mockWorker.onmessage({ data: { type: 'progress', progress: { status: 'rendering', percentage: 10 } } });
+                // Trigger cancel from external logic
+             }, 0);
+         }
+         if (msg.type === 'cancel') {
+             setTimeout(() => {
+                mockWorker.onmessage({ data: { type: 'progress', progress: { status: 'cancelled' } } });
+             }, 0);
+         }
+    });
+
     const onProgress = jest.fn((p) => {
-        if (p.status === 'rendering' && p.currentFrame > 5) {
+        if (p.status === 'rendering') {
             exportManager.cancel();
         }
     });
 
-    // Set duration to have enough frames (30fps * 1s = 30 frames)
-    const longProject = { ...mockProject, settings: { ...mockProject.settings, duration: 1 } };
-
-    const result = await exportManager.exportProject(longProject, mockExportSettings, onProgress);
+    const result = await exportManager.exportProject(mockProject, mockExportSettings, onProgress);
 
     expect(result).toBeNull();
     expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({ status: 'cancelled' }));
+    expect(mockWorker.postMessage).toHaveBeenCalledWith({ type: 'cancel' });
+    expect(mockWorker.terminate).toHaveBeenCalled();
   });
 
-  it('should fail gracefully if canvas creation fails', async () => {
-      const originalOffscreenCanvas = global.OffscreenCanvas;
-      global.OffscreenCanvas = class {
-          constructor() {}
-          getContext() { return null; }
-      } as any;
+  it('should handle worker errors', async () => {
+     mockWorker.postMessage.mockImplementation((msg: any) => {
+         if (msg.type === 'start') {
+             setTimeout(() => {
+                 mockWorker.onmessage({ data: { type: 'error', error: 'Worker crashed' } });
+             }, 0);
+         }
+     });
 
-      const onProgress = jest.fn();
-      const result = await exportManager.exportProject(mockProject, mockExportSettings, onProgress);
+     const onProgress = jest.fn();
+     await expect(exportManager.exportProject(mockProject, mockExportSettings, onProgress)).rejects.toThrow('Worker crashed');
 
-      expect(result).toBeNull();
-      expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({ status: 'error' }));
+     expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({ status: 'error', error: 'Worker crashed' }));
+     expect(mockWorker.terminate).toHaveBeenCalled();
+  });
 
-      global.OffscreenCanvas = originalOffscreenCanvas;
+  it('should fail immediately if WebCodecs not supported', async () => {
+     const originalVideoEncoder = global.VideoEncoder;
+     // @ts-ignore
+     delete global.VideoEncoder;
+
+     const onProgress = jest.fn();
+     await expect(exportManager.exportProject(mockProject, mockExportSettings, onProgress)).rejects.toThrow(/WebCodecs/);
+
+     expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({ status: 'error' }));
+
+     global.VideoEncoder = originalVideoEncoder;
   });
 });

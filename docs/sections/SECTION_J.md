@@ -11,33 +11,39 @@
   - Render only visible clips
   - Handles 100+ clips smoothly
   - Implemented custom virtualization in `src/components/timeline/TimelineContainer.tsx`
+  - Verified by `tests/integration/Performance.integration.test.tsx`
 
 - [x] **J2: Lazy asset loading** (4-5 hours)
   - Load assets on-demand (Metadata first, thumbnails lazy)
   - Unload unused assets (Revoke Blob URLs on project clear)
   - Implemented `ConcurrencyLimiter` for thumbnail generation
   - Files: `src/services/AssetLoader.ts`, `src/utils/concurrency.ts`
+  - Verified by `tests/unit/services/AssetLoaderVideo.test.ts`
 
 - [x] **J3: Web Worker for export** (8-10 hours)
   - Offload export to Worker
   - Keep UI responsive
   - Implemented `WorkerCompositor` and `exportWorker`
   - Files: `src/workers/exportWorker.ts`, `src/services/WorkerCompositor.ts`
+  - Verified by `tests/unit/services/WorkerCompositor.test.ts` (enhanced error handling/cleanup tests)
 
 - [x] **J4: Debounce expensive operations** (2-3 hours)
   - Debounce zoom/scroll
   - Throttle playback updates
   - Files: `src/hooks/useDebounce.ts` (new)
+  - Verified by `tests/unit/hooks/useDebounce.test.ts`
 
 - [x] **J5: Memory profiling** (4-6 hours)
   - Fix memory leaks (Revoke blobs on asset removal/project load)
   - Limit cache sizes (Implemented via `ConcurrencyLimiter` and explicit cleanup)
   - Files: `src/store/slices/assetsSlice.ts`, `src/store/slices/projectSlice.ts`
+  - Verified by `tests/unit/store/assetsSlice.test.ts` and `tests/unit/services/AssetLoaderVideo.test.ts`
 
 - [x] **J6: Frame dropping strategy** (3-4 hours)
   - Detect low FPS during playback
   - Display performance warning
   - Files: `src/hooks/usePlaybackLoop.ts`
+  - Verified by `tests/unit/hooks/usePlaybackLoop.test.ts`
 
 ## Success Criteria
 - Handles 50+ clips without lag

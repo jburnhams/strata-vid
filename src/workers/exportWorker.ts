@@ -34,7 +34,10 @@ async function runExport(payload: any) {
     const assetList = Object.values(project.assets);
     await compositor.initialize(assetList as any[]);
 
-    if (isCancelled) return;
+    if (isCancelled) {
+        self.postMessage({ type: 'progress', progress: { status: 'cancelled' } });
+        return;
+    }
 
     // 2. Setup Mediabunny Output
     const output = new Output({

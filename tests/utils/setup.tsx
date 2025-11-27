@@ -155,7 +155,7 @@ if (isJSDOM) {
       Marker: ({ position }: { position: any }) => <div data-testid="marker" data-position={JSON.stringify(position)} />,
       Popup: ({ children }: { children: React.ReactNode }) => <div data-testid="popup">{children}</div>,
       GeoJSON: ({ data, style }: { data: any, style: any }) => <div data-testid="geojson" data-style={JSON.stringify(style)} />,
-      useMap: (() => {
+      useMap: jest.fn(() => {
         // Create a singleton instance of the map mock to be shared across all calls in a test.
         const panes = {
           overlayPane: {
@@ -185,9 +185,13 @@ if (isJSDOM) {
           latLngToContainerPoint: () => ({ x: 0, y: 0 }),
           getSize: () => ({ x: 100, y: 100 }),
           options: { zoomAnimation: true },
+          // Add these to satisfy HeatmapOverlay usage
+          getZoom: () => 10,
+          getZoomScale: () => 1,
+          _latLngToNewLayerPoint: () => ({ x: 0, y: 0 }),
         });
-        return () => mapMock;
-      })(),
+        return mapMock;
+      }),
     }));
 
     afterEach(() => {

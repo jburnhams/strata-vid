@@ -48,6 +48,15 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     // Sync Play/Pause - Only when isPlaying state actually changes
     const isPlayingChanged = isPlaying !== lastIsPlayingRef.current;
+    
+    console.log('VideoPlayer effect:', {
+      isPlaying,
+      lastIsPlaying: lastIsPlayingRef.current,
+      isPlayingChanged,
+      videoPaused: video.paused,
+      currentTime,
+      expectedVideoTime
+    });
 
     if (isPlayingChanged) {
       lastIsPlayingRef.current = isPlaying;

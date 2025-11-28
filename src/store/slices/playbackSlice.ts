@@ -11,8 +11,9 @@ export const createPlaybackSlice: StateCreator<
   isPlaying: false,
   playbackRate: 1,
   setPlaybackState: (newState) =>
-    set((state) => ({
-        ...state,
-        ...newState
-    })),
+    set((state) => {
+      if (newState.currentTime !== undefined) state.currentTime = newState.currentTime;
+      if (newState.isPlaying !== undefined) state.isPlaying = newState.isPlaying;
+      if (newState.playbackRate !== undefined) state.playbackRate = newState.playbackRate;
+    }),
 });

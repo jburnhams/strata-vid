@@ -23,6 +23,25 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const clipRate = clip.playbackRate || 1;
   const expectedVideoTime = Math.max(0, (currentTime - clip.start) * clipRate + clip.offset);
 
+  // Separate effect for play/pause - only runs when isPlaying changes
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (isPlaying) {
+      // Play the video. The browser will handle stopping at the end automatically.
+      // Note: video.duration may be NaN if metadata hasn't loaded yet, so we don't check it here.
+      if (video.paused) {
+        video.play().catch(e => console.warn("Auto-play prevented:", e));
+      }
+    } else {
+      if (!video.paused) {
+        video.pause();
+      }
+    }
+  }, [isPlaying]); // Only re-run when isPlaying changes
+
+  // Separate effect for time sync and playback rate
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -39,24 +58,12 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     const drift = Math.abs(video.currentTime - expectedVideoTime);
     const isSeeking = !isPlaying || drift > 0.1;
 
-    if (isSeeking) {
-         if (Number.isFinite(expectedVideoTime)) {
-             // In Chrome, setting currentTime can be async if not loaded.
-             // But we assume metadata is loaded or it will catch up.
-             video.currentTime = expectedVideoTime;
-         }
+    if (isSeeking && Number.isFinite(expectedVideoTime)) {
+        // In Chrome, setting currentTime can be async if not loaded.
+        // But we assume metadata is loaded or it will catch up.
+        video.currentTime = expectedVideoTime;
     }
-
-    // Sync Play/Pause
-    if (isPlaying && video.paused) {
-        // Only play if we are not at the end of the video file (unless looping, but clips don't loop by default usually)
-        if (video.duration && expectedVideoTime < video.duration) {
-             video.play().catch(e => console.warn("Auto-play prevented:", e));
-        }
-    } else if (!isPlaying && !video.paused) {
-      video.pause();
-    }
-  }, [currentTime, isPlaying, playbackRate, expectedVideoTime, asset.src]);
+  }, [currentTime, isPlaying, playbackRate, clipRate, clip.start, clip.offset, asset.src]);
 
   // Helper to get animated value
   const getValue = (prop: keyof OverlayProperties, defaultValue: any) => {

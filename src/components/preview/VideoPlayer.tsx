@@ -18,12 +18,30 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   playbackRate,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const lastIsPlayingRef = useRef<boolean>(isPlaying);
 
   // Calculate where the video should be in its own timeline
   const clipRate = clip.playbackRate || 1;
   const expectedVideoTime = Math.max(0, (currentTime - clip.start) * clipRate + clip.offset);
 
+  // Separate effect for play/pause - only runs when isPlaying changes
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (isPlaying) {
+      // Play the video. The browser will handle stopping at the end automatically.
+      // Note: video.duration may be NaN if metadata hasn't loaded yet, so we don't check it here.
+      if (video.paused) {
+        video.play().catch(e => console.warn("Auto-play prevented:", e));
+      }
+    } else {
+      if (!video.paused) {
+        video.pause();
+      }
+    }
+  }, [isPlaying]); // Only re-run when isPlaying changes
+
+  // Separate effect for time sync and playback rate
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -44,30 +62,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         // In Chrome, setting currentTime can be async if not loaded.
         // But we assume metadata is loaded or it will catch up.
         video.currentTime = expectedVideoTime;
-    }
-
-    // Sync Play/Pause - Only when isPlaying state actually changes
-    const isPlayingChanged = isPlaying !== lastIsPlayingRef.current;
-    
-    console.log('VideoPlayer effect:', {
-      isPlaying,
-      lastIsPlaying: lastIsPlayingRef.current,
-      isPlayingChanged,
-      videoPaused: video.paused,
-      currentTime,
-      expectedVideoTime
-    });
-
-    if (isPlayingChanged) {
-      lastIsPlayingRef.current = isPlaying;
-
-      if (isPlaying && video.paused) {
-        // Play the video. The browser will handle stopping at the end automatically.
-        // Note: video.duration may be NaN if metadata hasn't loaded yet, so we don't check it here.
-        video.play().catch(e => console.warn("Auto-play prevented:", e));
-      } else if (!isPlaying && !video.paused) {
-        video.pause();
-      }
     }
   }, [currentTime, isPlaying, playbackRate, clipRate, clip.start, clip.offset, asset.src]);
 

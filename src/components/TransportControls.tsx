@@ -9,8 +9,16 @@ export const TransportControls: React.FC = () => {
   const playbackRate = useProjectStore((state) => state.playbackRate);
   const setPlaybackState = useProjectStore((state) => state.setPlaybackState);
 
-  const togglePlay = () => {
-    setPlaybackState({ isPlaying: !isPlaying });
+  const handlePlay = () => {
+    if (!isPlaying) {
+      setPlaybackState({ isPlaying: true });
+    }
+  };
+
+  const handlePause = () => {
+    if (isPlaying) {
+      setPlaybackState({ isPlaying: false });
+    }
   };
 
   const handleStop = () => {
@@ -39,7 +47,7 @@ export const TransportControls: React.FC = () => {
 
         <Tooltip content={isPlaying ? "Pause (Space)" : "Play (Space)"} position="top">
             <button
-            onClick={togglePlay}
+            onClick={isPlaying ? handlePause : handlePlay}
             className="p-1.5 hover:bg-neutral-700 rounded text-neutral-300 hover:text-white transition-colors"
             aria-label={isPlaying ? "Pause" : "Play"}
             >

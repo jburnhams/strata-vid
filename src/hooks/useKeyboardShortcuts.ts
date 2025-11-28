@@ -1,9 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useProjectStore } from '../store/useProjectStore';
 
 export const useKeyboardShortcuts = (onToggleHelp?: () => void) => {
   const setPlaybackState = useProjectStore((state) => state.setPlaybackState);
   const removeClip = useProjectStore((state) => state.removeClip);
+
+  // Ref to track the last time toggle was triggered to debounce rapid events
+  const lastToggleTimeRef = useRef<number>(0);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -46,7 +49,14 @@ export const useKeyboardShortcuts = (onToggleHelp?: () => void) => {
         case 'Space':
         case 'KeyK':
           e.preventDefault();
-          setPlaybackState({ isPlaying: !state.isPlaying });
+          {
+            const now = Date.now();
+            // Debounce toggle (200ms) to prevent double-firing events (e.g. Strict Mode quirks or bouncing keys)
+            if (now - lastToggleTimeRef.current > 200) {
+              setPlaybackState({ isPlaying: !state.isPlaying });
+              lastToggleTimeRef.current = now;
+            }
+          }
           break;
         case 'KeyJ':
            // Rewind 1 second

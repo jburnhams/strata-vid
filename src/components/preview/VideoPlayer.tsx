@@ -49,10 +49,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     // Sync Play/Pause
     if (isPlaying && video.paused) {
-        // Only play if we are not at the end of the video file (unless looping, but clips don't loop by default usually)
-        if (video.duration && expectedVideoTime < video.duration) {
-             video.play().catch(e => console.warn("Auto-play prevented:", e));
-        }
+        // Play the video. The browser will handle stopping at the end automatically.
+        // Note: video.duration may be NaN if metadata hasn't loaded yet, so we don't check it here.
+        video.play().catch(e => console.warn("Auto-play prevented:", e));
     } else if (!isPlaying && !video.paused) {
       video.pause();
     }

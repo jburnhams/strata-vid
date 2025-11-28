@@ -119,6 +119,36 @@ describe('VideoPlayer', () => {
     expect(playMock).toHaveBeenCalled();
   });
 
+  it('calls play() even when duration is NaN (metadata not loaded)', () => {
+    const { rerender, container } = render(
+      <VideoPlayer
+        clip={mockClip}
+        asset={mockAsset}
+        currentTime={0}
+        isPlaying={false}
+        playbackRate={1}
+      />
+    );
+
+    // Set paused property and duration to NaN to simulate metadata not loaded
+    const video = container.querySelector('video') as HTMLVideoElement;
+    Object.defineProperty(video, 'paused', { value: true, configurable: true });
+    Object.defineProperty(video, 'duration', { value: NaN, configurable: true });
+
+    rerender(
+      <VideoPlayer
+        clip={mockClip}
+        asset={mockAsset}
+        currentTime={0.1}
+        isPlaying={true}
+        playbackRate={1}
+      />
+    );
+
+    // Should still call play() even when duration is NaN
+    expect(playMock).toHaveBeenCalled();
+  });
+
   it('calls pause() when isPlaying becomes false', () => {
     const { rerender, container } = render(
       <VideoPlayer

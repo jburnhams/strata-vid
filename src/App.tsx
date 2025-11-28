@@ -35,6 +35,7 @@ function App() {
     setSettings,
     addAsset,
     updateAsset,
+    removeAsset,
     selectAsset,
     addClip,
     addTrack,
@@ -125,6 +126,32 @@ function App() {
     }
   };
 
+  const handleAssetUpdate = async (id: string, file: File) => {
+      const asset = assetsRecord[id];
+      if (!asset) return;
+
+      try {
+          // 1. Update source immediately to restore playback
+          const src = URL.createObjectURL(file);
+          updateAsset(id, { src, file });
+          showSuccess(`Relinked ${asset.name}`);
+
+          // 2. Regenerate thumbnail in background
+          try {
+              const thumbnail = await AssetLoader.loadThumbnail(file, asset.type);
+              updateAsset(id, { thumbnail });
+          } catch (e) {
+              console.warn(`Failed to regenerate thumbnail for ${asset.name}`, e);
+          }
+
+          // 3. For GPX, we might want to ensure points are valid, but usually serialized points are enough.
+          // If we wanted to be strict, we'd call AssetLoader.reprocessGpxAsset here.
+
+      } catch (e) {
+          handleError(e, `Failed to relink ${asset.name}`);
+      }
+  };
+
   return (
     <div className="grid h-screen w-screen bg-neutral-900 text-neutral-200 font-sans overflow-hidden"
          style={{
@@ -181,6 +208,8 @@ function App() {
             selectedAssetId={selectedAssetId}
             onAssetAdd={handleAssetAdd}
             onAssetSelect={selectAsset}
+            onAssetRemove={removeAsset}
+            onAssetUpdate={handleAssetUpdate}
         />
       </div>
 

@@ -2,8 +2,15 @@ import { renderHook, act } from '@testing-library/react';
 import { useKeyboardShortcuts } from '../../../src/hooks/useKeyboardShortcuts';
 import { useProjectStore } from '../../../src/store/useProjectStore';
 
+// We need to use real timers for Date.now() but can mock setTimeout if needed.
+// However, the debounce uses Date.now(), so we need to mock Date.now() or wait.
+// Jest's useFakeTimers also mocks Date.now().
+
 describe('useKeyboardShortcuts', () => {
   beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2023-01-01T00:00:00.000Z'));
+
     useProjectStore.setState({
       isPlaying: false,
       currentTime: 10,
@@ -19,15 +26,28 @@ describe('useKeyboardShortcuts', () => {
     });
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('toggles play on Space', () => {
     renderHook(() => useKeyboardShortcuts());
 
+    // First toggle
     act(() => {
       window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }));
     });
     expect(useProjectStore.getState().isPlaying).toBe(true);
 
+    // Try immediate second toggle (should be ignored due to debounce)
     act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }));
+    });
+    expect(useProjectStore.getState().isPlaying).toBe(true);
+
+    // Advance time beyond debounce threshold (200ms)
+    act(() => {
+      jest.advanceTimersByTime(250);
       window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }));
     });
     expect(useProjectStore.getState().isPlaying).toBe(false);

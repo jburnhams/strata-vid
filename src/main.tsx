@@ -16,6 +16,12 @@ const searchParams = new URLSearchParams(window.location.search);
 const strictModeParam = searchParams.get('strict');
 const isStrictMode = strictModeParam !== 'false';
 
+if (isStrictMode) {
+  console.log('[Strata Vid] Strict Mode: Enabled');
+} else {
+  console.log('[Strata Vid] Strict Mode: Disabled');
+}
+
 const Root = isStrictMode ? React.StrictMode : React.Fragment;
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

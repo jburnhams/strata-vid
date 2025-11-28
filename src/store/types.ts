@@ -47,6 +47,7 @@ export interface TimelineSlice {
   addExtraTrackToClip: (clipId: string, assetId: string) => void;
   removeExtraTrackFromClip: (clipId: string, assetId: string) => void;
   updateExtraTrackOnClip: (clipId: string, assetId: string, update: Partial<Omit<ExtraTrack, 'assetId'>>) => void;
+  removeClipsByAssetId: (assetId: string) => void;
 }
 
 export interface PlaybackSlice {

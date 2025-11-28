@@ -10,6 +10,7 @@ import { Asset, Track } from './types';
 import { AssetLoader } from './services/AssetLoader';
 import { ExportModal } from './components/ExportModal';
 import { HelpModal } from './components/HelpModal';
+import { ConfirmModal } from './components/ConfirmModal';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { ToastContainer } from './components/Toast';
 import { LoadingOverlay } from './components/LoadingOverlay';
@@ -21,6 +22,10 @@ import { HelpCircle } from 'lucide-react';
 function App() {
   const [showExport, setShowExport] = React.useState(false);
   const [showHelp, setShowHelp] = React.useState(false);
+  const [confirmModal, setConfirmModal] = React.useState<{ isOpen: boolean; assetId: string | null }>({
+    isOpen: false,
+    assetId: null,
+  });
 
   const toggleHelp = () => setShowHelp(prev => !prev);
   useKeyboardShortcuts(toggleHelp);
@@ -39,6 +44,7 @@ function App() {
     selectAsset,
     addClip,
     addTrack,
+    removeClipsByAssetId,
     setLoading
   } = useProjectStore();
 
@@ -152,6 +158,25 @@ function App() {
       }
   };
 
+  const handleAssetRemove = (id: string) => {
+    // Check if asset is used in any clip
+    const isUsed = clips.some(clip => clip.assetId === id);
+
+    if (isUsed) {
+      setConfirmModal({ isOpen: true, assetId: id });
+    } else {
+      removeAsset(id);
+    }
+  };
+
+  const confirmAssetRemove = () => {
+    if (confirmModal.assetId) {
+      removeClipsByAssetId(confirmModal.assetId);
+      removeAsset(confirmModal.assetId);
+      setConfirmModal({ isOpen: false, assetId: null });
+    }
+  };
+
   return (
     <div className="grid h-screen w-screen bg-neutral-900 text-neutral-200 font-sans overflow-hidden"
          style={{
@@ -208,7 +233,7 @@ function App() {
             selectedAssetId={selectedAssetId}
             onAssetAdd={handleAssetAdd}
             onAssetSelect={selectAsset}
-            onAssetRemove={removeAsset}
+            onAssetRemove={handleAssetRemove}
             onAssetUpdate={handleAssetUpdate}
         />
       </div>
@@ -230,6 +255,15 @@ function App() {
 
       {showExport && <ExportModal onClose={() => setShowExport(false)} />}
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+      {confirmModal.isOpen && (
+        <ConfirmModal
+          title="Remove Asset"
+          message="This asset is currently used in your timeline. Removing it will also remove all associated clips. Are you sure?"
+          confirmLabel="Remove All"
+          onConfirm={confirmAssetRemove}
+          onCancel={() => setConfirmModal({ isOpen: false, assetId: null })}
+        />
+      )}
       <ToastContainer />
       <LoadingOverlay />
     </div>

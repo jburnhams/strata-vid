@@ -364,4 +364,27 @@ export const createTimelineSlice: StateCreator<
         }
       }
     }),
+  removeClipsByAssetId: (assetId) =>
+    set((state) => {
+      const clipIdsToRemove: string[] = [];
+      Object.values(state.clips).forEach((clip) => {
+        if (clip.assetId === assetId) {
+          clipIdsToRemove.push(clip.id);
+        }
+      });
+
+      clipIdsToRemove.forEach((id) => {
+        const clip = state.clips[id];
+        if (clip) {
+          const track = state.tracks[clip.trackId];
+          if (track) {
+            track.clips = track.clips.filter((cId) => cId !== id);
+          }
+        }
+        delete state.clips[id];
+        if (state.selectedClipId === id) {
+          state.selectedClipId = null;
+        }
+      });
+    }),
 });

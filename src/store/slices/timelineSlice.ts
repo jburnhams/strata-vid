@@ -57,6 +57,12 @@ export const createTimelineSlice: StateCreator<
       if (track) {
         state.clips[clip.id] = clip;
         track.clips.push(clip.id);
+
+        // Auto-expand project duration
+        const end = clip.start + clip.duration;
+        if (end > state.settings.duration) {
+          state.settings.duration = end;
+        }
       }
     }),
   removeClip: (id) =>
@@ -106,6 +112,12 @@ export const createTimelineSlice: StateCreator<
 
       // Update start time
       clip.start = newStart;
+
+      // Auto-expand project duration
+      const end = clip.start + clip.duration;
+      if (end > state.settings.duration) {
+        state.settings.duration = end;
+      }
     }),
   resizeClip: (id, newDuration, newOffset) =>
     set((state) => {
@@ -115,6 +127,12 @@ export const createTimelineSlice: StateCreator<
       clip.duration = newDuration;
       if (newOffset !== undefined) {
         clip.offset = newOffset;
+      }
+
+      // Auto-expand project duration
+      const end = clip.start + clip.duration;
+      if (end > state.settings.duration) {
+        state.settings.duration = end;
       }
     }),
   duplicateClip: (id) =>
@@ -157,6 +175,12 @@ export const createTimelineSlice: StateCreator<
 
       // Select the new clip
       state.selectedClipId = newId;
+
+      // Auto-expand project duration
+      const end = newStart + newClip.duration;
+      if (end > state.settings.duration) {
+        state.settings.duration = end;
+      }
     }),
   splitClip: (id, time) =>
     set((state) => {
@@ -193,6 +217,13 @@ export const createTimelineSlice: StateCreator<
 
       // Select the new clip
       state.selectedClipId = newId;
+
+      // Auto-expand project duration
+      // splitClip preserves total duration, but if we split something that was already sticking out past duration (unlikely but possible), we should check.
+      const end = newStart + newDuration;
+      if (end > state.settings.duration) {
+        state.settings.duration = end;
+      }
     }),
   rippleDeleteClip: (id) =>
     set((state) => {
@@ -218,6 +249,7 @@ export const createTimelineSlice: StateCreator<
           const c = state.clips[cId];
           if (c && c.start > start) {
             c.start -= duration;
+            // Shifting left won't increase duration, so no check needed.
           }
         });
       }
@@ -274,6 +306,9 @@ export const createTimelineSlice: StateCreator<
           nextClip.start -= shiftAmount;
         }
       }
+
+      // Auto-expand (unlikely as we shift left, but good practice)
+      // Actually, addTransition shortens things by overlapping. So duration likely decreases or stays same.
     }),
   updateClipPlaybackRate: (id, playbackRate) =>
     set((state) => {
@@ -285,6 +320,12 @@ export const createTimelineSlice: StateCreator<
 
         clip.playbackRate = playbackRate;
         clip.duration = newDuration;
+
+        // Auto-expand project duration
+        const end = clip.start + newDuration;
+        if (end > state.settings.duration) {
+            state.settings.duration = end;
+        }
       }
     }),
   updateClipSyncOffset: (id, syncOffset) =>

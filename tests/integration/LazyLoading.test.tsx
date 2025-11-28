@@ -7,7 +7,14 @@ import { useProjectStore } from '../../src/store/useProjectStore';
 import '@testing-library/jest-dom';
 
 // Manual mocks
-jest.mock('../../src/services/AssetLoader');
+jest.mock('../../src/services/AssetLoader', () => ({
+    AssetLoader: {
+        loadAsset: jest.fn(),
+        loadThumbnail: jest.fn(),
+        revokeAsset: jest.fn(),
+        determineType: jest.fn(),
+    }
+}));
 
 // Mock leaflet completely
 jest.mock('leaflet', () => {
@@ -74,7 +81,7 @@ describe('App Integration - Lazy Asset Loading', () => {
             id: 'asset-1',
             name: file.name,
             type: 'video',
-            source: 'blob:video',
+            src: 'blob:video',
             duration: 10,
             file // Ensure the file is returned
         }));
@@ -86,10 +93,10 @@ describe('App Integration - Lazy Asset Loading', () => {
     it('should add asset immediately and load thumbnail lazily', async () => {
         render(<App />);
 
-        const fileInput = screen.getByTestId('add-asset-input');
         const file = new File([''], 'video.mp4', { type: 'video/mp4' });
+        const addAssetInput = screen.getByTestId('add-asset-input');
 
-        fireEvent.change(fileInput, { target: { files: [file] } });
+        fireEvent.change(addAssetInput, { target: { files: [file] } });
 
         // 1. Verify AssetLoader.loadAsset was called with simplification tolerance
         await waitFor(() => {
@@ -98,8 +105,9 @@ describe('App Integration - Lazy Asset Loading', () => {
 
         // 2. Verify asset appears in the list (LibraryPanel)
         await waitFor(() => {
-            const assetItem = screen.getByRole('button', { name: /video.mp4/ });
+            const assetItem = screen.getByTestId('asset-item-asset-1');
             expect(assetItem).toBeInTheDocument();
+            expect(assetItem).toHaveTextContent('video.mp4');
         });
 
         // 3. Verify AssetLoader.loadThumbnail was called with correct args

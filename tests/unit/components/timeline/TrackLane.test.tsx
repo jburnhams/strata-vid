@@ -71,7 +71,8 @@ describe('TrackLane', () => {
 
   it('renders clips in the lane', () => {
     render(<TrackLane {...defaultProps} />);
-    expect(screen.getByText('clip-1')).toBeInTheDocument();
+    // Use testid for robustness as text content is now dynamic (shortened name)
+    expect(screen.getByTestId('clip-item-clip-1')).toBeInTheDocument();
   });
 
   it('highlights drop zone when isOver (mocked)', () => {
@@ -82,11 +83,11 @@ describe('TrackLane', () => {
 
   it('passes isSelected prop to ClipItem', () => {
     const { rerender } = render(<TrackLane {...defaultProps} />);
-    const clipElement = screen.getByText('clip-1').closest('.cursor-move');
+    const clipElement = screen.getByTestId('clip-item-clip-1');
     expect(clipElement).not.toHaveClass('ring-2');
 
     rerender(<TrackLane {...defaultProps} selectedClipId="clip-1" />);
-    const selectedClipElement = screen.getByText('clip-1').closest('.cursor-move');
+    const selectedClipElement = screen.getByTestId('clip-item-clip-1');
     expect(selectedClipElement).toHaveClass('ring-2');
   });
 });

@@ -3,7 +3,7 @@
 **Priority**: High
 **Goal**: Implement a comprehensive audio system supporting mixing, effects, independent volume controls, and waveform visualization for both audio and video clips.
 **Dependencies**: Section C (Preview Engine), Section J (Export)
-**Status**: 🔴 Not implemented
+**Status**: 🟨 Partially implemented
 
 ## Overview
 The current system uses HTMLMediaElement's native audio playback for video clips and lacks a dedicated audio engine. This section introduces a **Web Audio API** based architecture to provide a central mixer, enabling advanced features like boost, global effects, and export mixing.
@@ -34,7 +34,7 @@ The current system uses HTMLMediaElement's native audio playback for video clips
   - Files: `src/services/AssetLoader.ts`, `src/utils/audioUtils.ts`
 
 ### Phase 2: Audio Engine & Preview
-- [ ] **M3: Audio Engine Service** (12-16 hours)
+- [x] **M3: Audio Engine Service** (12-16 hours)
   - Create `src/services/AudioEngine.ts`.
   - Manage `AudioContext` lifecycle.
   - Methods: `registerClip(clipId, element?)`, `unregisterClip(clipId)`, `updateVolume(id, vol)`.

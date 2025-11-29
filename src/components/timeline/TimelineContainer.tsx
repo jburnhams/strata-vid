@@ -1,17 +1,4 @@
-import React, { useRef, useState, useEffect, useMemo } from 'react';
-import {
-  DndContext,
-  DragOverlay,
-  useSensor,
-  useSensors,
-  PointerSensor,
-  DragEndEvent,
-  DragStartEvent,
-  DragMoveEvent,
-  defaultDropAnimationSideEffects,
-  DropAnimation,
-} from '@dnd-kit/core';
-
+import React, { useRef, useState, useEffect, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { Track, Clip, Asset, ProjectSettings, Transition, Marker } from '../../types';
 import { Marker as MarkerComponent } from './Marker';
 import { TrackLane } from './TrackLane';
@@ -20,12 +7,6 @@ import { Ruler } from './Ruler';
 import { Playhead } from './Playhead';
 import { ZoomControls } from './ZoomControls';
 import { ContextMenu } from './ContextMenu';
-import {
-  checkCollision,
-  getSnapPoints,
-  findNearestSnapPoint,
-  findNearestValidTime,
-} from '../../utils/timelineUtils';
 
 interface TimelineContainerProps {
   tracks: Record<string, Track>;
@@ -53,19 +34,11 @@ interface TimelineContainerProps {
   isPlaying: boolean;
   markers?: Marker[];
   onMarkerClick?: (id: string) => void;
+  externalSnapLine?: number | null;
+  externalIsValidDrop?: boolean;
 }
 
-const dropAnimation: DropAnimation = {
-  sideEffects: defaultDropAnimationSideEffects({
-    styles: {
-      active: {
-        opacity: '0.5',
-      },
-    },
-  }),
-};
-
-export const TimelineContainer: React.FC<TimelineContainerProps> = ({
+export const TimelineContainer = forwardRef<HTMLDivElement, TimelineContainerProps>(({
   tracks,
   clips,
   assets,
@@ -91,24 +64,17 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
   isPlaying,
   markers,
   onMarkerClick,
-}) => {
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [snapLine, setSnapLine] = useState<number | null>(null);
-  const [isValidDrop, setIsValidDrop] = useState(true);
-
+  externalSnapLine,
+  externalIsValidDrop = true
+}, ref) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [scrollLeft, setScrollLeft] = useState(0);
   const [containerWidth, setContainerWidth] = useState(1000);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5, // Wait for 5px drag before activating to allow clicks
-      },
-    })
-  );
+  // Forward the internal ref to the parent
+  useImperativeHandle(ref, () => scrollContainerRef.current as HTMLDivElement);
 
-  // J1: Calculate total duration for container width
+  // Calculate total duration for container width
   const totalDuration = useMemo(() => {
     let max = 0;
     Object.values(clips).forEach(c => {
@@ -121,26 +87,26 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
   // Ensure container width accommodates all clips plus some buffer
   const contentWidth = Math.max(containerWidth, totalDuration * zoomLevel + 200);
 
-  // J1: Virtualization - Visible time range
-  // Render clips that are within the viewport + buffer
+  // Virtualization - Visible time range
   const visibleStartTime = scrollLeft / zoomLevel;
   const visibleEndTime = (scrollLeft + containerWidth) / zoomLevel;
-  const bufferPixels = 500; // Render extra pixels outside viewport
+  const bufferPixels = 500;
   const bufferTime = bufferPixels / zoomLevel;
 
   const isClipVisible = (clip: Clip) => {
-    if (activeId === clip.id) return true; // Always render dragging clip
+    // Note: We don't check for active drag ID here because active drag overlay is now handled in App.tsx
+    // However, if we wanted to hide the original clip while dragging, we'd need that info.
+    // For now, standard behavior is often to keep it visible or ghosted.
+    // Since App.tsx handles the drag overlay, we just render what's in the store.
     const clipEnd = clip.start + clip.duration;
-    // Check overlap: clip starts before view ends AND clip ends after view starts
     return clip.start <= (visibleEndTime + bufferTime) && clipEnd >= (visibleStartTime - bufferTime);
   };
 
-  // Handle Wheel Zoom
   const handleWheel = (e: React.WheelEvent) => {
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
       const zoomDelta = e.deltaY > 0 ? 0.9 : 1.1;
-      const newZoom = Math.min(Math.max(zoomLevel * zoomDelta, 1), 500); // Clamp between 1 and 500
+      const newZoom = Math.min(Math.max(zoomLevel * zoomDelta, 1), 500);
       setZoomLevel(newZoom);
     }
   };
@@ -158,7 +124,6 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
     const width = container.clientWidth;
     const scrollPos = container.scrollLeft;
 
-    // Scroll if playhead is near the right edge or out of view
     if (playheadPos > scrollPos + width - 100) {
         container.scrollTo({ left: playheadPos - 100, behavior: 'smooth' });
     }
@@ -175,179 +140,6 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
     observer.observe(scrollContainerRef.current);
     return () => observer.disconnect();
   }, []);
-
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
-    setIsValidDrop(true);
-    setSnapLine(null);
-  };
-
-  const handleDragMove = (event: DragMoveEvent) => {
-    const { active, over, delta } = event;
-
-    if (!active) return;
-
-    // Clear snap line by default
-    setSnapLine(null);
-    setIsValidDrop(true);
-
-    const clipId = active.id as string;
-    const clip = clips[clipId];
-    if (!clip) return;
-
-    // Calculate potentially new start time
-    const deltaSeconds = delta.x / zoomLevel;
-    let newStart = clip.start + deltaSeconds;
-    newStart = Math.max(0, newStart);
-
-    if (snapToGrid) {
-        // Check snapping for visual feedback
-        const snapPoints = getSnapPoints(clips, currentTime);
-        const snapTolerance = 10 / zoomLevel;
-
-        const snappedStart = findNearestSnapPoint(newStart, snapPoints, snapTolerance);
-        if (snappedStart !== null) {
-            setSnapLine(snappedStart);
-            newStart = snappedStart;
-        } else {
-            const newEnd = newStart + clip.duration;
-            const snappedEnd = findNearestSnapPoint(newEnd, snapPoints, snapTolerance);
-            if (snappedEnd !== null) {
-                setSnapLine(snappedEnd);
-                newStart = snappedEnd - clip.duration;
-            }
-        }
-    }
-
-    // Check collision
-    if (over) {
-        const targetTrackId = over.id as string;
-        const targetTrack = tracks[targetTrackId];
-
-        if (targetTrack) {
-            const trackClips = targetTrack.clips
-                .map(id => clips[id])
-                .filter(c => c && c.id !== clipId);
-
-            if (checkCollision(newStart, clip.duration, trackClips)) {
-                if (!allowOverlaps) {
-                    setIsValidDrop(false);
-                }
-            }
-        }
-    }
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over, delta } = event;
-    setActiveId(null);
-    setSnapLine(null);
-    setIsValidDrop(true);
-
-    if (active && over) {
-      const clipId = active.id as string;
-      const clip = clips[clipId];
-
-      if (!clip) return;
-
-      const targetTrackId = over.id as string;
-      const targetTrack = tracks[targetTrackId];
-
-      // Calculate new start time based on drag delta
-      // delta.x is in pixels. We need to convert to seconds.
-      const deltaSeconds = delta.x / zoomLevel;
-      let newStart = clip.start + deltaSeconds;
-      newStart = Math.max(0, newStart); // Prevent negative time
-
-      // Get clips on target track (excluding current clip if moving within same track)
-      const trackClips = (targetTrack?.clips || [])
-        .map((id) => clips[id])
-        .filter((c) => c && c.id !== clipId);
-
-      // 1. Snapping
-      if (snapToGrid) {
-          const snapPoints = getSnapPoints(clips, currentTime);
-          const snapTolerance = 10 / zoomLevel; // 10 pixels tolerance
-
-          // Check snap for start
-          const snappedStart = findNearestSnapPoint(
-            newStart,
-            snapPoints,
-            snapTolerance
-          );
-          if (snappedStart !== null) {
-            newStart = snappedStart;
-          } else {
-            // Check snap for end
-            const newEnd = newStart + clip.duration;
-            const snappedEnd = findNearestSnapPoint(
-              newEnd,
-              snapPoints,
-              snapTolerance
-            );
-            if (snappedEnd !== null) {
-              newStart = snappedEnd - clip.duration;
-            }
-          }
-      }
-
-      // 2. Collision Check & Resolution
-      if (checkCollision(newStart, clip.duration, trackClips)) {
-        if (!allowOverlaps) {
-            // Collision! Find nearest valid spot
-            // Use a slightly larger tolerance for "valid slot" finding to be helpful
-            const snapTolerance = 10 / zoomLevel;
-            const validStart = findNearestValidTime(
-              newStart,
-              clip.duration,
-              trackClips,
-              snapTolerance * 2
-            );
-
-            if (validStart !== null) {
-              newStart = validStart;
-            } else {
-              // Reject move (snap back)
-              return;
-            }
-        }
-        // If allowOverlaps is true, we just proceed with newStart (even if colliding)
-      }
-
-      onMoveClip(clipId, newStart, targetTrackId);
-    }
-  };
-
-  const handleResize = (id: string, newStart: number, newDuration: number, newOffset: number) => {
-    // If start changed, move first
-    const clip = clips[id];
-    if (!clip) return;
-
-    const track = tracks[clip.trackId];
-    if (!track) return;
-
-    // Get clips on same track excluding self
-    const trackClips = track.clips
-      .map((cId) => clips[cId])
-      .filter((c) => c && c.id !== id);
-
-    // Check collision
-    if (checkCollision(newStart, newDuration, trackClips)) {
-      if (!allowOverlaps) {
-          // Reject resize if it causes collision
-          return;
-      }
-    }
-
-    if (newStart !== clip.start) {
-      onMoveClip(id, newStart);
-    }
-
-    // Update duration and offset
-    if (newDuration !== clip.duration || newOffset !== clip.offset) {
-      onResizeClip(id, newDuration, newOffset);
-    }
-  };
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; clipId: string } | null>(null);
 
@@ -389,15 +181,7 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
     setZoomLevel(Math.min(Math.max(newZoom, 0.1), 500));
   };
 
-  const activeClip = activeId ? clips[activeId] : null;
-
   return (
-    <DndContext
-      sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragMove={handleDragMove}
-      onDragEnd={handleDragEnd}
-    >
       <div className="flex flex-col h-full bg-gray-950 text-gray-300 select-none">
         {/* Top Bar / Toolbar */}
         <div className="h-10 bg-gray-900 border-b border-gray-700 flex items-center px-4 justify-between sticky top-0 z-30">
@@ -492,11 +276,11 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
                   ))}
                 </div>
 
-                {/* Snap Line */}
-                {snapLine !== null && (
+                {/* External Snap Line (from props) */}
+                {externalSnapLine !== null && externalSnapLine !== undefined && (
                   <div
                     className="absolute top-0 bottom-0 w-px bg-yellow-400 z-50 pointer-events-none shadow-[0_0_4px_rgba(250,204,21,0.8)]"
-                    style={{ left: `${snapLine * zoomLevel}px` }}
+                    style={{ left: `${externalSnapLine * zoomLevel}px` }}
                     data-testid="snap-line"
                   />
                 )}
@@ -520,7 +304,13 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
                             zoomLevel={zoomLevel}
                             selectedClipId={selectedClipId}
                             onClipSelect={onClipSelect}
-                            onClipResize={handleResize}
+                            onClipResize={(id, newStart, newDuration, newOffset) => {
+                                // Delegate resize to parent handler or implement directly
+                                onResizeClip(id, newDuration, newOffset);
+                                if (newStart !== clips[id]?.start) {
+                                    onMoveClip(id, newStart);
+                                }
+                            }}
                             onContextMenu={handleContextMenu}
                         />
                     );
@@ -530,26 +320,6 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
              </div>
           </div>
         </div>
-      </div>
-
-      <DragOverlay dropAnimation={dropAnimation}>
-        {activeClip ? (
-          <div
-            style={{
-                width: `${activeClip.duration * zoomLevel}px`,
-                height: '100%'
-            }}
-            className={`
-                rounded border text-white text-xs flex items-center overflow-hidden shadow-xl opacity-80 transition-colors duration-100
-                ${isValidDrop ? 'border-blue-500 bg-blue-600/80' : 'border-red-500 bg-red-600/80 ring-2 ring-red-500'}
-            `}
-            data-testid="drag-overlay-preview"
-          >
-             <span className="px-2 truncate">{activeClip.id}</span>
-             {!isValidDrop && <span className="ml-2">🚫</span>}
-          </div>
-        ) : null}
-      </DragOverlay>
 
       {contextMenu && (
         <ContextMenu
@@ -597,6 +367,8 @@ export const TimelineContainer: React.FC<TimelineContainerProps> = ({
           ]}
         />
       )}
-    </DndContext>
+      </div>
   );
-};
+});
+
+TimelineContainer.displayName = 'TimelineContainer';

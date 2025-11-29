@@ -58,6 +58,20 @@ export const createProjectSlice: StateCreator<
       // Reset Playback
       state.currentTime = 0;
       state.isPlaying = false;
+
+      // Recalculate duration from clips
+      // This fixes an issue where loaded projects might have incorrect duration (e.g. 0)
+      let maxEnd = 0;
+      Object.values(state.clips).forEach((clip) => {
+        const end = clip.start + clip.duration;
+        if (end > maxEnd) {
+          maxEnd = end;
+        }
+      });
+
+      if (maxEnd > state.settings.duration) {
+        state.settings.duration = maxEnd;
+      }
     });
   },
 });

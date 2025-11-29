@@ -1,6 +1,7 @@
-import React, { useState, forwardRef } from 'react';
+import React, { useState, forwardRef, useEffect } from 'react';
 import { useProjectStore } from '../store/useProjectStore';
 import { TimelineContainer } from './timeline/TimelineContainer';
+import { AudioEngine } from '../services/AudioEngine';
 
 interface TimelinePanelProps {
   snapLine?: number | null;
@@ -41,6 +42,14 @@ export const TimelinePanel = forwardRef<HTMLDivElement, TimelinePanelProps>(({
   const settings = useProjectStore((state) => state.settings);
   const setPlaybackState = useProjectStore((state) => state.setPlaybackState);
   const zoomLevel = useProjectStore((state) => state.zoomLevel);
+
+  // Sync Audio Engine Tracks
+  useEffect(() => {
+    const engine = AudioEngine.getInstance();
+    Object.values(tracks).forEach(track => {
+        engine.registerTrack(track.id, track.volume ?? 1.0, track.isMuted);
+    });
+  }, [tracks]);
 
   const handleMarkerClick = (id: string) => {
     const marker = markers.find((m) => m.id === id);
@@ -85,6 +94,10 @@ export const TimelinePanel = forwardRef<HTMLDivElement, TimelinePanelProps>(({
     }
   };
 
+  const handleUpdateVolume = (id: string, volume: number) => {
+      updateTrack(id, { volume });
+  };
+
   return (
     <div className="h-full w-full bg-gray-900 text-white overflow-hidden">
       <TimelineContainer
@@ -108,6 +121,7 @@ export const TimelinePanel = forwardRef<HTMLDivElement, TimelinePanelProps>(({
         onRemoveTrack={removeTrack}
         onToggleTrackMute={handleToggleMute}
         onToggleTrackLock={handleToggleLock}
+        onUpdateTrackVolume={handleUpdateVolume}
         onAddTrack={handleAddTrack}
         onAddMarker={handleAddMarker}
         selectedClipId={selectedClipId}

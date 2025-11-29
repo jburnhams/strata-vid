@@ -56,7 +56,7 @@ The current system uses HTMLMediaElement's native audio playback for video clips
   - Integrated into `PreviewPanel.tsx`.
 
 ### Phase 3: UI & Interaction
-- [ ] **M6: Volume Controls** (4-6 hours)
+- [x] **M6: Volume Controls** (4-6 hours)
   - Add Number Input for Volume to `MetadataPanel` (allow > 100% for boost).
   - Add Volume Slider/Input to Track Headers in `TimelinePanel`.
   - Files: `src/components/MetadataPanel.tsx`, `src/components/timeline/TrackHeader.tsx`

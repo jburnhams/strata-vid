@@ -70,7 +70,7 @@ describe('Timeline Editing Integration', () => {
         render(<TimelinePanel />);
 
         // Find clip
-        const clipElement = screen.getByText('clip-1').closest('div');
+        const clipElement = screen.getByTestId('clip-item-clip-1');
         expect(clipElement).toBeInTheDocument();
 
         // Right click
@@ -84,7 +84,7 @@ describe('Timeline Editing Integration', () => {
         fireEvent.click(deleteOption);
 
         // Verify clip is gone from UI
-        expect(screen.queryByText('clip-1')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('clip-item-clip-1')).not.toBeInTheDocument();
 
         // Verify store
         expect(useProjectStore.getState().clips['clip-1']).toBeUndefined();
@@ -110,7 +110,7 @@ describe('Timeline Editing Integration', () => {
         render(<TimelinePanel />);
 
         // Click to select
-        const clipElement = screen.getByText('clip-1').closest('div');
+        const clipElement = screen.getByTestId('clip-item-clip-1');
         fireEvent.click(clipElement!);
 
         // Verify selection state in store
@@ -127,7 +127,7 @@ describe('Timeline Editing Integration', () => {
         render(<TimelinePanel />);
 
         // Find clip
-        const clipElement = screen.getByText('clip-1').closest('div');
+        const clipElement = screen.getByTestId('clip-item-clip-1');
 
         // Right click
         fireEvent.contextMenu(clipElement!);
@@ -162,7 +162,7 @@ describe('Timeline Editing Integration', () => {
         });
 
         // Find clip
-        const clipElement = screen.getByText('clip-1').closest('div');
+        const clipElement = screen.getByTestId('clip-item-clip-1');
 
         // Right click
         fireEvent.contextMenu(clipElement!);
@@ -197,7 +197,7 @@ describe('Timeline Editing Integration', () => {
         });
 
         // Find clip
-        const clipElement = screen.getByText('clip-1').closest('div');
+        const clipElement = screen.getByTestId('clip-item-clip-1');
 
         // Right click
         fireEvent.contextMenu(clipElement!);
@@ -232,7 +232,7 @@ describe('Timeline Editing Integration', () => {
         render(<TimelinePanel />);
 
         // Find c2
-        const clipElement = screen.getByText('c2').closest('div');
+        const clipElement = screen.getByTestId('clip-item-c2');
 
         // Right click
         fireEvent.contextMenu(clipElement!);

@@ -56,11 +56,37 @@ describe('ClipItem', () => {
 
   it('renders correctly positioned', () => {
     render(<ClipItem {...defaultProps} />);
-    const clipElement = screen.getByText('clip-1').closest('div');
+    const clipElement = screen.getByTestId('clip-item-clip-1');
     expect(clipElement).toHaveStyle({
       left: '100px', // 10 * 10
       width: '50px', // 5 * 10
     });
+  });
+
+  it('renders asset name (shortened) instead of clip id', () => {
+    // Width = 5 * 10 = 50px.
+    // 50px - 16px padding = 34px.
+    // 34 / 7 = 4 chars.
+    // Name: video.mp4 -> video.
+    // 4 chars < 5 -> Prefix only. "vide".
+    render(<ClipItem {...defaultProps} />);
+
+    expect(screen.getByText('vide')).toBeInTheDocument();
+
+    // Check tooltip has full name
+    const label = screen.getByTestId('clip-label');
+    expect(label).toHaveAttribute('title', 'video.mp4');
+  });
+
+  it('renders clip id if asset is missing', () => {
+      // clip.id = clip-1 (6 chars).
+      // Width 50px -> 34px avail -> 4 chars.
+      // clip-1 -> clip
+      render(<ClipItem {...defaultProps} asset={undefined} />);
+      expect(screen.getByText('clip')).toBeInTheDocument();
+
+      const label = screen.getByTestId('clip-label');
+      expect(label).toHaveAttribute('title', 'clip-1');
   });
 
   it('renders thumbnail if present', () => {
@@ -73,37 +99,33 @@ describe('ClipItem', () => {
 
   it('calls onSelect when clicked', () => {
     render(<ClipItem {...defaultProps} />);
-    const clipElement = screen.getByText('clip-1').closest('div');
-    if (clipElement) {
-        fireEvent.click(clipElement);
-        expect(defaultProps.onSelect).toHaveBeenCalledWith('clip-1');
-    } else {
-        throw new Error('Clip element not found');
-    }
+    const clipElement = screen.getByTestId('clip-item-clip-1');
+    fireEvent.click(clipElement);
+    expect(defaultProps.onSelect).toHaveBeenCalledWith('clip-1');
   });
 
   it('applies correct color class for video', () => {
     render(<ClipItem {...defaultProps} clip={{ ...mockClip, type: 'video' }} />);
-    const clipElement = screen.getByText('clip-1').closest('div');
-    expect(clipElement?.className).toContain('bg-blue-600/80');
+    const clipElement = screen.getByTestId('clip-item-clip-1');
+    expect(clipElement.className).toContain('bg-blue-600/80');
   });
 
   it('applies correct color class for audio', () => {
     render(<ClipItem {...defaultProps} clip={{ ...mockClip, type: 'audio' }} />);
-    const clipElement = screen.getByText('clip-1').closest('div');
-    expect(clipElement?.className).toContain('bg-emerald-600/80');
+    const clipElement = screen.getByTestId('clip-item-clip-1');
+    expect(clipElement.className).toContain('bg-emerald-600/80');
   });
 
   it('applies correct color class for map', () => {
     render(<ClipItem {...defaultProps} clip={{ ...mockClip, type: 'map' }} />);
-    const clipElement = screen.getByText('clip-1').closest('div');
-    expect(clipElement?.className).toContain('bg-orange-600/80');
+    const clipElement = screen.getByTestId('clip-item-clip-1');
+    expect(clipElement.className).toContain('bg-orange-600/80');
   });
 
   it('calls onResize when dragging right handle', () => {
     render(<ClipItem {...defaultProps} />);
-    const clipElement = screen.getByText('clip-1').closest('div');
-    const handles = clipElement?.querySelectorAll('div.absolute');
+    const clipElement = screen.getByTestId('clip-item-clip-1');
+    const handles = clipElement.querySelectorAll('div.absolute');
     const rightHandle = Array.from(handles || []).find(el => el.className.includes('cursor-e-resize'));
 
     expect(rightHandle).toBeInTheDocument();
@@ -133,8 +155,8 @@ describe('ClipItem', () => {
 
   it('calls onResize when dragging left handle', () => {
     render(<ClipItem {...defaultProps} />);
-    const clipElement = screen.getByText('clip-1').closest('div');
-    const handles = clipElement?.querySelectorAll('div.absolute');
+    const clipElement = screen.getByTestId('clip-item-clip-1');
+    const handles = clipElement.querySelectorAll('div.absolute');
     const leftHandle = Array.from(handles || []).find(el => el.className.includes('cursor-w-resize'));
 
     expect(leftHandle).toBeInTheDocument();
@@ -165,8 +187,8 @@ describe('ClipItem', () => {
 
   it('shows tooltip when resizing', () => {
     render(<ClipItem {...defaultProps} />);
-    const clipElement = screen.getByText('clip-1').closest('div');
-    const handles = clipElement?.querySelectorAll('div.absolute');
+    const clipElement = screen.getByTestId('clip-item-clip-1');
+    const handles = clipElement.querySelectorAll('div.absolute');
     const rightHandle = Array.from(handles || []).find(el => el.className.includes('cursor-e-resize'));
 
     if (rightHandle) {

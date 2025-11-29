@@ -3,6 +3,7 @@ import { Clip, Asset } from '../../types';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { formatTime } from '../../utils/timeUtils';
+import { smartShortenFilename } from '../../utils/textUtils';
 
 interface ClipItemProps {
   clip: Clip;
@@ -101,6 +102,13 @@ export const ClipItem: React.FC<ClipItemProps> = ({
     window.addEventListener('pointerup', handlePointerUp);
   }, [clip, zoomLevel, onResize]);
 
+  // Determine display text
+  const displayName = asset?.name || clip.id;
+  const pixelWidth = clip.duration * zoomLevel;
+  const shortenedName = asset
+    ? smartShortenFilename(asset.name, pixelWidth)
+    : smartShortenFilename(clip.id, pixelWidth); // Fallback to clip id using same logic if needed, or just full id
+
   return (
     <div
       ref={setNodeRef}
@@ -139,8 +147,12 @@ export const ClipItem: React.FC<ClipItemProps> = ({
         />
       )}
 
-      <span className="px-2 truncate z-10 font-medium drop-shadow-md">
-        {clip.id}
+      <span
+        className="px-2 truncate z-10 font-medium drop-shadow-md"
+        title={displayName} // Tooltip with full name
+        data-testid="clip-label"
+      >
+        {shortenedName || displayName /* Fallback to standard truncation if empty */}
       </span>
 
       {/* Resize Tooltip */}

@@ -68,9 +68,11 @@ export interface UiSlice {
   isLoading: boolean;
   loadingMessage: string | null;
   toasts: Toast[];
+  zoomLevel: number;
   setLoading: (isLoading: boolean, message?: string | null) => void;
   addToast: (message: string, type?: Toast['type'], duration?: number) => void;
   removeToast: (id: string) => void;
+  setZoomLevel: (zoomLevel: number) => void;
 }
 
 export type StoreState = ProjectSlice & AssetsSlice & TimelineSlice & PlaybackSlice & UiSlice;

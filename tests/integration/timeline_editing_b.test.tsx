@@ -53,14 +53,13 @@ describe('Section B: Timeline Editing Integration', () => {
     it('updates clip duration and tooltip when resizing via handles', () => {
         render(<App />);
 
-        // Find the clip. The clip renders its ID text.
-        const clipText = screen.getByText('clip-1');
+        // Find the clip. Using testid instead of text to be robust against dynamic naming.
+        const clipElement = screen.getByTestId('clip-item-clip-1');
 
         // Locate the right resize handle.
         // We look for the sibling div with cursor-e-resize class.
-        // The structure is <div><span>text</span><div>handleL</div><div>handleR</div></div>
-        const clipContainer = clipText.closest('div');
-        const handles = clipContainer?.querySelectorAll('div.cursor-e-resize');
+        // The structure is <div data-testid="clip-item-..."><span>text</span><div>handleL</div><div>handleR</div></div>
+        const handles = clipElement.querySelectorAll('div.cursor-e-resize');
         const rightHandle = handles?.[0];
 
         if (!rightHandle) throw new Error('Right resize handle not found');

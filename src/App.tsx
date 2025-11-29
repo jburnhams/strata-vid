@@ -363,7 +363,8 @@ function App() {
                  type: asset.type === 'image' ? 'image' : asset.type === 'video' ? 'video' : asset.type === 'audio' ? 'audio' : 'map',
                  properties: {
                      x: 0, y: 0, width: 100, height: 100, rotation: 0, opacity: 1, zIndex: 0
-                 }
+                 },
+                 volume: 1.0
              });
          }
     }
@@ -393,6 +394,7 @@ function App() {
                label: 'Track 1',
                isMuted: false,
                isLocked: false,
+               volume: 1.0,
                clips: []
            });
            bestTrackId = newTrackId;
@@ -424,7 +426,8 @@ function App() {
                type: asset.type === 'image' ? 'image' : asset.type === 'video' ? 'video' : asset.type === 'audio' ? 'audio' : 'map',
                properties: {
                    x: 0, y: 0, width: 100, height: 100, rotation: 0, opacity: 1, zIndex: 0
-               }
+               },
+               volume: 1.0
            });
            showSuccess('Added to timeline');
       }

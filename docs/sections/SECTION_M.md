@@ -21,13 +21,13 @@ The current system uses HTMLMediaElement's native audio playback for video clips
 ## Tasks
 
 ### Phase 1: Foundation & Data Model
-- [ ] **M1: Update Data Models** (2-3 hours)
+- [x] **M1: Update Data Models** (2-3 hours)
   - Update `Track` interface: Add `volume: number` (default 1.0).
   - Update `Clip` interface: Add `volume: number` (default 1.0).
   - Update `Asset` interface: Ensure `waveform` is available for both `audio` and `video` types.
   - Files: `src/types.ts`
 
-- [ ] **M2: Waveform Extraction for Video** (4-6 hours)
+- [x] **M2: Waveform Extraction for Video** (4-6 hours)
   - Extend `AssetLoader` to extract audio from video files.
   - Use `AudioContext.decodeAudioData` or `mediabunny` fallback to get `AudioBuffer`.
   - Generate waveform peaks for `Asset.waveform`.

@@ -66,6 +66,7 @@ export const TimelinePanel = forwardRef<HTMLDivElement, TimelinePanelProps>(({
       label: `Track ${trackOrder.length + 1}`,
       isMuted: false,
       isLocked: false,
+      volume: 1.0,
       clips: [],
     });
   };

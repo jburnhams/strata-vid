@@ -41,17 +41,19 @@ The current system uses HTMLMediaElement's native audio playback for video clips
   - Implement node graph: `Source -> ClipGain -> TrackGain -> MasterGain -> Dest`.
   - Handle `isMuted` on tracks.
 
-- [ ] **M4: Video Player Integration** (4-6 hours)
+- [x] **M4: Video Player Integration** (4-6 hours)
   - Modify `VideoPlayer.tsx`:
     - Set `<video>` to `muted={false}` but remove it from DOM output (or keep muted in DOM and route via `captureStream` or `MediaElementAudioSourceNode`? *Note: `MediaElementAudioSourceNode` is safer for sync*).
     - **Wait**: `MediaElementAudioSourceNode` takes the element. The element must play. If we mute the element, the node might be silent (browser dependent). Better approach: Keep element playing, disconnected from default destination, connected to `AudioEngine`.
     - Register ref with `AudioEngine` on mount.
   - Files: `src/components/preview/VideoPlayer.tsx`
 
-- [ ] **M5: Audio Clip Player** (6-8 hours)
+- [x] **M5: Audio Clip Player** (6-8 hours)
   - Create `AudioPlayer.tsx` (headless component) or manage entirely within `AudioEngine` via `usePlaybackLoop`.
   - Since standard `AudioPlayer` is missing, implement it using `AudioBufferSourceNode` for precise timing or `<audio>` element for streaming.
   - *Recommendation*: Use `AudioBufferSourceNode` for short clips/SFX, `<audio>` for long tracks, or just `<audio>` for all for consistency with Video.
+  - Implemented using `<audio>` element for consistency and streaming support.
+  - Integrated into `PreviewPanel.tsx`.
 
 ### Phase 3: UI & Interaction
 - [ ] **M6: Volume Controls** (4-6 hours)

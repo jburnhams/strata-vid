@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useProjectStore } from '../store/useProjectStore';
 import { VideoPlayer } from './preview/VideoPlayer';
+import { AudioPlayer } from './preview/AudioPlayer';
 import { OverlayRenderer } from './preview/OverlayRenderer';
 import { TransportControls } from './TransportControls';
 import { usePlaybackLoop } from '../hooks/usePlaybackLoop';
@@ -116,6 +117,17 @@ export const PreviewPanel: React.FC = () => {
                     if (clip.type === 'video' && asset) {
                         return (
                             <VideoPlayer
+                                key={clip.id}
+                                clip={clip}
+                                asset={asset}
+                                currentTime={currentTime}
+                                isPlaying={isPlaying}
+                                playbackRate={playbackRate}
+                            />
+                        );
+                    } else if (clip.type === 'audio' && asset) {
+                        return (
+                            <AudioPlayer
                                 key={clip.id}
                                 clip={clip}
                                 asset={asset}

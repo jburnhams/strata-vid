@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Clip, Asset, OverlayProperties } from '../../types';
 import { interpolateValue } from '../../utils/animationUtils';
+import { AudioEngine } from '../../services/AudioEngine';
 
 interface VideoPlayerProps {
   clip: Clip;
@@ -22,6 +23,28 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   // Calculate where the video should be in its own timeline
   const clipRate = clip.playbackRate || 1;
   const expectedVideoTime = Math.max(0, (currentTime - clip.start) * clipRate + clip.offset);
+
+  // Audio Engine Registration
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const engine = AudioEngine.getInstance();
+    // Register the clip with the AudioEngine
+    // Note: This connects the video element to the audio graph.
+    // The element itself is kept unmuted, but hijacked by createMediaElementSource.
+    engine.registerClip(clip.id, clip.trackId, video, clip.volume ?? 1.0);
+
+    return () => {
+      engine.unregisterClip(clip.id);
+    };
+  }, [clip.id, clip.trackId]);
+
+  // Audio Volume Update
+  useEffect(() => {
+    const engine = AudioEngine.getInstance();
+    engine.updateClipVolume(clip.id, clip.volume ?? 1.0);
+  }, [clip.id, clip.volume]);
 
   // Separate effect for play/pause - only runs when isPlaying changes
   useEffect(() => {
@@ -117,8 +140,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       ref={videoRef}
       src={asset.src}
       style={style}
-      muted
       playsInline
+      crossOrigin="anonymous"
     />
   );
 };

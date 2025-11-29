@@ -2,6 +2,20 @@ import React from 'react';
 import { render, act } from '@testing-library/react';
 import { VideoPlayer } from '../../../../src/components/preview/VideoPlayer';
 import { Clip, Asset } from '../../../../src/types';
+import { AudioEngine } from '../../../../src/services/AudioEngine';
+
+// Mock AudioEngine
+const mockAudioEngine = {
+  registerClip: jest.fn(),
+  unregisterClip: jest.fn(),
+  updateClipVolume: jest.fn(),
+};
+
+jest.mock('../../../../src/services/AudioEngine', () => ({
+  AudioEngine: {
+    getInstance: jest.fn(() => mockAudioEngine)
+  }
+}));
 
 describe('VideoPlayer', () => {
   const mockClip: Clip = {
@@ -12,6 +26,7 @@ describe('VideoPlayer', () => {
     duration: 10,
     offset: 0,
     type: 'video',
+    volume: 1.0,
     properties: { x: 0, y: 0, width: 100, height: 100, rotation: 0, opacity: 1, zIndex: 1 }
   };
 
@@ -29,6 +44,9 @@ describe('VideoPlayer', () => {
     playMock = jest.fn().mockResolvedValue(undefined);
     pauseMock = jest.fn();
 
+    // Reset AudioEngine mocks
+    jest.clearAllMocks();
+
     // Setup mocks on the video element instance because setup.tsx might override prototype methods
     // by assigning to the instance directly.
     const originalCreateElement = document.createElement;
@@ -44,7 +62,6 @@ describe('VideoPlayer', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
     jest.restoreAllMocks(); // Restore document.createElement
   });
 
@@ -335,6 +352,7 @@ describe('VideoPlayer', () => {
           { id: 'k2', time: 5, value: 1, easing: 'linear' },
         ],
       },
+      volume: 1.0,
     };
 
     const { container } = render(
@@ -350,5 +368,87 @@ describe('VideoPlayer', () => {
     const video = container.querySelector('video') as HTMLVideoElement;
     // (2.5s is halfway between time 0 and 5, so opacity should be 0.5)
     expect(video.style.opacity).toBe('0.5');
+  });
+
+  // Audio Engine Tests
+  it('registers clip with AudioEngine on mount', () => {
+    const { container } = render(
+      <VideoPlayer
+        clip={mockClip}
+        asset={mockAsset}
+        currentTime={0}
+        isPlaying={false}
+        playbackRate={1}
+      />
+    );
+    const video = container.querySelector('video');
+    expect(mockAudioEngine.registerClip).toHaveBeenCalledWith(
+        mockClip.id,
+        mockClip.trackId,
+        video,
+        mockClip.volume
+    );
+  });
+
+  it('unregisters clip from AudioEngine on unmount', () => {
+    const { unmount } = render(
+      <VideoPlayer
+        clip={mockClip}
+        asset={mockAsset}
+        currentTime={0}
+        isPlaying={false}
+        playbackRate={1}
+      />
+    );
+
+    unmount();
+    expect(mockAudioEngine.unregisterClip).toHaveBeenCalledWith(mockClip.id);
+  });
+
+  it('updates audio volume when clip volume changes', () => {
+    const { rerender } = render(
+      <VideoPlayer
+        clip={mockClip}
+        asset={mockAsset}
+        currentTime={0}
+        isPlaying={false}
+        playbackRate={1}
+      />
+    );
+
+    // Change volume
+    const loudClip = { ...mockClip, volume: 1.5 };
+    rerender(
+      <VideoPlayer
+        clip={loudClip}
+        asset={mockAsset}
+        currentTime={0}
+        isPlaying={false}
+        playbackRate={1}
+      />
+    );
+
+    expect(mockAudioEngine.updateClipVolume).toHaveBeenCalledWith(mockClip.id, 1.5);
+  });
+
+  it('sets crossOrigin and removes muted attribute', () => {
+      const { container } = render(
+        <VideoPlayer
+          clip={mockClip}
+          asset={mockAsset}
+          currentTime={0}
+          isPlaying={false}
+          playbackRate={1}
+        />
+      );
+
+      const video = container.querySelector('video');
+      expect(video).toHaveAttribute('crossOrigin', 'anonymous');
+      // Should not be muted (or property muted should be false)
+      // JSDOM 'muted' attribute maps to property.
+      // If we remove the attribute in React, it shouldn't be there.
+      expect(video).not.toHaveAttribute('muted');
+      // Property check
+      expect((video as HTMLVideoElement).muted).toBe(false);
   });
 });

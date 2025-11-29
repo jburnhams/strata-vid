@@ -142,6 +142,7 @@ export interface Clip {
   transitionIn?: Transition;
   playbackRate?: number;
   keyframes?: Record<string, Keyframe[]>;
+  volume: number; // 0-1 (or >1 for boost)
 }
 
 export interface Track {
@@ -150,6 +151,7 @@ export interface Track {
   label: string;
   isMuted: boolean;
   isLocked: boolean;
+  volume: number; // 0-1 (or >1 for boost)
   clips: string[]; // Array of Clip IDs
 }
 

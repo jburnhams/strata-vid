@@ -141,6 +141,19 @@ export class AssetLoader {
         }
     }
 
+    // Attempt to extract audio waveform for video files
+    try {
+        const audioData = await extractAudioMetadata(file);
+        // Only use audio duration if mediabunny failed (audio duration might be slightly different from video, but close enough)
+        if (!asset.duration && audioData.duration) {
+            asset.duration = audioData.duration;
+        }
+        asset.waveform = audioData.waveform;
+    } catch (e) {
+        // Non-fatal, video might not have audio track or decoding failed
+        console.warn('Failed to extract audio from video:', e);
+    }
+
     // Fallback to file creation time if metadata unavailable
     if (!asset.creationTime) {
         // file.lastModified is reliable in browsers

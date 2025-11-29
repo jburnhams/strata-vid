@@ -105,4 +105,21 @@ describe('OverlayRenderer', () => {
     render(<OverlayRenderer clip={clipWithKeyframes} currentTime={1} />);
     expect(screen.getByText('Hello World').parentElement).toHaveStyle('opacity: 0.5');
   });
+
+  it('does not render data overlay if point not found', () => {
+    // Current time 25, start 20 -> relative 5s -> 5000ms.
+    // Points at 0ms. If getCoordinateAtTime strictly requires data in range or close by...
+    // Actually getCoordinateAtTime usually clamps or returns nearest.
+    // We should mock getCoordinateAtTime to return null to be sure.
+    // Or just provide empty points.
+    const assetWithNoPoints = { ...mockMapAsset, gpxPoints: [] };
+    const { container } = render(<OverlayRenderer clip={mockDataClip} asset={assetWithNoPoints} currentTime={25} />);
+    expect(container.firstChild).toBeNull();
+  });
+
+  it('renders null for unsupported clip type', () => {
+    const invalidClip = { ...mockTextClip, type: 'video' }; // video is handled by VideoPlayer not OverlayRenderer
+    const { container } = render(<OverlayRenderer clip={invalidClip as any} currentTime={0} />);
+    expect(container.firstChild).toBeNull();
+  });
 });

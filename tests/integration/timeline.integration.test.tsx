@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { describe, it, expect } from '@jest/globals';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
 import App from '../../src/App';
 import { useProjectStore } from '../../src/store/useProjectStore';
 import { AssetLoader } from '../../src/services/AssetLoader';
@@ -95,8 +95,7 @@ describe('Timeline Integration', () => {
         Object.defineProperty(input, 'files', {
             value: [file]
         });
-        const event = new Event('change', { bubbles: true });
-        input.dispatchEvent(event);
+        fireEvent.change(input);
     });
 
     // 2. Wait for asset to be loaded and added to store
@@ -106,12 +105,14 @@ describe('Timeline Integration', () => {
       expect(elements.length).toBeGreaterThan(0);
     });
 
-    // 3. Verify Timeline state
-    // The App logic says: if asset is video, find/create video track and add clip.
+    // Add to timeline manually
+    const addBtns = await screen.findAllByLabelText(/Add .* to timeline/i);
+    fireEvent.click(addBtns[0]);
 
-    // Check if "Video Track 1" exists (default label)
+    // 3. Verify Timeline state
+    // Check if "Track 1" exists (default label)
     await waitFor(() => {
-        expect(screen.getByText('Video Track 1')).toBeInTheDocument();
+        expect(screen.getByText('Track 1')).toBeInTheDocument();
     });
 
     // Check if the clip is rendered in the timeline

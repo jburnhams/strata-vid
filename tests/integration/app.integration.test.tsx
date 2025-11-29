@@ -69,6 +69,10 @@ describe('Browser Integration Tests', () => {
         expect(items.length).toBeGreaterThan(0);
       });
 
+      // Add to timeline to see it in preview
+      const addBtns = await screen.findAllByLabelText(/Add .* to timeline/i);
+      fireEvent.click(addBtns[0]);
+
       // Verify preview is active (video element present)
       const video = document.querySelector('video');
       expect(video).toBeInTheDocument();

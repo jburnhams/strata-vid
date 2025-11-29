@@ -18,6 +18,7 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
     selectedClipId,
     clips,
     updateClipProperties,
+    updateClip,
     addExtraTrackToClip,
     removeExtraTrackFromClip,
     updateExtraTrackOnClip,
@@ -41,6 +42,38 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                     <div className="text-xs text-gray-500 mb-1">Type</div>
                     <div className="text-sm capitalize">{activeClip.type}</div>
                 </div>
+
+                {(activeClip.type === 'video' || activeClip.type === 'audio') && (
+                     <div className="border-t border-neutral-700 pt-4 mb-4">
+                        <h4 className="text-sm font-bold mb-3">Audio</h4>
+                        <div className="mb-3">
+                            <label htmlFor="clip-volume" className="text-xs text-gray-500 block mb-1">
+                                Volume ({Math.round((activeClip.volume ?? 1.0) * 100)}%)
+                            </label>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    id="clip-volume"
+                                    type="range"
+                                    min="0" max="5" step="0.1"
+                                    value={activeClip.volume ?? 1.0}
+                                    onChange={(e) => updateClip(activeClip.id, { volume: parseFloat(e.target.value) })}
+                                    className="flex-1 h-2 bg-neutral-900 rounded-lg appearance-none cursor-pointer"
+                                />
+                                <input
+                                    type="number"
+                                    min="0" max="500"
+                                    value={Math.round((activeClip.volume ?? 1.0) * 100)}
+                                    onChange={(e) => updateClip(activeClip.id, { volume: parseFloat(e.target.value) / 100 })}
+                                    className="w-16 bg-neutral-900 border border-neutral-700 rounded px-1 py-0.5 text-xs text-right"
+                                />
+                                <span className="text-xs text-gray-500">%</span>
+                            </div>
+                            <p className="text-[10px] text-gray-500 mt-1">
+                                Values &gt; 100% will boost volume.
+                            </p>
+                        </div>
+                     </div>
+                )}
 
                 {activeClip.type === 'map' && (
                     <>

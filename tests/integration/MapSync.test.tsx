@@ -75,7 +75,17 @@ describe('Map Sync Integration', () => {
             fireEvent.change(fileInput, { target: { files: [videoFile, gpxFile] } });
         });
 
-        // Verify Video Clip was added automatically (per App.tsx logic)
+        // Verify assets loaded
+        await waitFor(() => {
+             expect(Object.values(useProjectStore.getState().assets)).toHaveLength(2);
+        });
+
+        // Add video to Timeline manually
+        // We click the first "Add to Timeline" button found, assuming it corresponds to the video asset
+        const addBtns = await screen.findAllByLabelText(/Add .* to timeline/i);
+        fireEvent.click(addBtns[0]);
+
+        // Verify Video Clip was added
         await waitFor(() => {
              expect(Object.values(useProjectStore.getState().clips)).toHaveLength(1); // Video only
         });

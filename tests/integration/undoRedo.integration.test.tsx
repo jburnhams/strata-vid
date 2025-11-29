@@ -48,9 +48,21 @@ describe('Undo/Redo Integration', () => {
 
     render(<App />);
 
-    // 2. Add Asset - Using accessible selector
-    const libraryInput = screen.getByLabelText('Add Asset');
-    await user.upload(libraryInput, new File(['dummy'], 'video.mp4', { type: 'video/mp4' }));
+    // 2. Add Asset
+    const libraryInput = screen.getByTestId('add-asset-input') as HTMLInputElement;
+    const file = new File(['dummy'], 'video.mp4', { type: 'video/mp4' });
+    Object.defineProperty(libraryInput, 'files', { value: [file] });
+    fireEvent.change(libraryInput);
+
+    // Wait for asset to appear in library
+    await waitFor(() => {
+        const items = screen.getAllByText('video.mp4');
+        expect(items.length).toBeGreaterThan(0);
+    });
+
+    // Add to timeline
+    const addBtns = await screen.findAllByLabelText(/Add .* to timeline/i);
+    await user.click(addBtns[0]);
 
     // Verify clip added to timeline
     await waitFor(() => {

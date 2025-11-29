@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
-import { TimelinePanel } from '../../src/components/TimelinePanel';
+import App from '../../src/App';
 import { useProjectStore } from '../../src/store/useProjectStore';
 
 // Mock Browser APIs
@@ -96,21 +96,21 @@ describe('Comprehensive Timeline Editing Integration', () => {
     });
 
     it('displays thumbnail on clip', () => {
-        render(<TimelinePanel />);
+        render(<App />);
         const thumb = screen.getByTestId('clip-thumbnail');
         expect(thumb).toBeInTheDocument();
         expect(thumb).toHaveStyle({ backgroundImage: 'url(mock-thumb-url)' });
     });
 
     it('toggles snapping and affects drag behavior', () => {
-        render(<TimelinePanel />);
+        render(<App />);
 
         // 1. Initial State: Snapping ON
         // Move clip to 0.5s (delta -95px from 10s -> 0.5s)
         // Should snap to 0s
         act(() => {
             capturedOnDragEnd({
-                active: { id: 'clip-1' },
+                active: { id: 'clip-1', data: { current: { type: 'Clip' } } },
                 over: { id: 'track-1' },
                 delta: { x: -95, y: 0 }
             });
@@ -132,7 +132,7 @@ describe('Comprehensive Timeline Editing Integration', () => {
         // Move clip to 0.5s again
         act(() => {
             capturedOnDragEnd({
-                active: { id: 'clip-1' },
+                active: { id: 'clip-1', data: { current: { type: 'Clip' } } },
                 over: { id: 'track-1' },
                 delta: { x: -95, y: 0 }
             });
@@ -143,7 +143,7 @@ describe('Comprehensive Timeline Editing Integration', () => {
     });
 
     it('toggles overlap permission and affects drag behavior', () => {
-        render(<TimelinePanel />);
+        render(<App />);
 
         // Setup: Add a second clip to collide with
         act(() => {
@@ -167,7 +167,7 @@ describe('Comprehensive Timeline Editing Integration', () => {
         // Delta = (27 - 10) * 10 = 170px
         act(() => {
             capturedOnDragEnd({
-                active: { id: 'clip-1' },
+                active: { id: 'clip-1', data: { current: { type: 'Clip' } } },
                 over: { id: 'track-1' },
                 delta: { x: 170, y: 0 }
             });
@@ -190,7 +190,7 @@ describe('Comprehensive Timeline Editing Integration', () => {
         // Move to 27s again
         act(() => {
             capturedOnDragEnd({
-                active: { id: 'clip-1' },
+                active: { id: 'clip-1', data: { current: { type: 'Clip' } } },
                 over: { id: 'track-1' },
                 delta: { x: 170, y: 0 }
             });

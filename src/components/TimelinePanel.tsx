@@ -1,8 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, forwardRef } from 'react';
 import { useProjectStore } from '../store/useProjectStore';
 import { TimelineContainer } from './timeline/TimelineContainer';
 
-export const TimelinePanel: React.FC = () => {
+interface TimelinePanelProps {
+  snapLine?: number | null;
+  isValidDrop?: boolean;
+}
+
+export const TimelinePanel = forwardRef<HTMLDivElement, TimelinePanelProps>(({
+  snapLine = null,
+  isValidDrop = true
+}, ref) => {
   // Connect to store
   const tracks = useProjectStore((state) => state.tracks);
   const clips = useProjectStore((state) => state.clips);
@@ -23,6 +31,7 @@ export const TimelinePanel: React.FC = () => {
   const addMarker = useProjectStore((state) => state.addMarker);
   const selectClip = useProjectStore((state) => state.selectClip);
   const setSettings = useProjectStore((state) => state.setSettings);
+  const setZoomLevel = useProjectStore((state) => state.setZoomLevel);
 
   // State
   const currentTime = useProjectStore((state) => state.currentTime);
@@ -30,9 +39,7 @@ export const TimelinePanel: React.FC = () => {
   const selectedClipId = useProjectStore((state) => state.selectedClipId);
   const settings = useProjectStore((state) => state.settings);
   const setPlaybackState = useProjectStore((state) => state.setPlaybackState);
-
-  // Local state for UI
-  const [zoomLevel, setZoomLevel] = useState(10); // pixels per second
+  const zoomLevel = useProjectStore((state) => state.zoomLevel);
 
   const handleMarkerClick = (id: string) => {
     const marker = markers.find((m) => m.id === id);
@@ -65,6 +72,7 @@ export const TimelinePanel: React.FC = () => {
   return (
     <div className="h-full w-full bg-gray-900 text-white overflow-hidden">
       <TimelineContainer
+        ref={ref}
         tracks={tracks}
         clips={clips}
         assets={assets}
@@ -90,7 +98,11 @@ export const TimelinePanel: React.FC = () => {
         isPlaying={isPlaying}
         markers={markers}
         onMarkerClick={handleMarkerClick}
+        externalSnapLine={snapLine}
+        externalIsValidDrop={isValidDrop}
       />
     </div>
   );
-};
+});
+
+TimelinePanel.displayName = 'TimelinePanel';

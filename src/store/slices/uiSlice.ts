@@ -10,6 +10,7 @@ export const createUiSlice: StateCreator<
   isLoading: false,
   loadingMessage: null,
   toasts: [],
+  zoomLevel: 10,
   setLoading: (isLoading, message = null) =>
     set((state) => {
       state.isLoading = isLoading;
@@ -27,5 +28,9 @@ export const createUiSlice: StateCreator<
   removeToast: (id) =>
     set((state) => {
       state.toasts = state.toasts.filter((t) => t.id !== id);
+    }),
+  setZoomLevel: (zoomLevel) =>
+    set((state) => {
+      state.zoomLevel = zoomLevel;
     }),
 });

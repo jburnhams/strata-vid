@@ -4,11 +4,14 @@ import { parseGpxFile, simplifyTrack } from '../utils/gpxParser';
 import { extractAudioMetadata } from '../utils/audioUtils';
 import { ConcurrencyLimiter } from '../utils/concurrency';
 
+import { VideoMetadata } from '../types';
+
 // Helper interface for Mediabunny Input to handle potential type mismatches
 interface IMediabunnyInput {
     computeDuration?: () => Promise<number>;
     getFormat?: () => Promise<{ duration?: number; tags?: Record<string, string> }>;
     getVideoTracks: () => Promise<any[]>;
+    getAudioTracks?: () => Promise<any[]>;
     dispose: () => void;
 }
 
@@ -123,6 +126,8 @@ export class AssetLoader {
         }
 
         const videoTracks = await input.getVideoTracks();
+        const videoMetadata: VideoMetadata = {};
+
         if (videoTracks.length > 0) {
             const track = videoTracks[0];
             const w = track.displayWidth || track.width;
@@ -131,7 +136,37 @@ export class AssetLoader {
             if (w && h) {
                 asset.resolution = { width: w, height: h };
             }
+
+            // Extract video metadata
+            videoMetadata.videoCodec = track.codec || track.codec_name;
+            videoMetadata.bitrate = track.bitrate || track.bit_rate;
+            videoMetadata.frameRate = track.fps || track.frame_rate || track.framerate;
+
+            if (!videoMetadata.frameRate && track.nb_samples && track.duration && track.timescale) {
+                 // Estimate FPS if not explicitly provided
+                 const durationSec = track.duration / track.timescale;
+                 if (durationSec > 0) {
+                    videoMetadata.frameRate = Math.round((track.nb_samples / durationSec) * 100) / 100;
+                 }
+            }
         }
+
+        if (input.getAudioTracks) {
+            const audioTracks = await input.getAudioTracks();
+            if (audioTracks.length > 0) {
+                const track = audioTracks[0];
+                videoMetadata.audioCodec = track.codec || track.codec_name;
+                videoMetadata.sampleRate = track.sample_rate || track.sampleRate;
+                videoMetadata.channels = track.channels || track.number_of_channels || track.numberOfChannels;
+            }
+        }
+
+        if (formatData?.tags) {
+             // Try to get container format
+             videoMetadata.format = formatData.tags.major_brand || formatData.tags.compatible_brands;
+        }
+
+        asset.videoMetadata = videoMetadata;
 
     } catch (error) {
         console.warn('Failed to extract video metadata via mediabunny', error);

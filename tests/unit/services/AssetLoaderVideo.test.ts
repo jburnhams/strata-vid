@@ -13,6 +13,7 @@ describe('AssetLoader Video', () => {
     getFormat: jest.fn(),
     computeDuration: jest.fn(),
     getVideoTracks: jest.fn(),
+    getAudioTracks: jest.fn(),
     dispose: jest.fn(),
   };
 
@@ -39,13 +40,24 @@ describe('AssetLoader Video', () => {
     // Mock successful metadata extraction
     mockInput.getFormat.mockResolvedValue({
       duration: 15.5,
-      tags: { creation_time: '2023-05-20T10:00:00Z' }
+      tags: {
+        creation_time: '2023-05-20T10:00:00Z',
+        major_brand: 'mp42'
+      }
     });
     mockInput.getVideoTracks.mockResolvedValue([{
       width: 1920,
       height: 1080,
       displayWidth: 1920,
-      displayHeight: 1080
+      displayHeight: 1080,
+      codec: 'avc1',
+      fps: 30,
+      bitrate: 5000000
+    }]);
+    mockInput.getAudioTracks.mockResolvedValue([{
+      codec: 'mp4a',
+      sampleRate: 48000,
+      channels: 2
     }]);
 
     const asset = await AssetLoader.loadAsset(file);
@@ -57,6 +69,16 @@ describe('AssetLoader Video', () => {
     expect(asset.resolution).toEqual({ width: 1920, height: 1080 });
     expect(asset.creationTime).toEqual(new Date('2023-05-20T10:00:00Z'));
     expect(asset.creationTimeSource).toBe('metadata');
+
+    // Verify extra metadata
+    expect(asset.videoMetadata).toBeDefined();
+    expect(asset.videoMetadata?.format).toBe('mp42');
+    expect(asset.videoMetadata?.videoCodec).toBe('avc1');
+    expect(asset.videoMetadata?.frameRate).toBe(30);
+    expect(asset.videoMetadata?.bitrate).toBe(5000000);
+    expect(asset.videoMetadata?.audioCodec).toBe('mp4a');
+    expect(asset.videoMetadata?.sampleRate).toBe(48000);
+    expect(asset.videoMetadata?.channels).toBe(2);
 
     expect(mockInput.dispose).toHaveBeenCalled();
   });

@@ -500,18 +500,73 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
             </div>
 
             {activeAsset.type === 'video' && (
-               <div className="grid grid-cols-2 gap-4 border-t border-neutral-700 pt-4">
-                 <div>
-                   <div className="text-xs text-neutral-400 mb-1">Duration</div>
-                   <div className="text-sm">{activeAsset.duration ? `${Math.round(activeAsset.duration)}s` : 'Unknown'}</div>
-                 </div>
-                 <div>
-                   <div className="text-xs text-neutral-400 mb-1">Resolution</div>
-                   <div className="text-sm">
-                     {activeAsset.resolution ? `${activeAsset.resolution.width}x${activeAsset.resolution.height}` : 'Unknown'}
+               <>
+                 <div className="grid grid-cols-2 gap-4 border-t border-neutral-700 pt-4">
+                   <div>
+                     <div className="text-xs text-neutral-400 mb-1">Duration</div>
+                     <div className="text-sm">{activeAsset.duration ? `${Math.round(activeAsset.duration)}s` : 'Unknown'}</div>
+                   </div>
+                   <div>
+                     <div className="text-xs text-neutral-400 mb-1">Resolution</div>
+                     <div className="text-sm">
+                       {activeAsset.resolution ? `${activeAsset.resolution.width}x${activeAsset.resolution.height}` : 'Unknown'}
+                     </div>
                    </div>
                  </div>
-               </div>
+
+                 {activeAsset.videoMetadata && (
+                    <div className="space-y-4 border-t border-neutral-700 pt-4">
+                        <h5 className="font-bold text-sm text-gray-300">Video Details</h5>
+                        <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-sm">
+                            {activeAsset.videoMetadata.format && (
+                                <>
+                                    <div className="text-neutral-400 text-xs">Container</div>
+                                    <div className="truncate" title={activeAsset.videoMetadata.format}>{activeAsset.videoMetadata.format}</div>
+                                </>
+                            )}
+                            {activeAsset.videoMetadata.videoCodec && (
+                                <>
+                                    <div className="text-neutral-400 text-xs">Video Codec</div>
+                                    <div className="truncate" title={activeAsset.videoMetadata.videoCodec}>{activeAsset.videoMetadata.videoCodec}</div>
+                                </>
+                            )}
+                            {activeAsset.videoMetadata.frameRate && (
+                                <>
+                                    <div className="text-neutral-400 text-xs">Frame Rate</div>
+                                    <div>{activeAsset.videoMetadata.frameRate} fps</div>
+                                </>
+                            )}
+                            {activeAsset.videoMetadata.bitrate && (
+                                <>
+                                    <div className="text-neutral-400 text-xs">Bitrate</div>
+                                    <div>{(activeAsset.videoMetadata.bitrate / 1000000).toFixed(2)} Mbps</div>
+                                </>
+                            )}
+                            {(activeAsset.videoMetadata.audioCodec || activeAsset.videoMetadata.sampleRate) && (
+                                <div className="col-span-2 text-xs font-semibold text-gray-500 mt-1">Audio Track</div>
+                            )}
+                            {activeAsset.videoMetadata.audioCodec && (
+                                <>
+                                    <div className="text-neutral-400 text-xs">Audio Codec</div>
+                                    <div className="truncate" title={activeAsset.videoMetadata.audioCodec}>{activeAsset.videoMetadata.audioCodec}</div>
+                                </>
+                            )}
+                            {activeAsset.videoMetadata.sampleRate && (
+                                <>
+                                    <div className="text-neutral-400 text-xs">Sample Rate</div>
+                                    <div>{activeAsset.videoMetadata.sampleRate / 1000} kHz</div>
+                                </>
+                            )}
+                            {activeAsset.videoMetadata.channels && (
+                                <>
+                                    <div className="text-neutral-400 text-xs">Channels</div>
+                                    <div>{activeAsset.videoMetadata.channels}</div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                 )}
+               </>
             )}
 
             {activeAsset.type === 'gpx' && activeAsset.stats && (

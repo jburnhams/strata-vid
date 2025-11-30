@@ -1,5 +1,6 @@
 import { Asset, Clip, ProjectSettings, Track } from '../types';
 import { createExportWorker } from '../utils/workerUtils';
+import { AudioCompositor } from './AudioCompositor';
 
 export interface ExportProgress {
   currentFrame: number;
@@ -47,6 +48,28 @@ export class ExportManager {
         const error = 'WebCodecs API is not supported in this browser. Please use Chrome, Edge, or a modern browser.';
         onProgress({ currentFrame: 0, totalFrames: 0, percentage: 0, status: 'error', error });
         throw new Error(error);
+    }
+
+    // Prepare Audio
+    let audioData: { channels: Float32Array[], sampleRate: number } | undefined;
+    try {
+        onProgress({ currentFrame: 0, totalFrames: 0, percentage: 0, status: 'initializing' });
+        const audioCompositor = new AudioCompositor();
+        // TODO: This runs in main thread and might block UI for large projects.
+        // Consideration: Move to worker or use requestIdleCallback chunks if needed.
+        const audioBuffer = await audioCompositor.render(project as any);
+
+        // Extract channels for transfer
+        const channels: Float32Array[] = [];
+        for (let i = 0; i < audioBuffer.numberOfChannels; i++) {
+            channels.push(audioBuffer.getChannelData(i));
+        }
+        audioData = {
+            channels,
+            sampleRate: audioBuffer.sampleRate
+        };
+    } catch (e) {
+        console.warn('Audio export preparation failed, proceeding with video only', e);
     }
 
     return new Promise((resolve, reject) => {
@@ -100,14 +123,18 @@ export class ExportManager {
                 reject(new Error(msg));
             };
 
+            // Transfer buffers to avoid copy
+            const transferables = audioData ? audioData.channels.map(c => c.buffer) : [];
+
             // Start Export
             this.worker.postMessage({
                 type: 'start',
                 payload: {
                     project,
-                    exportSettings
+                    exportSettings,
+                    audioData
                 }
-            });
+            }, transferables);
 
         } catch (e: any) {
             console.error('Export initiation failed', e);

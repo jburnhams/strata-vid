@@ -57,7 +57,7 @@ describe('audioUtils', () => {
     const metadata = await extractAudioMetadata(file);
 
     expect(metadata.duration).toBe(10);
-    expect(metadata.waveform).toHaveLength(100); // We requested 100 samples in the impl
+    expect(metadata.waveform).toHaveLength(1000); // We requested 1000 samples in the impl
     // Since input is flat 0.5, all peaks should be 0.5 (normalized to 1.0 if max is 0.5)
     // Wait, normalization: max is 0.5. val / globalMax => 0.5 / 0.5 = 1.
     expect(metadata.waveform[0]).toBeCloseTo(1);

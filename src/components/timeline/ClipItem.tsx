@@ -4,6 +4,7 @@ import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { formatTime } from '../../utils/timeUtils';
 import { smartShortenFilename } from '../../utils/textUtils';
+import { WaveformOverlay } from './WaveformOverlay';
 
 interface ClipItemProps {
   clip: Clip;
@@ -144,6 +145,18 @@ export const ClipItem: React.FC<ClipItemProps> = ({
              backgroundRepeat: 'repeat-x'
           }}
           data-testid="clip-thumbnail"
+        />
+      )}
+
+      {/* Waveform Overlay */}
+      {asset?.waveform && (
+        <WaveformOverlay
+          waveform={asset.waveform}
+          assetDuration={asset.duration || 0}
+          offset={clip.offset}
+          duration={clip.duration}
+          playbackRate={clip.playbackRate || 1}
+          color="rgba(255, 255, 255, 0.6)"
         />
       )}
 

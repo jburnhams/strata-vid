@@ -61,7 +61,7 @@ The current system uses HTMLMediaElement's native audio playback for video clips
   - Add Volume Slider/Input to Track Headers in `TimelinePanel`.
   - Files: `src/components/MetadataPanel.tsx`, `src/components/timeline/TrackHeader.tsx`
 
-- [ ] **M7: Waveform Visualization** (8-12 hours)
+- [x] **M7: Waveform Visualization** (8-12 hours)
   - Create `WaveformOverlay` component.
   - Render on `ClipItem`.
   - For Video: Semi-transparent overlay over the thumbnail strip.

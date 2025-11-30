@@ -91,7 +91,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ onClose }) => {
                 {step === 'settings' ? 'Export Settings' : 'Exporting Project'}
             </h2>
             {step === 'settings' && (
-                <button onClick={onClose} className="text-neutral-400 hover:text-white">
+                <button onClick={onClose} className="text-neutral-400 hover:text-white" aria-label="Close Modal">
                     <X size={20} />
                 </button>
             )}
@@ -124,8 +124,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({ onClose }) => {
                     <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1">
-                                <label className="text-xs text-neutral-400">Container Format</label>
+                                <label htmlFor="export-format" className="text-xs text-neutral-400">Container Format</label>
                                 <select
+                                    id="export-format"
                                     value={settings.format}
                                     onChange={e => handleFormatChange(e.target.value as any)}
                                     className="w-full bg-neutral-900 border border-neutral-700 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none"
@@ -135,8 +136,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({ onClose }) => {
                                 </select>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-xs text-neutral-400">FPS</label>
+                                <label htmlFor="export-fps" className="text-xs text-neutral-400">FPS</label>
                                 <select
+                                    id="export-fps"
                                     value={settings.fps}
                                     onChange={e => setSettings({...settings, fps: Number(e.target.value)})}
                                     className="w-full bg-neutral-900 border border-neutral-700 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none"
@@ -150,8 +152,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({ onClose }) => {
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1">
-                                <label className="text-xs text-neutral-400">Width</label>
+                                <label htmlFor="export-width" className="text-xs text-neutral-400">Width</label>
                                 <input
+                                    id="export-width"
                                     type="number"
                                     value={settings.width}
                                     onChange={e => setSettings({...settings, width: Number(e.target.value)})}
@@ -159,8 +162,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({ onClose }) => {
                                 />
                             </div>
                             <div className="space-y-1">
-                                <label className="text-xs text-neutral-400">Height</label>
+                                <label htmlFor="export-height" className="text-xs text-neutral-400">Height</label>
                                 <input
+                                    id="export-height"
                                     type="number"
                                     value={settings.height}
                                     onChange={e => setSettings({...settings, height: Number(e.target.value)})}
@@ -186,8 +190,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({ onClose }) => {
                                 <label className="text-xs text-neutral-400 font-bold">Video Encoding</label>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1">
-                                        <label className="text-xs text-neutral-500">Codec</label>
+                                        <label htmlFor="export-video-codec" className="text-xs text-neutral-500">Codec</label>
                                         <select
+                                            id="export-video-codec"
                                             value={settings.videoCodec}
                                             onChange={e => setSettings({...settings, videoCodec: e.target.value as any})}
                                             className="w-full bg-neutral-900 border border-neutral-700 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none"
@@ -199,8 +204,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({ onClose }) => {
                                         </select>
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-xs text-neutral-500">Bitrate (Mbps)</label>
+                                        <label htmlFor="export-video-bitrate" className="text-xs text-neutral-500">Bitrate (Mbps)</label>
                                         <input
+                                            id="export-video-bitrate"
                                             type="number"
                                             value={Math.round((settings.videoBitrate || 6000000) / 1000000)}
                                             onChange={e => setSettings({...settings, videoBitrate: Number(e.target.value) * 1000000})}
@@ -214,8 +220,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({ onClose }) => {
                                 <label className="text-xs text-neutral-400 font-bold">Audio Encoding</label>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1">
-                                        <label className="text-xs text-neutral-500">Codec</label>
+                                        <label htmlFor="export-audio-codec" className="text-xs text-neutral-500">Codec</label>
                                         <select
+                                            id="export-audio-codec"
                                             value={settings.audioCodec}
                                             onChange={e => setSettings({...settings, audioCodec: e.target.value as any})}
                                             className="w-full bg-neutral-900 border border-neutral-700 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none"
@@ -225,8 +232,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({ onClose }) => {
                                         </select>
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-xs text-neutral-500">Bitrate (kbps)</label>
+                                        <label htmlFor="export-audio-bitrate" className="text-xs text-neutral-500">Bitrate (kbps)</label>
                                         <input
+                                            id="export-audio-bitrate"
                                             type="number"
                                             value={(settings.audioBitrate || 128000) / 1000}
                                             onChange={e => setSettings({...settings, audioBitrate: Number(e.target.value) * 1000})}

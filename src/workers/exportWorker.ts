@@ -22,7 +22,7 @@ self.onmessage = async (e: MessageEvent) => {
   }
 };
 
-async function runExport(payload: any) {
+export async function runExport(payload: any) {
     const { project, exportSettings, audioData } = payload;
     const { width, height, fps, videoBitrate, format, videoCodec, audioCodec, audioBitrate } = exportSettings;
     const duration = project.settings.duration;
@@ -157,3 +157,6 @@ async function runExport(payload: any) {
 
     self.postMessage({ type: 'complete', blob });
 }
+
+// Export for testing
+export const setIsCancelled = (val: boolean) => { isCancelled = val; };

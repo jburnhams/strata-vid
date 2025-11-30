@@ -114,4 +114,49 @@ describe('AudioEngine Coverage', () => {
 
         expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Error disconnecting'), expect.any(Error));
     });
+
+    it('should update clip volume', () => {
+         const mockGainParam = { value: 1 };
+         const mockClipGain = { connect: jest.fn(), gain: mockGainParam, disconnect: jest.fn() };
+         const mockAudioContext = {
+            createGain: jest.fn()
+                .mockReturnValueOnce({ connect: jest.fn(), gain: {}, disconnect: jest.fn() }) // master
+                .mockReturnValueOnce({ connect: jest.fn(), gain: { value: 0 }, disconnect: jest.fn() }) // track
+                .mockReturnValueOnce(mockClipGain), // clip
+            createMediaElementSource: jest.fn(() => ({ connect: jest.fn(), disconnect: jest.fn() })),
+            destination: {},
+            state: 'running'
+        };
+        (window as any).AudioContext = jest.fn(() => mockAudioContext);
+
+        const engine = AudioEngine.getInstance();
+        engine.registerTrack('t1', 1, false);
+        const el = document.createElement('video');
+        engine.registerClip('c1', 't1', el, 1);
+
+        engine.updateClipVolume('c1', 0.8);
+        expect(mockGainParam.value).toBe(0.8);
+    });
+
+    it('should update track volume', () => {
+         const mockGainParam = { value: 1 };
+         const mockTrackGain = { connect: jest.fn(), gain: mockGainParam, disconnect: jest.fn() };
+         const mockAudioContext = {
+            createGain: jest.fn()
+                .mockReturnValueOnce({ connect: jest.fn(), gain: {}, disconnect: jest.fn() }) // master
+                .mockReturnValueOnce(mockTrackGain), // track
+            destination: {},
+            state: 'running'
+        };
+        (window as any).AudioContext = jest.fn(() => mockAudioContext);
+
+        const engine = AudioEngine.getInstance();
+        engine.registerTrack('t1', 1, false);
+
+        engine.updateTrackVolume('t1', 0.5, false);
+        expect(mockGainParam.value).toBe(0.5);
+
+        engine.updateTrackVolume('t1', 0.5, true);
+        expect(mockGainParam.value).toBe(0);
+    });
 });

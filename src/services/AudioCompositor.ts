@@ -93,18 +93,18 @@ export class AudioCompositor {
           const offset = clip.offset;
 
           // Duration to play
-          // If playbackRate is != 1, we need to adjust the source duration we play.
-          // Timeline duration = source duration / rate
-          // So source duration = Timeline duration * rate
+          // The duration parameter in start() is in context time (seconds),
+          // determining how long the source will play on the destination timeline.
+          // It automatically handles the playback rate scaling for source content consumption.
+          const duration = clip.duration;
           const rate = clip.playbackRate || 1;
-          const playDuration = clip.duration * rate;
 
           // Playback Rate
           if (rate !== 1) {
               source.playbackRate.value = rate;
           }
 
-          source.start(startTime, offset, playDuration);
+          source.start(startTime, offset, duration);
 
       } catch (e) {
           console.error(`Failed to schedule clip ${clip.id}`, e);

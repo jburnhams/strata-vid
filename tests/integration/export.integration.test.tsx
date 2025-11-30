@@ -110,6 +110,9 @@ describe('Export Integration Flow', () => {
              expect(screen.getByText('Export Complete!')).toBeInTheDocument();
         }, { timeout: 5000 });
 
-        expect(mockWorker.postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'start' }));
+        expect(mockWorker.postMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'start' }),
+            expect.any(Array)
+        );
     });
 });

@@ -123,8 +123,8 @@ describe('AudioCompositor', () => {
 
         const source = mockCreateBufferSource.mock.results[0].value;
         expect(source.playbackRate.value).toBe(2);
-        // Play duration should be 5 * 2 = 10 (source duration)
-        expect(source.start).toHaveBeenCalledWith(0, 0, 10);
+        // Play duration should be 5 (timeline duration), start() handles internal rate scaling
+        expect(source.start).toHaveBeenCalledWith(0, 0, 5);
     });
 
     it('should handle muted tracks', async () => {

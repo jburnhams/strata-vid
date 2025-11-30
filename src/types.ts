@@ -171,13 +171,14 @@ export interface ProjectSettings {
 export interface ProjectState {
   id: string;
   settings: ProjectSettings;
-  assets: Asset[];
-  tracks: Track[];
-  clips: Record<string, Clip>; // Map of ID -> Clip for easy access
-  selectedAssetId: string | null;
-  currentTime: number;
-  isPlaying: boolean;
-  playbackRate: number;
+  assets: Record<string, Asset>;
+  tracks: Record<string, Track>;
+  clips: Record<string, Clip>;
+  trackOrder?: string[];
+  selectedAssetId?: string | null;
+  currentTime?: number;
+  isPlaying?: boolean;
+  playbackRate?: number;
 }
 
 // State shape used for loading/saving projects

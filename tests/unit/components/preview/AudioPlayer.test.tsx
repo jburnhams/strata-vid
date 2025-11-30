@@ -261,4 +261,28 @@ describe('AudioPlayer', () => {
 
     expect(mockAudioEngine.updateClipVolume).toHaveBeenCalledWith(mockClip.id, 1.5);
   });
+
+  it('should handle play() error', async () => {
+    const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    playMock.mockRejectedValue(new Error('Play failed'));
+
+    const { container } = render(
+      <AudioPlayer
+        clip={mockClip}
+        asset={mockAsset}
+        currentTime={0}
+        isPlaying={true}
+        playbackRate={1}
+      />
+    );
+
+    const audio = container.querySelector('audio') as HTMLAudioElement;
+    Object.defineProperty(audio, 'paused', { value: true, configurable: true });
+
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(playMock).toHaveBeenCalled();
+    expect(consoleSpy).toHaveBeenCalledWith('Audio auto-play prevented:', expect.any(Error));
+    consoleSpy.mockRestore();
+  });
 });

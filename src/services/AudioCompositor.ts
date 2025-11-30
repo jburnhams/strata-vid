@@ -1,12 +1,22 @@
 import { Clip, ProjectState, Track } from '../types';
 import { readFileToArrayBuffer } from '../utils/audioUtils';
 
+/**
+ * AudioCompositor Service
+ *
+ * Handles the offline rendering of the project's audio.
+ * It uses the Web Audio API's OfflineAudioContext to mix all audio tracks
+ * and clips into a single AudioBuffer, which is then used for export.
+ */
 export class AudioCompositor {
   private offlineContext: OfflineAudioContext | null = null;
 
   /**
    * Renders the audio for the entire project into a single AudioBuffer.
    * This buffer can then be passed to the export worker for encoding.
+   *
+   * @param project The current project state containing tracks, clips, and assets.
+   * @returns A Promise resolving to the mixed AudioBuffer.
    */
   async render(project: ProjectState): Promise<AudioBuffer> {
     const { duration } = project.settings;

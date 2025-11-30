@@ -62,7 +62,8 @@ export class AudioEngine {
 
   /**
    * Resumes the AudioContext if it was suspended (e.g. by browser policy).
-   * Should be called on user interaction (e.g. Play button).
+   * This is typically required by browsers before audio can play and should
+   * be triggered by a user interaction event (e.g. Play button click).
    */
   public async resumeContext(): Promise<void> {
     if (this.audioContext && this.audioContext.state === 'suspended') {
@@ -76,8 +77,12 @@ export class AudioEngine {
   }
 
   /**
-   * Registers a track and creates its GainNode.
-   * If the track already exists, updates its volume/mute state.
+   * Registers a track and creates its GainNode in the audio graph.
+   * If the track already exists, it updates its volume/mute state instead of creating a new node.
+   *
+   * @param trackId Unique identifier for the track
+   * @param volume Volume level (0.0 to 1.0+)
+   * @param isMuted Whether the track is muted
    */
   public registerTrack(trackId: string, volume: number, isMuted: boolean) {
     if (!this.audioContext || !this.masterGain) return;

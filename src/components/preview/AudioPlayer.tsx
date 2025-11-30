@@ -2,6 +2,19 @@ import React, { useEffect, useRef } from 'react';
 import { Clip, Asset } from '../../types';
 import { AudioEngine } from '../../services/AudioEngine';
 
+/**
+ * AudioPlayer Component
+ *
+ * A headless component that manages the playback of audio clips.
+ * It renders a hidden <audio> element and registers it with the AudioEngine
+ * for routing through the Web Audio API graph.
+ *
+ * It handles:
+ * - Synchronization with the global timeline
+ * - Playback rate adjustment
+ * - Volume updates
+ * - Registration/Cleanup with AudioEngine
+ */
 interface AudioPlayerProps {
   clip: Clip;
   asset: Asset;

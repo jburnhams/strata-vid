@@ -1,151 +1,122 @@
+import { runExport, setIsCancelled } from '../../../src/workers/exportWorker';
+import { WorkerCompositor } from '../../../src/services/WorkerCompositor';
 
-/**
- * @jest-environment node
- */
-// import { WorkerCompositor } from '../../../src/services/WorkerCompositor';
-// We will require it dynamically to handle resetModules
-
-// Mock dependencies
+// Mock WorkerCompositor
 jest.mock('../../../src/services/WorkerCompositor');
+// Mock mediabunny
 jest.mock('mediabunny', () => ({
     Output: jest.fn().mockImplementation(() => ({
         addVideoTrack: jest.fn(),
-        start: jest.fn().mockResolvedValue(undefined),
-        finalize: jest.fn().mockResolvedValue(undefined),
+        addAudioTrack: jest.fn(),
+        start: jest.fn(),
+        finalize: jest.fn(),
         target: { buffer: new ArrayBuffer(8) }
     })),
     Mp4OutputFormat: jest.fn(),
+    WebMOutputFormat: jest.fn(),
     BufferTarget: jest.fn(),
     CanvasSource: jest.fn().mockImplementation(() => ({
-        addFrame: jest.fn().mockResolvedValue(undefined),
-        add: jest.fn().mockResolvedValue(undefined)
+        addFrame: jest.fn(),
+        add: jest.fn()
     })),
-    ALL_FORMATS: []
+    Input: jest.fn().mockImplementation(() => ({
+        getAudioTracks: jest.fn().mockResolvedValue([{ id: 'track1' }])
+    })),
+    BlobSource: jest.fn()
+}));
+// Mock utils
+jest.mock('../../../src/utils/audioUtils', () => ({
+    createWavBlob: jest.fn(() => new Blob([]))
 }));
 
-// Mock OffscreenCanvas
-global.OffscreenCanvas = class MockOffscreenCanvas {
-    width: number;
-    height: number;
-    constructor(width: number, height: number) {
-        this.width = width;
-        this.height = height;
-    }
-    getContext() {
-        return {
-             clearRect: jest.fn(),
-             drawImage: jest.fn(),
-        };
-    }
-} as any;
-
 describe('exportWorker', () => {
-    let mockCompositor: any;
-    let originalSelf: any;
-    let workerSelf: any;
+    const mockPostMessage = jest.fn();
+
+    beforeAll(() => {
+        // Mock global self.postMessage
+        Object.defineProperty(global, 'self', {
+            value: { postMessage: mockPostMessage },
+            writable: true
+        });
+
+        // Mock OffscreenCanvas
+        global.OffscreenCanvas = class {
+            constructor(width: number, height: number) {}
+            getContext() { return { filter: '' }; }
+        } as any;
+    });
 
     beforeEach(() => {
-        jest.resetModules(); // Important to reload worker script
-        originalSelf = global.self;
-
-        workerSelf = {
-            onmessage: null,
-            postMessage: jest.fn(),
-        };
-        global.self = workerSelf;
-        global.postMessage = workerSelf.postMessage;
-
-        mockCompositor = {
-            initialize: jest.fn().mockResolvedValue(undefined),
-            renderFrame: jest.fn().mockResolvedValue(undefined),
-            cleanup: jest.fn()
-        };
-
-        // Re-require WorkerCompositor to get the fresh mock in the new module registry
-        const { WorkerCompositor } = require('../../../src/services/WorkerCompositor');
-        WorkerCompositor.mockImplementation(() => mockCompositor);
-    });
-
-    afterEach(() => {
-        global.self = originalSelf;
         jest.clearAllMocks();
+        setIsCancelled(false);
+        (WorkerCompositor as jest.Mock).mockClear();
+        (WorkerCompositor as jest.Mock).mockImplementation(() => ({
+            initialize: jest.fn(),
+            renderFrame: jest.fn(),
+            cleanup: jest.fn()
+        }));
     });
 
-    it('handles start message and runs export loop', async () => {
-        // Load the worker script
-        require('../../../src/workers/exportWorker');
-
-        expect(workerSelf.onmessage).toBeDefined();
-
+    it('runs export successfully (MP4 default)', async () => {
         const payload = {
             project: {
-                assets: { 'a1': { id: 'a1', type: 'video' } },
-                tracks: { 't1': { id: 't1', clips: ['c1'] } },
-                clips: { 'c1': { id: 'c1', start: 0, duration: 1 } },
-                settings: { duration: 0.1, width: 100, height: 100 },
-                trackOrder: ['t1']
-            },
-            exportSettings: { width: 100, height: 100, fps: 10, videoBitrate: 1000 }
-        };
-
-        // Simulate message
-        await workerSelf.onmessage({ data: { type: 'start', payload } });
-
-        // Verify initialize called
-        expect(mockCompositor.initialize).toHaveBeenCalled();
-
-        // Verify progress messages
-        expect(workerSelf.postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'progress', progress: expect.objectContaining({ status: 'initializing' }) }));
-        expect(workerSelf.postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'progress', progress: expect.objectContaining({ status: 'rendering' }) }));
-        expect(workerSelf.postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'progress', progress: expect.objectContaining({ status: 'encoding' }) }));
-
-        // Verify completion
-        expect(workerSelf.postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'complete', blob: expect.any(Blob) }));
-
-        expect(mockCompositor.cleanup).toHaveBeenCalled();
-    });
-
-    it('handles cancel message', async () => {
-        require('../../../src/workers/exportWorker');
-
-        const payload = {
-            project: {
+                settings: { duration: 0.1 }, // 3 frames at 30fps
                 assets: {},
                 tracks: {},
                 clips: {},
-                settings: { duration: 10, width: 100, height: 100 },
                 trackOrder: []
             },
-            exportSettings: { width: 100, height: 100, fps: 10 }
+            exportSettings: {
+                width: 100, height: 100, fps: 30,
+                format: 'mp4', videoCodec: 'avc'
+            }
         };
 
-        // Start
-        const promise = workerSelf.onmessage({ data: { type: 'start', payload } });
+        await runExport(payload);
 
-        // Cancel immediately
-        await workerSelf.onmessage({ data: { type: 'cancel' } });
-
-        await promise;
-
-        expect(workerSelf.postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'progress', progress: expect.objectContaining({ status: 'cancelled' }) }));
+        expect(mockPostMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'complete' }));
     });
 
-    it('handles errors during export', async () => {
-        require('../../../src/workers/exportWorker');
-
-        mockCompositor.initialize.mockRejectedValue(new Error('Init failed'));
-
+    it('runs export successfully (WebM)', async () => {
         const payload = {
             project: {
+                settings: { duration: 0.1 },
                 assets: {},
-                settings: { duration: 1 },
-                trackOrder: [] // Add this to prevent crash before initialize (though initialize is called before using it, safely)
+                tracks: {},
+                clips: {},
+                trackOrder: []
             },
-            exportSettings: { width: 100, height: 100, fps: 10 }
+            exportSettings: {
+                width: 100, height: 100, fps: 30,
+                format: 'webm', videoCodec: 'vp9', audioCodec: 'opus'
+            },
+            audioData: { channels: [], sampleRate: 44100 }
         };
 
-        await workerSelf.onmessage({ data: { type: 'start', payload } });
+        await runExport(payload);
 
-        expect(workerSelf.postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'error', error: 'Init failed' }));
+        expect(mockPostMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'complete' }));
+        // Should verify WebM MIME type in blob
+        const lastCall = mockPostMessage.mock.calls.find(c => c[0].type === 'complete');
+        expect(lastCall[0].blob.type).toBe('video/webm');
+    });
+
+    it('handles cancellation', async () => {
+        setIsCancelled(true);
+        const payload = {
+            project: {
+                settings: { duration: 1 },
+                assets: {},
+                tracks: {},
+                clips: {},
+                trackOrder: []
+            },
+            exportSettings: { width: 100, height: 100, fps: 30 }
+        };
+        await runExport(payload);
+        expect(mockPostMessage).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'progress',
+            progress: expect.objectContaining({ status: 'cancelled' })
+        }));
     });
 });

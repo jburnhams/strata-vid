@@ -15,6 +15,10 @@ export interface ExportSettings {
   height: number;
   fps: number;
   videoBitrate?: number;
+  format?: 'mp4' | 'webm';
+  videoCodec?: 'avc' | 'hevc' | 'vp9' | 'av1';
+  audioCodec?: 'aac' | 'opus';
+  audioBitrate?: number;
 }
 
 export type ProgressCallback = (progress: ExportProgress) => void;

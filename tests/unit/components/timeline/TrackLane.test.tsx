@@ -67,6 +67,7 @@ describe('TrackLane', () => {
     selectedClipId: null,
     onClipSelect: jest.fn(),
     onClipResize: jest.fn(),
+    onContextMenu: jest.fn(),
   };
 
   it('renders clips in the lane', () => {
@@ -89,5 +90,13 @@ describe('TrackLane', () => {
     rerender(<TrackLane {...defaultProps} selectedClipId="clip-1" />);
     const selectedClipElement = screen.getByTestId('clip-item-clip-1');
     expect(selectedClipElement).toHaveClass('ring-2');
+  });
+
+  it('passes onContextMenu to ClipItem', () => {
+    const onContextMenu = jest.fn();
+    render(<TrackLane {...defaultProps} onContextMenu={onContextMenu} />);
+    const clip = screen.getByTestId('clip-item-clip-1');
+    fireEvent.contextMenu(clip);
+    expect(onContextMenu).toHaveBeenCalled();
   });
 });

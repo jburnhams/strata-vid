@@ -1,6 +1,6 @@
 import { WorkerCompositor } from '../services/WorkerCompositor';
 // @ts-ignore
-import { Output, Mp4OutputFormat, BufferTarget, CanvasSource, Input, BlobSource } from 'mediabunny';
+import { Output, Mp4OutputFormat, WebMOutputFormat, BufferTarget, CanvasSource, Input, BlobSource } from 'mediabunny';
 import { createWavBlob } from '../utils/audioUtils';
 
 const compositor = new WorkerCompositor();
@@ -22,9 +22,9 @@ self.onmessage = async (e: MessageEvent) => {
   }
 };
 
-async function runExport(payload: any) {
+export async function runExport(payload: any) {
     const { project, exportSettings, audioData } = payload;
-    const { width, height, fps, videoBitrate } = exportSettings;
+    const { width, height, fps, videoBitrate, format, videoCodec, audioCodec, audioBitrate } = exportSettings;
     const duration = project.settings.duration;
     const totalFrames = Math.ceil(duration * fps);
 
@@ -41,8 +41,11 @@ async function runExport(payload: any) {
     }
 
     // 2. Setup Mediabunny Output
+    // Default to MP4 if not specified
+    const outputFormat = format === 'webm' ? new WebMOutputFormat() : new Mp4OutputFormat();
+
     const output = new Output({
-        format: new Mp4OutputFormat(),
+        format: outputFormat,
         target: new BufferTarget(),
     });
 
@@ -54,7 +57,7 @@ async function runExport(payload: any) {
 
     // @ts-ignore
     const videoSource = new CanvasSource(canvas, {
-        codec: 'avc',
+        codec: videoCodec || 'avc',
         // @ts-ignore
         framerate: fps, // mediabunny sometimes uses lowercase
         bitrate: videoBitrate || 6_000_000,
@@ -70,23 +73,18 @@ async function runExport(payload: any) {
             const source = new BlobSource(wavBlob);
             // @ts-ignore
             audioInput = new Input({ source });
-            // Get the track and add it
-            // We need to wait for metadata? addAudioTrack might handle async.
-            // Mediabunny's addAudioTrack expects a Track object, usually from input.getAudioTracks()
-            // We assume input is ready or waits internally.
 
-            // In mediabunny, we might need to await something?
-            // Input constructor is sync-ish but processing is async.
-
-            // Let's assume we can get tracks immediately or after a quick check
-            // Actually, `Input` might need initialization if it parses header.
-            // But `BlobSource` is instant.
-
-            // Let's try to get tracks. If empty, maybe wait?
-            // Usually we might need `await input.getFormat()` or similar, but let's try direct access.
             const tracks = await audioInput.getAudioTracks();
             if (tracks && tracks.length > 0) {
-                output.addAudioTrack(tracks[0]);
+                const track = tracks[0];
+                const audioOptions: any = {};
+
+                // Only pass options if they are explicitly set
+                if (audioCodec) audioOptions.codec = audioCodec;
+                if (audioBitrate) audioOptions.bitrate = audioBitrate;
+
+                // addAudioTrack(track, options) is the expected API for transcoding
+                output.addAudioTrack(track, audioOptions);
             } else {
                 console.warn('No audio tracks found in generated WAV');
             }
@@ -153,7 +151,12 @@ async function runExport(payload: any) {
     // @ts-ignore
     const buffer = output.target.buffer;
     const blobPart = buffer || new ArrayBuffer(0);
-    const blob = new Blob([blobPart as BlobPart], { type: 'video/mp4' });
+    // Determine MIME type based on format
+    const mimeType = format === 'webm' ? 'video/webm' : 'video/mp4';
+    const blob = new Blob([blobPart as BlobPart], { type: mimeType });
 
     self.postMessage({ type: 'complete', blob });
 }
+
+// Export for testing
+export const setIsCancelled = (val: boolean) => { isCancelled = val; };

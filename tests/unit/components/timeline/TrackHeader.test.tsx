@@ -10,6 +10,8 @@ const mockTrack: Track = {
   isMuted: false,
   isLocked: false,
   clips: [],
+  volume: 1.0,
+  viewMode: 'frames'
 };
 
 describe('TrackHeader', () => {
@@ -18,6 +20,8 @@ describe('TrackHeader', () => {
     onRemove: jest.fn(),
     onToggleMute: jest.fn(),
     onToggleLock: jest.fn(),
+    onUpdateVolume: jest.fn(),
+    onToggleViewMode: jest.fn(),
   };
 
   it('renders track label', () => {
@@ -44,5 +48,27 @@ describe('TrackHeader', () => {
     const lockBtn = screen.getByTitle('Lock');
     fireEvent.click(lockBtn);
     expect(defaultProps.onToggleLock).toHaveBeenCalledWith('track-1');
+  });
+
+  it('calls onUpdateVolume when volume input changes', () => {
+    render(<TrackHeader {...defaultProps} />);
+    const volumeInput = screen.getByTitle('Volume %');
+    fireEvent.change(volumeInput, { target: { value: '50' } });
+    expect(defaultProps.onUpdateVolume).toHaveBeenCalledWith('track-1', 0.5);
+  });
+
+  it('toggles view mode and renders correct icons', () => {
+      const { rerender } = render(<TrackHeader {...defaultProps} />);
+
+      const viewModeBtn = screen.getByTitle('Show Video Frames Only');
+      fireEvent.click(viewModeBtn);
+      expect(defaultProps.onToggleViewMode).toHaveBeenCalledWith('track-1');
+
+      // Test other modes for coverage
+      rerender(<TrackHeader {...defaultProps} track={{...mockTrack, viewMode: 'waveform'}} />);
+      expect(screen.getByTitle('Show Waveform Only')).toBeInTheDocument();
+
+      rerender(<TrackHeader {...defaultProps} track={{...mockTrack, viewMode: 'both'}} />);
+      expect(screen.getByTitle('Show Both Video and Waveform')).toBeInTheDocument();
   });
 });

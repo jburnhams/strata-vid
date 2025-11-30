@@ -69,7 +69,7 @@ The current system uses HTMLMediaElement's native audio playback for video clips
   - Files: `src/components/timeline/ClipItem.tsx`, `src/components/timeline/WaveformOverlay.tsx` (new)
 
 ### Phase 4: Export & Effects
-- [ ] **M8: Audio Compositor for Export** (12-16 hours)
+- [x] **M8: Audio Compositor for Export** (12-16 hours)
   - Create `src/services/AudioCompositor.ts`.
   - Use `OfflineAudioContext`.
   - Load all audio assets as buffers (decode upfront or chunked).

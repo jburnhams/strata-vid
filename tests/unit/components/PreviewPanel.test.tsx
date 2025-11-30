@@ -117,7 +117,7 @@ describe('PreviewPanel', () => {
     expect(screen.getByTestId('overlay-renderer')).toBeInTheDocument();
   });
 
-  test('does not render clips from muted tracks', () => {
+  test('renders clips from muted tracks (visual only)', () => {
     const assetId = 'asset-1';
     const trackId = 'track-1';
     const clipId = 'clip-1';
@@ -161,7 +161,7 @@ describe('PreviewPanel', () => {
     });
 
     render(<PreviewPanel />);
-    expect(screen.queryByTestId('video-player')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('video-player')).toBeInTheDocument();
   });
 
   test('does not render clips outside current time range', () => {

@@ -2,14 +2,18 @@ import React from 'react';
 import { Play, Pause, Square, SkipBack, SkipForward } from 'lucide-react';
 import { useProjectStore } from '../store/useProjectStore';
 import { Tooltip } from './Tooltip';
+import { AudioEngine } from '../services/AudioEngine';
 
 export const TransportControls: React.FC = () => {
   const isPlaying = useProjectStore((state) => state.isPlaying);
   const currentTime = useProjectStore((state) => state.currentTime);
   const playbackRate = useProjectStore((state) => state.playbackRate);
+  const masterVolume = useProjectStore((state) => state.masterVolume);
   const setPlaybackState = useProjectStore((state) => state.setPlaybackState);
 
   const handlePlay = () => {
+    // Resume audio context on user interaction
+    AudioEngine.getInstance().resumeContext();
     if (!isPlaying) {
       setPlaybackState({ isPlaying: true });
     }
@@ -59,6 +63,20 @@ export const TransportControls: React.FC = () => {
       {/* Time Display */}
       <div className="font-mono text-neutral-300 text-sm w-28 text-center bg-neutral-900/50 py-1 rounded" aria-label="Current Time">
         {formatTime(currentTime)}
+      </div>
+
+      <div className="flex items-center gap-2 ml-4">
+        <span className="text-xs text-neutral-400">Vol:</span>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          value={masterVolume ?? 1.0}
+          onChange={(e) => setPlaybackState({ masterVolume: parseFloat(e.target.value) })}
+          className="w-24 h-1 bg-neutral-600 rounded-lg appearance-none cursor-pointer accent-blue-500"
+          title={`Volume: ${Math.round((masterVolume ?? 1.0) * 100)}%`}
+        />
       </div>
 
       {/* Playback Rate */}

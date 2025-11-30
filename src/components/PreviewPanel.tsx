@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useProjectStore } from '../store/useProjectStore';
 import { VideoPlayer } from './preview/VideoPlayer';
 import { AudioPlayer } from './preview/AudioPlayer';
@@ -7,11 +7,13 @@ import { TransportControls } from './TransportControls';
 import { usePlaybackLoop } from '../hooks/usePlaybackLoop';
 import { Clip, ProjectSettings } from '../types';
 import { SafeAreaGuides } from './preview/SafeAreaGuides';
+import { AudioEngine } from '../services/AudioEngine';
 
 export const PreviewPanel: React.FC = () => {
   const currentTime = useProjectStore((state) => state.currentTime);
   const isPlaying = useProjectStore((state) => state.isPlaying);
   const playbackRate = useProjectStore((state) => state.playbackRate);
+  const masterVolume = useProjectStore((state) => state.masterVolume);
   const settings = useProjectStore((state) => state.settings);
   const setSettings = useProjectStore((state) => state.setSettings);
 
@@ -26,13 +28,20 @@ export const PreviewPanel: React.FC = () => {
   // Use the playback loop hook to drive the engine
   usePlaybackLoop();
 
+  // Sync master volume
+  useEffect(() => {
+    AudioEngine.getInstance().updateMasterVolume(masterVolume ?? 1.0);
+  }, [masterVolume]);
+
   const activeClips: Clip[] = [];
 
   trackOrder.forEach(trackId => {
       const track = tracks[trackId];
-      if (!track || track.isMuted) return; // Muted tracks (hidden)
+      if (!track) return;
 
       // Find clips in this track that are active at currentTime
+      // Note: We render clips even if track is muted to ensure video is visible.
+      // AudioEngine handles muting audio for these tracks.
       track.clips.forEach(clipId => {
           const clip = clips[clipId];
           if (!clip) return;

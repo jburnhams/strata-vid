@@ -55,6 +55,7 @@ export const TrackLane: React.FC<TrackLaneProps> = ({
           onSelect={onClipSelect}
           onResize={onClipResize}
           onContextMenu={onContextMenu}
+          viewMode={track.viewMode}
         />
       ))}
     </div>

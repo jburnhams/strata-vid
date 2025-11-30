@@ -24,6 +24,7 @@ interface TimelineContainerProps {
   onToggleTrackMute?: (id: string) => void;
   onToggleTrackLock?: (id: string) => void;
   onUpdateTrackVolume?: (id: string, volume: number) => void;
+  onToggleTrackViewMode?: (id: string) => void;
   onRemoveClip: (id: string) => void;
   onDuplicateClip: (id: string) => void;
   onSplitClip: (id: string, time: number) => void;
@@ -57,6 +58,7 @@ export const TimelineContainer = forwardRef<HTMLDivElement, TimelineContainerPro
   onToggleTrackMute,
   onToggleTrackLock,
   onUpdateTrackVolume,
+  onToggleTrackViewMode,
   onRemoveClip,
   onDuplicateClip,
   onSplitClip,
@@ -244,7 +246,8 @@ export const TimelineContainer = forwardRef<HTMLDivElement, TimelineContainerPro
                         onRemove={onRemoveTrack}
                         onToggleMute={onToggleTrackMute}
                         onToggleLock={onToggleTrackLock}
-                            onUpdateVolume={onUpdateTrackVolume}
+                        onUpdateVolume={onUpdateTrackVolume}
+                        onToggleViewMode={onToggleTrackViewMode}
                     />
                 );
             })}

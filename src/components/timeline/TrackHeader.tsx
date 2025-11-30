@@ -1,6 +1,6 @@
 import React from 'react';
-import { Track } from '../../types';
-import { Volume2, VolumeX, Lock, Unlock, Trash2 } from 'lucide-react';
+import { Track, TrackViewMode } from '../../types';
+import { Volume2, VolumeX, Lock, Unlock, Trash2, Film, AudioWaveform, Layers } from 'lucide-react';
 
 interface TrackHeaderProps {
   track: Track;
@@ -8,6 +8,7 @@ interface TrackHeaderProps {
   onToggleMute?: (id: string) => void;
   onToggleLock?: (id: string) => void;
   onUpdateVolume?: (id: string, volume: number) => void;
+  onToggleViewMode?: (id: string) => void;
 }
 
 export const TrackHeader: React.FC<TrackHeaderProps> = ({
@@ -15,8 +16,33 @@ export const TrackHeader: React.FC<TrackHeaderProps> = ({
   onRemove,
   onToggleMute,
   onToggleLock,
-  onUpdateVolume
+  onUpdateVolume,
+  onToggleViewMode
 }) => {
+  const getViewModeIcon = (mode?: TrackViewMode) => {
+    switch (mode) {
+      case 'waveform':
+        return <AudioWaveform size={14} />;
+      case 'both':
+        return <Layers size={14} />;
+      case 'frames':
+      default:
+        return <Film size={14} />;
+    }
+  };
+
+  const getViewModeTooltip = (mode?: TrackViewMode) => {
+    switch (mode) {
+      case 'waveform':
+        return 'Show Waveform Only';
+      case 'both':
+        return 'Show Both Video and Waveform';
+      case 'frames':
+      default:
+        return 'Show Video Frames Only';
+    }
+  };
+
   return (
     <div className="h-16 min-w-[200px] w-[200px] border-b border-gray-700 bg-gray-800 flex flex-col justify-center px-2 shrink-0">
       <div className="flex items-center justify-between mb-1">
@@ -24,6 +50,15 @@ export const TrackHeader: React.FC<TrackHeaderProps> = ({
           {track.label || `Track ${track.id}`}
         </div>
         <div className="flex gap-1">
+          {track.type === 'video' && (
+             <button
+              className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white"
+              onClick={() => onToggleViewMode?.(track.id)}
+              title={getViewModeTooltip(track.viewMode)}
+            >
+              {getViewModeIcon(track.viewMode)}
+            </button>
+          )}
           <button
             className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white"
             onClick={() => onToggleMute?.(track.id)}

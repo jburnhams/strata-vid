@@ -156,6 +156,8 @@ export interface Clip {
   volume: number; // 0-1 (or >1 for boost)
 }
 
+export type TrackViewMode = 'frames' | 'waveform' | 'both';
+
 export interface Track {
   id: string;
   type: 'video' | 'audio' | 'overlay';
@@ -164,6 +166,7 @@ export interface Track {
   isLocked: boolean;
   volume: number; // 0-1 (or >1 for boost)
   clips: string[]; // Array of Clip IDs
+  viewMode?: TrackViewMode;
 }
 
 export interface ProjectSettings {

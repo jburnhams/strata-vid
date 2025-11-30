@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Clip, Asset } from '../../types';
+import { Clip, Asset, TrackViewMode } from '../../types';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { formatTime } from '../../utils/timeUtils';
@@ -14,6 +14,7 @@ interface ClipItemProps {
   onSelect?: (id: string) => void;
   onResize?: (id: string, newStart: number, newDuration: number, newOffset: number) => void;
   onContextMenu?: (e: React.MouseEvent, id: string) => void;
+  viewMode?: TrackViewMode;
 }
 
 export const ClipItem: React.FC<ClipItemProps> = ({
@@ -23,7 +24,8 @@ export const ClipItem: React.FC<ClipItemProps> = ({
   isSelected,
   onSelect,
   onResize,
-  onContextMenu
+  onContextMenu,
+  viewMode = 'frames'
 }) => {
   const [resizeState, setResizeState] = useState<{ direction: 'left' | 'right' } | null>(null);
 
@@ -135,8 +137,8 @@ export const ClipItem: React.FC<ClipItemProps> = ({
       {...attributes}
       {...listeners}
     >
-      {/* Thumbnail Background */}
-      {asset?.thumbnail && (
+      {/* Thumbnail Background - Show if viewMode is 'frames' or 'both' */}
+      {asset?.thumbnail && (viewMode === 'frames' || viewMode === 'both') && (
         <div
           className="absolute inset-0 z-0 opacity-40 pointer-events-none"
           style={{
@@ -148,15 +150,15 @@ export const ClipItem: React.FC<ClipItemProps> = ({
         />
       )}
 
-      {/* Waveform Overlay */}
-      {asset?.waveform && (
+      {/* Waveform Overlay - Show if viewMode is 'waveform' or 'both' OR if it's an audio clip */}
+      {asset?.waveform && (clip.type === 'audio' || viewMode === 'waveform' || viewMode === 'both') && (
         <WaveformOverlay
           waveform={asset.waveform}
           assetDuration={asset.duration || 0}
           offset={clip.offset}
           duration={clip.duration}
           playbackRate={clip.playbackRate || 1}
-          color="rgba(255, 255, 255, 0.6)"
+          color={clip.type === 'video' ? "rgba(0, 100, 255, 0.5)" : "rgba(255, 255, 255, 0.6)"}
         />
       )}
 

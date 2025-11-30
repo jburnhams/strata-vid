@@ -30,6 +30,7 @@ export const TimelinePanel = forwardRef<HTMLDivElement, TimelinePanelProps>(({
   const addTrack = useProjectStore((state) => state.addTrack);
   const removeTrack = useProjectStore((state) => state.removeTrack);
   const updateTrack = useProjectStore((state) => state.updateTrack);
+  const setTrackViewMode = useProjectStore((state) => state.setTrackViewMode);
   const addMarker = useProjectStore((state) => state.addMarker);
   const selectClip = useProjectStore((state) => state.selectClip);
   const setSettings = useProjectStore((state) => state.setSettings);
@@ -98,6 +99,15 @@ export const TimelinePanel = forwardRef<HTMLDivElement, TimelinePanelProps>(({
       updateTrack(id, { volume });
   };
 
+  const handleToggleTrackViewMode = (id: string) => {
+    const track = tracks[id];
+    if (track && track.type === 'video') {
+       const currentMode = track.viewMode || 'frames';
+       const nextMode = currentMode === 'frames' ? 'waveform' : currentMode === 'waveform' ? 'both' : 'frames';
+       setTrackViewMode(id, nextMode);
+    }
+  };
+
   return (
     <div className="h-full w-full bg-gray-900 text-white overflow-hidden">
       <TimelineContainer
@@ -122,6 +132,7 @@ export const TimelinePanel = forwardRef<HTMLDivElement, TimelinePanelProps>(({
         onToggleTrackMute={handleToggleMute}
         onToggleTrackLock={handleToggleLock}
         onUpdateTrackVolume={handleUpdateVolume}
+        onToggleTrackViewMode={handleToggleTrackViewMode}
         onAddTrack={handleAddTrack}
         onAddMarker={handleAddMarker}
         selectedClipId={selectedClipId}

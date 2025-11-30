@@ -31,6 +31,7 @@ const mockClip: Clip = {
     zIndex: 1,
   },
   type: 'video',
+  volume: 1.0,
 };
 
 const mockAsset: Asset = {
@@ -97,9 +98,19 @@ describe('ClipItem', () => {
     expect(thumb).toHaveStyle({ backgroundImage: 'url(blob:thumb-url)' });
   });
 
-  it('renders waveform overlay if asset has waveform data', () => {
+  it('renders waveform overlay if asset has waveform data and viewMode allows it', () => {
     const assetWithWaveform = { ...mockAsset, waveform: [0, 1, 0] };
-    render(<ClipItem {...defaultProps} asset={assetWithWaveform} />);
+    // Pass viewMode="waveform" explicitly because default is "frames" for video
+    render(<ClipItem {...defaultProps} asset={assetWithWaveform} viewMode="waveform" />);
+    const waveform = screen.getByTestId('waveform-overlay');
+    expect(waveform).toBeInTheDocument();
+  });
+
+  it('renders waveform overlay automatically for audio clips', () => {
+    const assetWithWaveform = { ...mockAsset, waveform: [0, 1, 0], type: 'audio' as const };
+    const audioClip = { ...mockClip, type: 'audio' as const };
+
+    render(<ClipItem {...defaultProps} clip={audioClip} asset={assetWithWaveform} />);
     const waveform = screen.getByTestId('waveform-overlay');
     expect(waveform).toBeInTheDocument();
   });

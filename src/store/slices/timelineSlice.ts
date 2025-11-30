@@ -435,4 +435,11 @@ export const createTimelineSlice: StateCreator<
         }
       });
     }),
+  setTrackViewMode: (id, mode) =>
+    set((state) => {
+      const track = state.tracks[id];
+      if (track) {
+        track.viewMode = mode;
+      }
+    }),
 });

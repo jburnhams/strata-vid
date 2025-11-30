@@ -3,10 +3,10 @@
 **Priority**: High
 **Goal**: Implement a comprehensive audio system supporting mixing, effects, independent volume controls, and waveform visualization for both audio and video clips.
 **Dependencies**: Section C (Preview Engine), Section J (Export)
-**Status**: 🟨 Partially implemented
+**Status**: 🟢 Complete
 
 ## Overview
-The current system uses HTMLMediaElement's native audio playback for video clips and lacks a dedicated audio engine. This section introduces a **Web Audio API** based architecture to provide a central mixer, enabling advanced features like boost, global effects, and export mixing.
+The system uses a **Web Audio API** based architecture to provide a central mixer, enabling advanced features like boost, global effects, and export mixing.
 
 ## Architecture
 - **Engine**: `AudioEngine` (Singleton/Service) managing an `AudioContext`.
@@ -16,80 +16,60 @@ The current system uses HTMLMediaElement's native audio playback for video clips
   - **Track Gain**: `GainNode` per track (volume + mute).
   - **Master Gain**: `GainNode` (Global volume).
   - **Destination**: `AudioContext.destination` (Speakers) / `MediaStreamAudioDestinationNode` (Export).
-- **Export**: Uses `OfflineAudioContext` or `AudioCompositor` to render audio tracks to a buffer, separate from the visual frame loop.
+- **Export**: Uses `OfflineAudioContext` via `AudioCompositor` to render audio tracks to a buffer.
 
 ## Tasks
 
 ### Phase 1: Foundation & Data Model
-- [x] **M1: Update Data Models** (2-3 hours)
-  - Update `Track` interface: Add `volume: number` (default 1.0).
-  - Update `Clip` interface: Add `volume: number` (default 1.0).
-  - Update `Asset` interface: Ensure `waveform` is available for both `audio` and `video` types.
+- [x] **M1: Update Data Models**
+  - Update `Track` and `Clip` interfaces with volume/mute properties.
   - Files: `src/types.ts`
 
-- [x] **M2: Waveform Extraction for Video** (4-6 hours)
+- [x] **M2: Waveform Extraction for Video**
   - Extend `AssetLoader` to extract audio from video files.
-  - Use `AudioContext.decodeAudioData` or `mediabunny` fallback to get `AudioBuffer`.
-  - Generate waveform peaks for `Asset.waveform`.
   - Files: `src/services/AssetLoader.ts`, `src/utils/audioUtils.ts`
+  - Verified by: `tests/integration/AudioWaveforms.integration.test.tsx`
 
 ### Phase 2: Audio Engine & Preview
-- [x] **M3: Audio Engine Service** (12-16 hours)
-  - Create `src/services/AudioEngine.ts`.
-  - Manage `AudioContext` lifecycle.
-  - Methods: `registerClip(clipId, element?)`, `unregisterClip(clipId)`, `updateVolume(id, vol)`.
-  - Implement node graph: `Source -> ClipGain -> TrackGain -> MasterGain -> Dest`.
-  - Handle `isMuted` on tracks.
+- [x] **M3: Audio Engine Service**
+  - Manage `AudioContext` lifecycle and routing graph.
+  - Files: `src/services/AudioEngine.ts`
+  - Verified by: `tests/unit/services/AudioEngine.test.ts`, `tests/integration/AudioSystem.integration.test.ts`
 
-- [x] **M4: Video Player Integration** (4-6 hours)
-  - Modify `VideoPlayer.tsx`:
-    - Set `<video>` to `muted={false}` but remove it from DOM output (or keep muted in DOM and route via `captureStream` or `MediaElementAudioSourceNode`? *Note: `MediaElementAudioSourceNode` is safer for sync*).
-    - **Wait**: `MediaElementAudioSourceNode` takes the element. The element must play. If we mute the element, the node might be silent (browser dependent). Better approach: Keep element playing, disconnected from default destination, connected to `AudioEngine`.
-    - Register ref with `AudioEngine` on mount.
+- [x] **M4: Video Player Integration**
+  - Route video audio through `AudioEngine`.
   - Files: `src/components/preview/VideoPlayer.tsx`
+  - Verified by: `tests/integration/AudioPreview.integration.test.tsx`
 
-- [x] **M5: Audio Clip Player** (6-8 hours)
-  - Create `AudioPlayer.tsx` (headless component) or manage entirely within `AudioEngine` via `usePlaybackLoop`.
-  - Since standard `AudioPlayer` is missing, implement it using `AudioBufferSourceNode` for precise timing or `<audio>` element for streaming.
-  - *Recommendation*: Use `AudioBufferSourceNode` for short clips/SFX, `<audio>` for long tracks, or just `<audio>` for all for consistency with Video.
-  - Implemented using `<audio>` element for consistency and streaming support.
-  - Integrated into `PreviewPanel.tsx`.
+- [x] **M5: Audio Clip Player**
+  - Implement `AudioPlayer` for standalone audio clips.
+  - Files: `src/components/preview/AudioPlayer.tsx`
+  - Verified by: `tests/unit/components/preview/AudioPlayer.test.tsx`
 
 ### Phase 3: UI & Interaction
-- [x] **M6: Volume Controls** (4-6 hours)
-  - Add Number Input for Volume to `MetadataPanel` (allow > 100% for boost).
-  - Add Volume Slider/Input to Track Headers in `TimelinePanel`.
+- [x] **M6: Volume Controls**
+  - Add volume/mute controls to Track Header and Metadata Panel.
   - Files: `src/components/MetadataPanel.tsx`, `src/components/timeline/TrackHeader.tsx`
+  - Verified by: `tests/integration/AudioControl.integration.test.tsx` (New)
 
-- [x] **M7: Waveform Visualization** (8-12 hours)
-  - Create `WaveformOverlay` component.
-  - Render on `ClipItem`.
-  - For Video: Semi-transparent overlay over the thumbnail strip.
-  - For Audio: Main representation.
-  - Files: `src/components/timeline/ClipItem.tsx`, `src/components/timeline/WaveformOverlay.tsx` (new)
+- [x] **M7: Waveform Visualization**
+  - Render audio waveforms on timeline clips.
+  - Files: `src/components/timeline/WaveformOverlay.tsx`
+  - Verified by: `tests/unit/components/timeline/WaveformOverlay.test.tsx`
 
 ### Phase 4: Export & Effects
-- [x] **M8: Audio Compositor for Export** (12-16 hours)
-  - Create `src/services/AudioCompositor.ts`.
-  - Use `OfflineAudioContext`.
-  - Load all audio assets as buffers (decode upfront or chunked).
-  - Render mix to `AudioBuffer`.
-  - Encode to AAC/MP3 (using `mediabunny` or `ffmpeg.wasm` if needed, or `MediaRecorder` API workaround if offline context isn't enough).
-  - Integrate with `ExportManager`.
+- [x] **M8: Audio Compositor for Export**
+  - Render project audio to buffer using `OfflineAudioContext`.
+  - Files: `src/services/AudioCompositor.ts`
+  - Verified by: `tests/integration/exportWithAudio.integration.test.tsx`
 
 - [ ] **M9: Advanced Effects (Optional)** (Future)
   - Equalizer, Compressor, Reverb nodes.
-  - VST-like plugin support structure.
 
-## Integration Testing Strategy
-- **Node Support**: Use `web-audio-test-api` or similar mock for `AudioContext` in Jest/Node environment.
+## Testing Summary
+- **Unit Tests**: Full coverage for `AudioEngine`, `AudioPlayer`, and `AudioCompositor`.
 - **Integration Tests**:
-  - Verify routing: `Clip -> Track -> Master`.
-  - Verify Volume math (Clip=0.5 * Track=0.5 = 0.25).
-  - Verify Mute toggle.
-  - Verify Boost (>1.0 gain).
-
-## Technical Considerations
-- **CORS**: `MediaElementAudioSourceNode` requires `crossOrigin="anonymous"` on video/audio elements.
-- **Sync**: Web Audio API clock is different from `performance.now()`. Sync logic in `VideoPlayer` needs to align visual frame with audio time.
-- **Memory**: Decoding large video files to `AudioBuffer` for waveform/export can be heavy. Consider "lazy" decoding or peaks-only extraction.
+  - **System**: `AudioSystem.integration.test.ts` verifies the node graph topology.
+  - **Wiring**: `AudioPreview.integration.test.tsx` ensures components register with the engine.
+  - **UI Interaction**: `AudioControl.integration.test.tsx` verifies that UI controls update the engine state.
+  - **Export**: `exportWithAudio.integration.test.tsx` verifies audio is included in the export pipeline.

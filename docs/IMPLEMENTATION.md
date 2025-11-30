@@ -177,9 +177,9 @@ These add power-user features and advanced capabilities.
 
 ---
 
-### [Section I: Audio System](sections/SECTION_I.md) ⭐
-**Status**: 🔴 Not implemented
-**Dependencies**: Section A, Section B
+### [Section M: Audio System](sections/SECTION_M.md) ⭐
+**Status**: 🟢 Complete
+**Dependencies**: Section C (Preview Engine), Section J (Export)
 **Goal**: Audio track support, mixing, volume control
 
 **Features**: Audio asset loading, Waveform visualization, Audio track rendering, Volume control, Audio export, Extract audio from video
@@ -253,7 +253,7 @@ These add power-user features and advanced capabilities.
 **Goal**: Improve user experience and reliability
 
 7. **Section G** - User Experience
-8. **Section I** - Audio System (or defer to Phase 4)
+8. **Section M** - Audio System (or defer to Phase 4)
 
 **Milestone**: Polished, reliable editor with good UX.
 
@@ -263,7 +263,7 @@ These add power-user features and advanced capabilities.
 **Goal**: Power-user features and optimizations
 
 9. **Section H** - Advanced Timeline
-10. **Section I** - Audio (if not done in Phase 3)
+10. **Section M** - Audio (if not done in Phase 3)
 11. **Section J** - Performance
 12. **Section K** - Advanced Map
 
@@ -308,7 +308,7 @@ For each section, write corresponding tests:
 A (Playback) ──────┬──────────┬────────────┬──────────┐
                    │          │            │          │
                    ↓          ↓            ↓          ↓
-             B (Timeline)  C (Preview)  F (Project) I (Audio)
+             B (Timeline)  C (Preview)  F (Project) M (Audio)
                    │          │            │
                    ↓          ↓            │
              H (Advanced)  D (Map)        │

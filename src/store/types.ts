@@ -55,6 +55,7 @@ export interface PlaybackSlice {
   currentTime: number;
   isPlaying: boolean;
   playbackRate: number;
+  masterVolume: number;
   setPlaybackState: (state: Partial<Omit<PlaybackSlice, 'setPlaybackState'>>) => void;
 }
 

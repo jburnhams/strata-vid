@@ -27,7 +27,7 @@ export async function extractAudioMetadata(file: File): Promise<{ duration: numb
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
         const duration = audioBuffer.duration;
-        const waveform = extractWaveform(audioBuffer, 100); // 100 points for the waveform
+        const waveform = extractWaveform(audioBuffer, 1000); // 1000 points for the waveform
 
         resolve({ duration, waveform });
       } catch (err) {

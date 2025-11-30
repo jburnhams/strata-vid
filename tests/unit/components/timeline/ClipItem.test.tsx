@@ -97,6 +97,13 @@ describe('ClipItem', () => {
     expect(thumb).toHaveStyle({ backgroundImage: 'url(blob:thumb-url)' });
   });
 
+  it('renders waveform overlay if asset has waveform data', () => {
+    const assetWithWaveform = { ...mockAsset, waveform: [0, 1, 0] };
+    render(<ClipItem {...defaultProps} asset={assetWithWaveform} />);
+    const waveform = screen.getByTestId('waveform-overlay');
+    expect(waveform).toBeInTheDocument();
+  });
+
   it('calls onSelect when clicked', () => {
     render(<ClipItem {...defaultProps} />);
     const clipElement = screen.getByTestId('clip-item-clip-1');

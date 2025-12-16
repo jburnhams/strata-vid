@@ -1,6 +1,5 @@
 import { Asset, Clip, ProjectSettings, Track } from '../types';
 import { createExportWorker } from '../utils/workerUtils';
-import { AudioCompositor } from './AudioCompositor';
 
 export interface ExportProgress {
   currentFrame: number;
@@ -54,27 +53,7 @@ export class ExportManager {
         throw new Error(error);
     }
 
-    // Prepare Audio
-    let audioData: { channels: Float32Array[], sampleRate: number } | undefined;
-    try {
-        onProgress({ currentFrame: 0, totalFrames: 0, percentage: 0, status: 'initializing' });
-        const audioCompositor = new AudioCompositor();
-        // TODO: This runs in main thread and might block UI for large projects.
-        // Consideration: Move to worker or use requestIdleCallback chunks if needed.
-        const audioBuffer = await audioCompositor.render(project as any);
-
-        // Extract channels for transfer
-        const channels: Float32Array[] = [];
-        for (let i = 0; i < audioBuffer.numberOfChannels; i++) {
-            channels.push(audioBuffer.getChannelData(i));
-        }
-        audioData = {
-            channels,
-            sampleRate: audioBuffer.sampleRate
-        };
-    } catch (e) {
-        console.warn('Audio export preparation failed, proceeding with video only', e);
-    }
+    // Note: Audio preparation is now handled inside the worker to avoid blocking main thread.
 
     return new Promise((resolve, reject) => {
         try {
@@ -127,18 +106,16 @@ export class ExportManager {
                 reject(new Error(msg));
             };
 
-            // Transfer buffers to avoid copy
-            const transferables = audioData ? audioData.channels.map(c => c.buffer) : [];
-
             // Start Export
+            // We do not pass audioData here; the worker will generate it.
             this.worker.postMessage({
                 type: 'start',
                 payload: {
                     project,
                     exportSettings,
-                    audioData
+                    // audioData: undefined
                 }
-            }, transferables);
+            });
 
         } catch (e: any) {
             console.error('Export initiation failed', e);

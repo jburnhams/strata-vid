@@ -110,9 +110,9 @@ describe('Export Integration Flow', () => {
              expect(screen.getByText('Export Complete!')).toBeInTheDocument();
         }, { timeout: 5000 });
 
+        // Since audio is generated in worker, we don't expect transferable arrays anymore
         expect(mockWorker.postMessage).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'start' }),
-            expect.any(Array)
+            expect.objectContaining({ type: 'start' })
         );
     });
 });

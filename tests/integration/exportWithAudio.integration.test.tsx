@@ -9,13 +9,9 @@ import { AudioCompositor } from '../../src/services/AudioCompositor';
 // Mock workerUtils
 jest.mock('../../src/utils/workerUtils');
 
-// Mock AudioCompositor
-const mockRender = jest.fn().mockResolvedValue({
-    numberOfChannels: 2,
-    sampleRate: 44100,
-    getChannelData: jest.fn().mockReturnValue(new Float32Array(100))
-});
-
+// Mock AudioCompositor - not called in main thread anymore, but might be imported
+// We just verify it is NOT called on main thread
+const mockRender = jest.fn();
 jest.mock('../../src/services/AudioCompositor', () => {
     return {
         AudioCompositor: jest.fn().mockImplementation(() => ({
@@ -82,7 +78,7 @@ describe('Export with Audio Integration', () => {
         } as any;
     });
 
-    it('should pass audio data to export worker', async () => {
+    it('should trigger export and delegate audio to worker', async () => {
         // Setup worker mock
         const mockPostMessage = jest.fn();
         const mockWorker = {
@@ -117,21 +113,22 @@ describe('Export with Audio Integration', () => {
             fireEvent.click(screen.getByText('Start Export'));
         });
 
-        // Verify AudioCompositor was used
-        expect(AudioCompositor).toHaveBeenCalled();
-        expect(mockRender).toHaveBeenCalled();
+        // Verify AudioCompositor was NOT used in Main Thread
+        expect(AudioCompositor).not.toHaveBeenCalled();
+        expect(mockRender).not.toHaveBeenCalled();
 
-        // Verify worker payload contains audio data
+        // Verify worker payload does NOT contain audio data (because it's generated in worker)
         await waitFor(() => {
              expect(mockPostMessage).toHaveBeenCalledWith(expect.objectContaining({
                  type: 'start',
                  payload: expect.objectContaining({
-                     audioData: expect.objectContaining({
-                         channels: expect.any(Array),
-                         sampleRate: 44100
-                     })
+                     // audioData should be missing or undefined
                  })
-             }), expect.any(Array)); // Second arg is transferables
+             }));
+
+             // Ensure audioData is NOT present in the payload
+             const payload = mockPostMessage.mock.calls[0][0].payload;
+             expect(payload.audioData).toBeUndefined();
         });
 
         // Wait for completion

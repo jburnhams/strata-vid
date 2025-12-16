@@ -1,9 +1,11 @@
 import { WorkerCompositor } from '../services/WorkerCompositor';
+import { AudioCompositor } from '../services/AudioCompositor';
 // @ts-ignore
 import { Output, Mp4OutputFormat, WebMOutputFormat, BufferTarget, CanvasSource, Input, BlobSource } from 'mediabunny';
 import { createWavBlob } from '../utils/audioUtils';
 
 const compositor = new WorkerCompositor();
+const audioCompositor = new AudioCompositor();
 let isCancelled = false;
 
 self.onmessage = async (e: MessageEvent) => {
@@ -23,7 +25,7 @@ self.onmessage = async (e: MessageEvent) => {
 };
 
 export async function runExport(payload: any) {
-    const { project, exportSettings, audioData } = payload;
+    const { project, exportSettings, audioData: providedAudioData } = payload;
     const { width, height, fps, videoBitrate, format, videoCodec, audioCodec, audioBitrate } = exportSettings;
     const duration = project.settings.duration;
     const totalFrames = Math.ceil(duration * fps);
@@ -40,7 +42,26 @@ export async function runExport(payload: any) {
         return;
     }
 
-    // 2. Setup Mediabunny Output
+    // 2. Prepare Audio (if not provided)
+    let audioData = providedAudioData;
+    if (!audioData) {
+        try {
+             // Render audio in worker
+             const audioBuffer = await audioCompositor.render(project);
+             const channels: Float32Array[] = [];
+             for (let i = 0; i < audioBuffer.numberOfChannels; i++) {
+                 channels.push(audioBuffer.getChannelData(i));
+             }
+             audioData = {
+                 channels,
+                 sampleRate: audioBuffer.sampleRate
+             };
+        } catch (e) {
+            console.warn('Audio export preparation failed in worker, proceeding with video only', e);
+        }
+    }
+
+    // 3. Setup Mediabunny Output
     // Default to MP4 if not specified
     const outputFormat = format === 'webm' ? new WebMOutputFormat() : new Mp4OutputFormat();
 
@@ -95,7 +116,7 @@ export async function runExport(payload: any) {
 
     await output.start();
 
-    // 3. Render Loop
+    // 4. Render Loop
     const orderedTracks = project.trackOrder.map((id: string) => project.tracks[id]).filter(Boolean);
     const renderProjectState = {
         tracks: orderedTracks,

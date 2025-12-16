@@ -26,8 +26,11 @@ export class AudioCompositor {
     const length = Math.ceil(duration * sampleRate);
 
     // Safari/Webkit check (standard vs prefixed)
+    // Use self instead of window to support Worker environment
+    const scope = typeof self !== 'undefined' ? self : typeof globalThis !== 'undefined' ? globalThis : window;
+
     // @ts-ignore
-    const OfflineContextClass = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    const OfflineContextClass = scope.OfflineAudioContext || scope.webkitOfflineAudioContext;
     if (!OfflineContextClass) {
         throw new Error('OfflineAudioContext not supported');
     }

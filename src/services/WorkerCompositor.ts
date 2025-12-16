@@ -3,11 +3,49 @@ import { getGpxPositionAtTime, lat2tile, lon2tile, getTileUrl, TILE_SIZE } from 
 import { interpolateValue } from '../utils/animationUtils';
 import { calculateObjectFit } from '../utils/layoutUtils';
 // @ts-ignore
-import { Input, BlobSource, ALL_FORMATS } from 'mediabunny';
+import { Input, BlobSource, ALL_FORMATS, CanvasSink } from 'mediabunny';
 import { Feature, LineString } from 'geojson';
 
+class PushableGenerator<T> implements AsyncIterable<T> {
+  private queue: T[] = [];
+  private signal: (() => void) | null = null;
+  private finished = false;
+
+  push(value: T) {
+    this.queue.push(value);
+    if (this.signal) {
+      this.signal();
+      this.signal = null;
+    }
+  }
+
+  finish() {
+    this.finished = true;
+    if (this.signal) this.signal();
+  }
+
+  async *[Symbol.asyncIterator]() {
+    while (true) {
+      if (this.queue.length > 0) {
+        yield this.queue.shift()!;
+      } else if (this.finished) {
+        return;
+      } else {
+        await new Promise<void>(resolve => this.signal = resolve);
+      }
+    }
+  }
+}
+
+interface VideoSession {
+    input: any; // Input
+    sink: any; // CanvasSink
+    timestampGen: PushableGenerator<number>;
+    frameIterator: AsyncIterator<any>; // WrappedCanvas
+}
+
 export class WorkerCompositor {
-  private videoPool: Map<string, any> = new Map(); // Input instance
+  private videoPool: Map<string, VideoSession> = new Map();
   private imageCache: Map<string, ImageBitmap> = new Map();
   private tileCache: Map<string, ImageBitmap> = new Map();
 
@@ -20,7 +58,30 @@ export class WorkerCompositor {
            try {
              const source = new BlobSource(asset.file);
              const input = new Input({ source, formats: ALL_FORMATS });
-             this.videoPool.set(asset.id, input);
+
+             const track = await input.getPrimaryVideoTrack();
+             let sink = null;
+             let timestampGen = new PushableGenerator<number>();
+             let frameIterator: AsyncIterator<any> | null = null;
+
+             if (track) {
+                 sink = new CanvasSink(track, { poolSize: 3, alpha: true }); // Enable alpha just in case
+                 const iterator = sink.canvasesAtTimestamps(timestampGen);
+                 frameIterator = iterator[Symbol.asyncIterator]();
+             }
+
+             if (sink && frameIterator) {
+                this.videoPool.set(asset.id, {
+                    input,
+                    sink,
+                    timestampGen,
+                    frameIterator
+                });
+             } else {
+                 console.warn(`No video track found for asset ${asset.id}`);
+                 input.dispose();
+             }
+
            } catch (e) {
              console.error(`Failed to init video input for ${asset.id}`, e);
            }
@@ -40,8 +101,10 @@ export class WorkerCompositor {
   }
 
   public cleanup() {
-    this.videoPool.forEach((input) => {
-        if (input.dispose) input.dispose();
+    this.videoPool.forEach((session) => {
+        session.timestampGen.finish();
+        // CanvasSink doesn't have explicit close, but Input.dispose cleans up tracks
+        if (session.input.dispose) session.input.dispose();
     });
     this.videoPool.clear();
 
@@ -175,28 +238,29 @@ export class WorkerCompositor {
     dstW: number,
     dstH: number
   ) {
-    const input = this.videoPool.get(asset.id);
-    if (!input) return;
+    const session = this.videoPool.get(asset.id);
+    if (!session) return;
 
-    // TODO: Verify mediabunny Input API for getting a frame at specific time
-    // Assuming input.getFrame(time) exists and returns { image: ImageBitmap | VideoFrame }
-    // If not, we might need a workaround.
     try {
-        // @ts-ignore
-        const frameData = await input.getFrame(time);
-        if (frameData && frameData.image) {
-             const image = frameData.image; // ImageBitmap or VideoFrame
-             const srcW = image.displayWidth || image.width;
-             const srcH = image.displayHeight || image.height;
+        // Request frame at 'time'
+        session.timestampGen.push(time);
+
+        // Wait for the result
+        const { value: frameData, done } = await session.frameIterator.next();
+
+        if (!done && frameData && frameData.canvas) {
+             const image = frameData.canvas; // HTMLCanvasElement or OffscreenCanvas
+             const srcW = image.width;
+             const srcH = image.height;
 
              const { dw, dh, dx, dy } = calculateObjectFit(srcW, srcH, dstW, dstH, 'cover');
              ctx.drawImage(image, dx, dy, dw, dh);
 
-             // Close frame if needed? Depends on API.
-             if (image.close) image.close();
+             // CanvasSink manages canvas reuse, we don't close it explicitly unless it's an ImageBitmap which it is not.
         }
     } catch (e) {
         // Fallback or ignore
+        console.error("Video draw error", e);
     }
   }
 

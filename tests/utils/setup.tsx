@@ -51,6 +51,49 @@ if (!global.createImageBitmap) {
     };
 }
 
+// Polyfill WebCodecs
+if (typeof VideoDecoder === 'undefined') {
+    // @ts-ignore
+    global.VideoDecoder = class {
+        constructor(init: any) { this.init = init; }
+        configure(config: any) {}
+        decode(chunk: any) {
+            // Mock decoding by immediately outputting a frame
+            if (this.init.output) {
+                this.init.output({
+                    timestamp: chunk.timestamp,
+                    displayWidth: 100,
+                    displayHeight: 100,
+                    close: () => {},
+                    format: 'RGBA'
+                });
+            }
+        }
+        flush() { return Promise.resolve(); }
+        reset() {}
+        close() {}
+        static isConfigSupported(config: any) { return Promise.resolve({ supported: true }); }
+    };
+}
+
+if (typeof EncodedVideoChunk === 'undefined') {
+    // @ts-ignore
+    global.EncodedVideoChunk = class {
+        timestamp: number;
+        duration: number | undefined;
+        type: 'key' | 'delta';
+        byteLength: number;
+
+        constructor(init: any) {
+            this.timestamp = init.timestamp;
+            this.duration = init.duration;
+            this.type = init.type;
+            this.byteLength = init.data.byteLength;
+        }
+        copyTo(dest: any) {}
+    };
+}
+
 // Add TextEncoder/TextDecoder to global for jsdom/node
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder as any;

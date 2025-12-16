@@ -57,7 +57,7 @@ describe('ExportManager', () => {
     }));
   });
 
-  it('should run export successfully and pass settings (with audio)', async () => {
+  it('should run export successfully and delegate audio to worker', async () => {
     mockWorker.postMessage.mockImplementation((msg: any) => {
          if (msg.type === 'start') {
              setTimeout(() => {
@@ -73,46 +73,21 @@ describe('ExportManager', () => {
     const onProgress = jest.fn();
     const result = await exportManager.exportProject(mockProject, mockExportSettings, onProgress);
 
-    // Verify audio data was extracted and passed
+    // Verify correct start message
+    // Note: audioData should NOT be present (or be undefined), and no transferables (2nd arg)
     expect(mockWorker.postMessage).toHaveBeenCalledWith(expect.objectContaining({
         type: 'start',
         payload: expect.objectContaining({
-            audioData: expect.objectContaining({
-                sampleRate: 44100,
-                channels: expect.any(Array)
-            })
+            project: mockProject,
+            exportSettings: mockExportSettings
         })
-    }), expect.any(Array)); // Transferables
+    }));
+
+    // Verify AudioCompositor was NOT called on main thread
+    expect(AudioCompositor).not.toHaveBeenCalled();
 
     expect(result).toBeInstanceOf(Blob);
     expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({ status: 'completed' }));
-  });
-
-  it('should handle audio export failure gracefully', async () => {
-    // Mock audio failure
-    (AudioCompositor as jest.Mock).mockImplementationOnce(() => ({
-        render: jest.fn().mockRejectedValue(new Error('Audio failed'))
-    }));
-
-    mockWorker.postMessage.mockImplementation((msg: any) => {
-         if (msg.type === 'start') {
-             setTimeout(() => {
-                 if (mockWorker.onmessage)
-                     mockWorker.onmessage({ data: { type: 'complete', blob: new Blob([], {type: 'video/mp4'}) } });
-             }, 0);
-         }
-    });
-
-    const onProgress = jest.fn();
-    await exportManager.exportProject(mockProject, mockExportSettings, onProgress);
-
-    // Should proceed without audioData
-    expect(mockWorker.postMessage).toHaveBeenCalledWith(expect.objectContaining({
-        type: 'start',
-        payload: expect.objectContaining({
-            audioData: undefined
-        })
-    }), expect.any(Array));
   });
 
   it('should handle cancellation', async () => {

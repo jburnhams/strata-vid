@@ -1,17 +1,37 @@
 
 import { WorkerCompositor } from '../../../src/services/WorkerCompositor';
 import { Asset, Clip, ProjectSettings, Track } from '../../../src/types';
-import { Input } from 'mediabunny';
+import { Input, CanvasSink } from 'mediabunny';
 
 // Mock mediabunny
 const mockInput = {
-    getFrame: jest.fn(),
+    getPrimaryVideoTrack: jest.fn().mockResolvedValue({ id: 1 }),
     dispose: jest.fn(),
+};
+
+const mockCanvasSink = {
+    canvasesAtTimestamps: jest.fn(() => ({
+         [Symbol.asyncIterator]: () => ({
+             next: jest.fn().mockResolvedValue({
+                 value: {
+                    canvas: {
+                        width: 100,
+                        height: 100,
+                        getContext: jest.fn()
+                    },
+                    timestamp: 0,
+                    duration: 1
+                 },
+                 done: false
+             })
+         })
+    }))
 };
 
 jest.mock('mediabunny', () => ({
   Input: jest.fn(() => mockInput),
   BlobSource: jest.fn(),
+  CanvasSink: jest.fn(() => mockCanvasSink),
   ALL_FORMATS: []
 }));
 
@@ -52,9 +72,11 @@ describe('WorkerCompositor', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockInput.getFrame.mockResolvedValue({
-        image: { ...mockImageBitmap, close: jest.fn(), displayWidth: 100, displayHeight: 100 }
-    });
+
+    // Reset mock implementation for fresh state
+    mockInput.getPrimaryVideoTrack.mockResolvedValue({ id: 1 });
+    (CanvasSink as unknown as jest.Mock).mockClear();
+    (Input as unknown as jest.Mock).mockClear();
 
     (global.fetch as jest.Mock).mockResolvedValue({
         ok: true,
@@ -112,6 +134,7 @@ describe('WorkerCompositor', () => {
     ];
     await compositor.initialize(assets);
     expect(Input).toHaveBeenCalledTimes(1);
+    expect(CanvasSink).toHaveBeenCalledTimes(1);
     expect(global.createImageBitmap).toHaveBeenCalledTimes(1);
   });
 

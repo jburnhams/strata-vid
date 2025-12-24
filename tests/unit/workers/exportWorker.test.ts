@@ -26,7 +26,8 @@ jest.mock('mediabunny', () => ({
 }));
 // Mock utils
 jest.mock('../../../src/utils/audioUtils', () => ({
-    createWavBlob: jest.fn(() => new Blob([]))
+    createWavBlob: jest.fn(() => new Blob([])),
+    readFileToArrayBuffer: jest.fn().mockResolvedValue(new ArrayBuffer(100))
 }));
 
 describe('exportWorker', () => {
@@ -44,6 +45,24 @@ describe('exportWorker', () => {
             constructor(width: number, height: number) {}
             getContext() { return { filter: '' }; }
         } as any;
+
+        // Mock OfflineAudioContext for worker environment
+        global.OfflineAudioContext = class {
+            constructor(channels: number, length: number, sampleRate: number) {
+                this.sampleRate = sampleRate;
+                this.destination = {};
+            }
+            sampleRate: number;
+            destination: any;
+            createGain() { return { gain: { value: 1 }, connect: jest.fn() }; }
+            createBufferSource() { return { buffer: null, connect: jest.fn(), start: jest.fn(), playbackRate: { value: 1 } }; }
+            decodeAudioData(buffer: any) { return Promise.resolve({ duration: 1, getChannelData: () => new Float32Array(100) }); }
+            startRendering() { return Promise.resolve({ numberOfChannels: 2, getChannelData: () => new Float32Array(100), sampleRate: 44100 }); }
+        } as any;
+
+        // Ensure self has OfflineAudioContext too since AudioCompositor checks scope
+        // @ts-ignore
+        global.self.OfflineAudioContext = global.OfflineAudioContext;
     });
 
     beforeEach(() => {

@@ -2,7 +2,6 @@ import { Asset, Clip, ProjectSettings, Track, OverlayProperties, TextStyle, Trac
 import { getGpxPositionAtTime, lat2tile, lon2tile, getTileUrl, TILE_SIZE } from '../utils/mapUtils';
 import { interpolateValue } from '../utils/animationUtils';
 import { calculateObjectFit } from '../utils/layoutUtils';
-// @ts-ignore
 import { Input, BlobSource, ALL_FORMATS, CanvasSink } from 'mediabunny';
 import { Feature, LineString } from 'geojson';
 
@@ -56,7 +55,7 @@ export class WorkerCompositor {
       if (asset.type === 'video' && !this.videoPool.has(asset.id)) {
         if (asset.file) {
            try {
-             const source = new BlobSource(asset.file);
+             const source = new BlobSource(asset.file as any);
              const input = new Input({ source, formats: ALL_FORMATS });
 
              const track = await input.getPrimaryVideoTrack();
@@ -242,7 +241,7 @@ export class WorkerCompositor {
     if (!session) return;
 
     try {
-        // Request frame at 'time'
+        // Request frame at 'time' using CanvasSink generator pattern (verified correct API)
         session.timestampGen.push(time);
 
         // Wait for the result

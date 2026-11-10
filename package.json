@@ -41,7 +41,7 @@
     "@babel/core": "^7.28.5",
     "@babel/preset-env": "^7.28.5",
     "@babel/preset-react": "^7.28.5",
-    "@babel/preset-typescript": "^7.28.5",
+    "@babel/preset-typescript": "^8.0.7",
     "@jest/globals": "^29.7.0",
     "@napi-rs/canvas": "^0.1.82",
     "@tailwindcss/postcss": "^4.1.17",

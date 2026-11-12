@@ -47,12 +47,9 @@ no longer imported; removing it from `package.json` is Jonathan's call.
 
 Found while writing the visual tests (2026-11-12), with the media in `tests/fixtures/media`, and filed
 as issues #141 to #145. Each is struck from this list in the PR that fixes it. Fixed so far: export
-never rendering a frame and always dropping the sound (#141).
+never rendering a frame and always dropping the sound (#141); MP4 details and dates, and GPX dates, not
+read (#142).
 
-- **MP4 metadata is mostly not read.** For a GoPro-style H.264/AAC MP4 that ffprobe reads in full, the
-  inspector shows Container, Frame rate and Bitrate as "–" and takes the date from the file's modified
-  time ("Date from: file") although the file has `creation_time`, so map sync starts from the wrong time.
-- **A GPX file shows no Created date** although its points have times (the sync panel shows the GPX start).
 - **Files added together are listed in a race order**: the library lists them as they finish loading.
 - **"Add to timeline" also selects the file** (the click reaches the row), and it puts audio and GPX on
   the video track, end to end after the clips.

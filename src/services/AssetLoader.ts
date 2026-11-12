@@ -6,14 +6,16 @@ import { ConcurrencyLimiter } from '../utils/concurrency';
 
 import type { VideoMetadata } from '../types';
 
-// Helper interface for Mediabunny Input to handle potential type mismatches
-interface IMediabunnyInput {
-    computeDuration?: () => Promise<number>;
-    getFormat?: () => Promise<{ duration?: number; tags?: Record<string, string> }>;
-    getVideoTracks: () => Promise<any[]>;
-    getAudioTracks?: () => Promise<any[]>;
-    dispose: () => void;
-}
+/** Packets read to estimate a video's frame rate and bitrate: enough for a steady figure, few enough for a long file. */
+const STATS_PACKETS = 300;
+
+/**
+ * A date a file says it was made, or null when it gives none or one that can't be right. MP4 writes
+ * 0 (1904) or the Unix epoch when the camera's clock was never set, so anything before 1980 is
+ * treated as missing.
+ */
+const plausibleDate = (date: Date | null | undefined): Date | null =>
+  date instanceof Date && !isNaN(date.getTime()) && date.getUTCFullYear() >= 1980 ? date : null;
 
 export class AssetLoader {
   // Limit concurrent thumbnail generations to avoid browser freeze
@@ -95,75 +97,47 @@ export class AssetLoader {
     throw new Error(`Unsupported file type: ${file.type}`);
   }
 
+  /**
+   * Reads what the file says about itself through mediabunny's own API: container, duration, the
+   * date the file was recorded (`creationTime`, or the tagged date), and each track's codec, size,
+   * frame rate, bitrate, sample rate and channels. Until 2026-11-12 this read ffprobe-style names
+   * (`codec_name`, `bit_rate`, `tags.creation_time`) that mediabunny does not have, so most fields
+   * were blank and the date always came from the file's modified time (issue #142).
+   */
   private static async enrichVideoMetadata(asset: Asset, file: File): Promise<void> {
-    let input: IMediabunnyInput | undefined;
+    let input: Input | undefined;
 
     try {
-        const source = new BlobSource(file);
-        // Cast to unknown first to bypass type check against original Input class
-        input = new Input({ source, formats: ALL_FORMATS }) as unknown as IMediabunnyInput;
-
-        let formatData: { duration?: number; tags?: Record<string, string> } | undefined;
-
-        if (input.getFormat) {
-             formatData = await input.getFormat();
-             if (formatData?.duration) asset.duration = formatData.duration;
-
-             // Try to extract creation time from metadata
-             if (formatData?.tags && formatData.tags.creation_time) {
-                 const date = new Date(formatData.tags.creation_time);
-                 if (!isNaN(date.getTime())) {
-                     asset.creationTime = date;
-                     asset.creationTimeSource = 'metadata';
-                 }
-             }
-        }
-
-        // Use computeDuration as fallback or primary if getFormat didn't give duration
-        if (!asset.duration && input.computeDuration) {
-             const duration = await input.computeDuration();
-             if (typeof duration === 'number') asset.duration = duration;
-        }
-
-        const videoTracks = await input.getVideoTracks();
+        input = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
         const videoMetadata: VideoMetadata = {};
 
-        if (videoTracks.length > 0) {
-            const track = videoTracks[0];
-            const w = track.displayWidth || track.width;
-            const h = track.displayHeight || track.height;
+        videoMetadata.format = (await input.getFormat()).name;
 
-            if (w && h) {
-                asset.resolution = { width: w, height: h };
-            }
+        const duration = await input.computeDuration();
+        if (duration > 0) asset.duration = duration;
 
-            // Extract video metadata
-            videoMetadata.videoCodec = track.codec || track.codec_name;
-            videoMetadata.bitrate = track.bitrate || track.bit_rate;
-            videoMetadata.frameRate = track.fps || track.frame_rate || track.framerate;
-
-            if (!videoMetadata.frameRate && track.nb_samples && track.duration && track.timescale) {
-                 // Estimate FPS if not explicitly provided
-                 const durationSec = track.duration / track.timescale;
-                 if (durationSec > 0) {
-                    videoMetadata.frameRate = Math.round((track.nb_samples / durationSec) * 100) / 100;
-                 }
-            }
+        const tags = await input.getMetadataTags();
+        const recorded = plausibleDate(tags.creationTime) ?? plausibleDate(tags.date);
+        if (recorded) {
+            asset.creationTime = recorded;
+            asset.creationTimeSource = 'metadata';
         }
 
-        if (input.getAudioTracks) {
-            const audioTracks = await input.getAudioTracks();
-            if (audioTracks.length > 0) {
-                const track = audioTracks[0];
-                videoMetadata.audioCodec = track.codec || track.codec_name;
-                videoMetadata.sampleRate = track.sample_rate || track.sampleRate;
-                videoMetadata.channels = track.channels || track.number_of_channels || track.numberOfChannels;
-            }
+        const video = await input.getPrimaryVideoTrack();
+        if (video) {
+            const [width, height] = [await video.getDisplayWidth(), await video.getDisplayHeight()];
+            if (width && height) asset.resolution = { width, height };
+            videoMetadata.videoCodec = (await video.getCodec()) ?? undefined;
+            const stats = await video.computePacketStats(STATS_PACKETS);
+            if (stats.averagePacketRate > 0) videoMetadata.frameRate = Math.round(stats.averagePacketRate * 100) / 100;
+            if (stats.averageBitrate > 0) videoMetadata.bitrate = stats.averageBitrate;
         }
 
-        if (formatData?.tags) {
-             // Try to get container format
-             videoMetadata.format = formatData.tags.major_brand || formatData.tags.compatible_brands;
+        const audio = await input.getPrimaryAudioTrack();
+        if (audio) {
+            videoMetadata.audioCodec = (await audio.getCodec()) ?? undefined;
+            videoMetadata.sampleRate = await audio.getSampleRate();
+            videoMetadata.channels = await audio.getNumberOfChannels();
         }
 
         asset.videoMetadata = videoMetadata;
@@ -171,9 +145,7 @@ export class AssetLoader {
     } catch (error) {
         console.warn('Failed to extract video metadata via mediabunny', error);
     } finally {
-        if (input) {
-            input.dispose();
-        }
+        input?.dispose();
     }
 
     // Attempt to extract audio waveform for video files
@@ -208,6 +180,11 @@ export class AssetLoader {
         asset.geoJson = geoJson;
         asset.stats = stats;
         asset.gpxPoints = simplifiedPoints;
+
+        // A GPX file's date is its first timed point: when the recording started (issue #142).
+        const started = plausibleDate(points.length > 0 ? new Date(points[0].time) : null);
+        asset.creationTime = started ?? undefined;
+        asset.creationTimeSource = started ? 'metadata' : 'none';
 
     } catch (e) {
         console.warn("Failed to parse GPX", e);

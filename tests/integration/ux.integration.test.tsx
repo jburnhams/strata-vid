@@ -2,6 +2,7 @@ import { StrataToastRegion } from 'strata-react';
 import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
+import { chooseFiles } from '../utils/files';
 import userEvent from '@testing-library/user-event';
 import App from '../../src/App';
 import { AssetLoader } from '../../src/services/AssetLoader';
@@ -11,6 +12,7 @@ import { useProjectStore } from '../../src/store/useProjectStore';
 jest.mock('../../src/services/AssetLoader', () => ({
   AssetLoader: {
     loadAsset: jest.fn(),
+    loadThumbnail: jest.fn(async () => 'blob:thumb'),
   },
 }));
 
@@ -53,7 +55,8 @@ describe('UX Integration Flow', () => {
                 src: 'blob:url',
                 duration: 10,
                 resolution: { width: 1920, height: 1080 },
-                thumbnail: 'blob:thumb'
+                thumbnail: 'blob:thumb',
+                file: f
             };
         });
 
@@ -61,20 +64,10 @@ describe('UX Integration Flow', () => {
 
         // The input is hidden inside the label. We find the input associated with the label text "+ Add"
         // Wait for it to be ready
-        const fileInput = await screen.findByLabelText('Add Asset');
+        chooseFiles(await screen.findByRole('button', { name: 'Add files' }), [file]);
 
-        await user.upload(fileInput, file);
-
-        // Check for loading overlay
-        expect(await screen.findByText('Loading assets...')).toBeInTheDocument();
-
-        // Wait for loading to finish (overlay disappears)
-        await waitFor(() => {
-            expect(screen.queryByText('Loading assets...')).not.toBeInTheDocument();
-        });
-
-        // Check for success toast
-        expect(await screen.findByText('Loaded 1 asset')).toBeInTheDocument();
+        // The file's own outcome says it was added (no full-screen overlay, no toast)
+        expect(await screen.findByText('Added')).toBeInTheDocument();
 
         // Check asset is in library and thumbnail is shown
         const libraryItem = screen.getAllByText('video.mp4')[0];
@@ -93,12 +86,11 @@ describe('UX Integration Flow', () => {
 
         renderWithStrata(<><App /><StrataToastRegion /></>);
 
-        const fileInput = screen.getByLabelText('Add Asset');
+        chooseFiles(screen.getByRole('button', { name: 'Add files' }), [file]);
 
-        await user.upload(fileInput, file);
-
-        // Wait for error toast
-        // handleError prefers error.message ("Corrupt file") over fallback ("Failed to load...")
-        expect(await screen.findByText('Corrupt file')).toBeInTheDocument();
+        // The failure is named beside the file, with its reason and a retry
+        expect(await screen.findByText('Failed')).toBeInTheDocument();
+        expect(screen.getByText('Corrupt file')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Try again/ })).toBeInTheDocument();
     });
 });

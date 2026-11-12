@@ -6,6 +6,7 @@ import { render, screen, waitFor, act, fireEvent } from '@testing-library/react'
 import App from '../../src/App';
 import { useProjectStore } from '../../src/store/useProjectStore';
 import { AssetLoader } from '../../src/services/AssetLoader';
+import { chooseFiles } from '../utils/files';
 
 // Mock URL.createObjectURL
 global.URL.createObjectURL = jest.fn(() => 'mock-url');
@@ -39,13 +40,6 @@ jest.mock('react-leaflet', () => ({
     GeoJSON: () => <div>GeoJSON</div>,
     useMap: () => ({ fitBounds: jest.fn() }),
 }));
-
-// We need to mock ResizeObserver for the TimelineContainer/Ruler
-global.ResizeObserver = class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-};
 
 describe('Timeline Integration', () => {
   beforeEach(() => {
@@ -84,19 +78,12 @@ describe('Timeline Integration', () => {
   });
 
   it('automatically adds a track and clip when a video is uploaded', async () => {
-    const { container } = renderWithStrata(<App />);
+    renderWithStrata(<App />);
 
-    // 1. Upload a video
-    // Select the library input (accepts video/gpx), not the project load input
-    const input = container.querySelector('input[accept*="video"]') as HTMLInputElement;
+    // 1. Upload a video through the library's file button
     const file = new File(['content'], 'test-video.mp4', { type: 'video/mp4' });
-
-    // Manually trigger change event
     await act(async () => {
-        Object.defineProperty(input, 'files', {
-            value: [file]
-        });
-        fireEvent.change(input);
+        chooseFiles(screen.getByRole('button', { name: 'Add files' }), [file]);
     });
 
     // 2. Wait for asset to be loaded and added to store
@@ -113,7 +100,7 @@ describe('Timeline Integration', () => {
     // 3. Verify Timeline state
     // Check if "Track 1" exists (default label)
     await waitFor(() => {
-        expect(screen.getByText('Track 1')).toBeInTheDocument();
+        expect(screen.getByRole('group', { name: 'Track 1' })).toBeInTheDocument();
     });
 
     // Check if the clip is rendered in the timeline
@@ -122,8 +109,7 @@ describe('Timeline Integration', () => {
         expect(clips.length).toBeGreaterThan(0);
     });
 
-    // Verify Ruler is present
-    const canvas = document.querySelector('canvas');
-    expect(canvas).toBeInTheDocument();
+    // The ruler is the timeline's position slider
+    expect(screen.getByRole('slider', { name: 'Current time' })).toBeInTheDocument();
   });
 });

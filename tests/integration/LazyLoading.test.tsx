@@ -1,6 +1,7 @@
 
 import { renderWithStrata } from 'strata-react/testing';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { chooseFiles } from '../utils/files';
 import React from 'react';
 import App from '../../src/App';
 import { AssetLoader } from '../../src/services/AssetLoader';
@@ -95,9 +96,7 @@ describe('App Integration - Lazy Asset Loading', () => {
         renderWithStrata(<App />);
 
         const file = new File([''], 'video.mp4', { type: 'video/mp4' });
-        const addAssetInput = screen.getByTestId('add-asset-input');
-
-        fireEvent.change(addAssetInput, { target: { files: [file] } });
+        chooseFiles(screen.getByRole('button', { name: 'Add files' }), [file]);
 
         // 1. Verify AssetLoader.loadAsset was called with simplification tolerance
         await waitFor(() => {

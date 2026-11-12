@@ -1,6 +1,11 @@
+/**
+ * The player's controls, from strata-react's media transport (issue #78): the buttons, the time,
+ * a seek bar, the master volume and the playback speed. They take the store's playback state and
+ * report requests, so the store stays the one player; the keys are the editor's commands
+ * (`useEditorCommands`), not a second binding here.
+ */
 import React from 'react';
-import { Play, Pause, Square } from 'lucide-react';
-import { IconButton, Slider, Toolbar } from 'strata-react';
+import { RateChoice, SeekBar, TimeReadout, Transport, VolumeControl } from 'strata-react';
 import { useProjectStore } from '../store/useProjectStore';
 import { AudioEngine } from '../services/AudioEngine';
 
@@ -9,65 +14,46 @@ export const TransportControls: React.FC = () => {
   const currentTime = useProjectStore((state) => state.currentTime);
   const playbackRate = useProjectStore((state) => state.playbackRate);
   const masterVolume = useProjectStore((state) => state.masterVolume);
+  const duration = useProjectStore((state) => state.settings.duration);
+  const fps = useProjectStore((state) => state.settings.fps) || 30;
   const setPlaybackState = useProjectStore((state) => state.setPlaybackState);
 
-  const handlePlay = () => {
-    // Resume audio context on user interaction
-    AudioEngine.getInstance().resumeContext();
-    if (!isPlaying) {
-      setPlaybackState({ isPlaying: true });
-    }
-  };
+  const seek = (time: number) => setPlaybackState({ currentTime: Math.min(duration, Math.max(0, time)) });
 
-  const handlePause = () => {
-    if (isPlaying) {
-      setPlaybackState({ isPlaying: false });
-    }
-  };
-
-  const handleStop = () => {
-    setPlaybackState({ isPlaying: false, currentTime: 0 });
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    const ms = Math.floor((seconds % 1) * 1000);
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(3, '0')}`;
+  const playPause = () => {
+    // Audio can only start from a person's action
+    if (!isPlaying) AudioEngine.getInstance().resumeContext();
+    setPlaybackState({ isPlaying: !isPlaying });
   };
 
   return (
-    <div className="h-12 bg-card border-t border-border flex items-center px-4 gap-4 select-none">
-      <Toolbar label="Playback">
-        <IconButton variant="ghost" icon={Square} label="Stop" onClick={handleStop} />
-        <IconButton
-          variant="ghost"
-          icon={isPlaying ? Pause : Play}
-          label={isPlaying ? 'Pause' : 'Play'}
-          hint="Space"
-          onClick={isPlaying ? handlePause : handlePlay}
-        />
-      </Toolbar>
-
-      {/* Time Display */}
-      <div className="font-mono text-foreground type-body-sm w-28 text-center bg-background/50 py-1 rounded-control tabular-nums" aria-label="Current Time">
-        {formatTime(currentTime)}
-      </div>
-
-      <Slider
-        aria-label="Volume"
-        className="ml-4 w-40"
-        min={0}
-        max={100}
-        unit="%"
-        value={Math.round((masterVolume ?? 1.0) * 100)}
-        onChange={(v) => setPlaybackState({ masterVolume: v / 100 })}
+    <div className="bg-card border-t border-border flex items-center px-4 py-1 gap-4 select-none">
+      <Transport
+        playing={isPlaying}
+        onPlayPause={playPause}
+        onStop={() => setPlaybackState({ isPlaying: false, currentTime: 0 })}
+        onStepBack={() => setPlaybackState({ isPlaying: false, currentTime: Math.max(0, currentTime - 1 / fps) })}
+        onStepForward={() => setPlaybackState({ isPlaying: false, currentTime: Math.min(duration, currentTime + 1 / fps) })}
+      >
+        <TimeReadout time={currentTime} duration={duration} precision="ms" fps={fps} />
+      </Transport>
+      <SeekBar
+        className="flex-1 min-w-0"
+        label="Playhead"
+        time={currentTime}
+        duration={Math.max(duration, 0.001)}
+        precision="ms"
+        fps={fps}
+        step={1}
+        onSeek={seek}
+        disabled={duration <= 0}
       />
-
-      {/* Playback Rate */}
-      <div className="ml-auto flex items-center gap-2 type-caption text-muted-foreground">
-         <span>Rate: {playbackRate}x</span>
-      </div>
+      <VolumeControl
+        className="w-40"
+        volume={Math.round((masterVolume ?? 1.0) * 100)}
+        onVolumeChange={(v) => setPlaybackState({ masterVolume: v / 100 })}
+      />
+      <RateChoice rate={playbackRate} onRateChange={(rate) => setPlaybackState({ playbackRate: rate })} />
     </div>
   );
 };

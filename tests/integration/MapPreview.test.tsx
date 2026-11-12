@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, act, waitFor } from '@testing-library/react';
+import { render, act, waitFor, screen, fireEvent } from '@testing-library/react';
+import { installLayoutShims } from 'strata-react/testing';
 import { PreviewPanel } from '../../src/components/PreviewPanel';
 import { useProjectStore } from '../../src/store/useProjectStore';
 import '@testing-library/jest-dom';
@@ -168,10 +169,11 @@ describe('MapPreview Integration', () => {
              });
         });
 
-        const { findByTitle, findByText, queryByText } = render(<PreviewPanel />);
+        const restore = installLayoutShims({ width: 400, height: 120 });
+        const { findByTitle, queryByRole } = render(<PreviewPanel />);
 
         // Profile should be hidden initially
-        expect(queryByText('Elevation Profile')).not.toBeInTheDocument();
+        expect(queryByRole('heading', { name: 'Elevation profile' })).not.toBeInTheDocument();
 
         // Toggle profile on
         const toggleButton = await findByTitle('Toggle Elevation Profile');
@@ -179,31 +181,15 @@ describe('MapPreview Integration', () => {
             toggleButton.click();
         });
 
-        // Profile should now be visible
-        await findByText('Elevation Profile');
+        // Profile should now be visible, as a chart with a reading a person can move
+        await screen.findByRole('heading', { name: 'Elevation profile' });
+        const reader = screen.getByRole('slider', { name: 'Elevation along test.gpx: read values' });
 
-        // Simulate click on profile to seek
-        const svg = document.querySelector('svg.w-full.h-24'); // Use specific class for profile SVG
-        if (svg) {
-            // Mock the geometry properties for the SVG element in JSDOM
-            Object.defineProperty(svg, 'clientWidth', { value: 200, configurable: true });
-            Object.defineProperty(svg, 'getBoundingClientRect', {
-                value: () => ({ left: 10, top: 10, width: 200, height: 100, right: 210, bottom: 110, x: 10, y: 10, toJSON: () => '' }),
-                configurable: true
-            });
-
-            act(() => {
-                // Simulate a click half-way through the profile (clientX 110 = 50% progress)
-                const clickEvent = new MouseEvent('click', { bubbles: true, clientX: 110 });
-                svg.dispatchEvent(clickEvent);
-            });
-        }
-
-        // Check if the current time has updated
-        // Note: The click handler in ElevationProfile calculates a time ratio.
-        // For a click at 50%, the time should be 50% of the clip duration (10s), so ~5s.
-        // We'll check if it's close to 5.
-        expect(useProjectStore.getState().currentTime).toBeCloseTo(5, 0);
+        // Choosing the last reading (the end of the track) seeks to the end of the clip
+        fireEvent.keyDown(reader, { key: 'End' });
+        fireEvent.keyDown(reader, { key: 'Enter' });
+        expect(useProjectStore.getState().currentTime).toBeCloseTo(10, 3);
+        restore();
     });
 
     it('updates map style when clip properties change', async () => {

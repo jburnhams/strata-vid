@@ -2,39 +2,10 @@ import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import App from '../../src/App';
+import { dragBy, timelineItem } from '../utils/timeline';
 import { useProjectStore } from '../../src/store/useProjectStore';
 
-// Mock Browser APIs
 global.URL.createObjectURL = jest.fn(() => 'mock-url');
-global.ResizeObserver = class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-};
-
-// Capture dnd callbacks
-let capturedOnDragEnd: any;
-
-// Mock dnd-kit
-jest.mock('@dnd-kit/core', () => ({
-  ...jest.requireActual('@dnd-kit/core'),
-  DndContext: ({ children, onDragEnd }: any) => {
-    capturedOnDragEnd = onDragEnd;
-    return <div>{children}</div>;
-  },
-  useDraggable: () => ({
-    attributes: {},
-    listeners: {},
-    setNodeRef: jest.fn(),
-    transform: null,
-    isDragging: false,
-  }),
-  useDroppable: () => ({
-    setNodeRef: jest.fn(),
-    isOver: false,
-  }),
-  DragOverlay: ({ children }: any) => <div>{children}</div>,
-}));
 
 describe('Comprehensive Timeline Editing Integration', () => {
     beforeEach(() => {
@@ -106,47 +77,25 @@ describe('Comprehensive Timeline Editing Integration', () => {
     it('toggles snapping and affects drag behavior', () => {
         renderWithStrata(<App />);
 
-        // 1. Initial State: Snapping ON
-        // Move clip to 0.5s (delta -95px from 10s -> 0.5s)
-        // Should snap to 0s
-        act(() => {
-            capturedOnDragEnd({
-                active: { id: 'clip-1', data: { current: { type: 'Clip' } } },
-                over: { id: 'track-1' },
-                delta: { x: -95, y: 0 }
-            });
-        });
-
+        // Snapping on: dragged to 0.5s, the clip snaps to the playhead at 0s
+        act(() => dragBy(timelineItem('test.mp4'), -95));
         expect(useProjectStore.getState().clips['clip-1'].start).toBe(0);
 
-        // Reset clip position
         act(() => {
             useProjectStore.setState(state => {
                 state.clips['clip-1'].start = 10;
             });
         });
 
-        // 2. Toggle Snapping OFF
-        const snapCheckbox = screen.getByRole('button', { name: 'Snap' });
-        fireEvent.click(snapCheckbox);
-
-        // Move clip to 0.5s again
-        act(() => {
-            capturedOnDragEnd({
-                active: { id: 'clip-1', data: { current: { type: 'Clip' } } },
-                over: { id: 'track-1' },
-                delta: { x: -95, y: 0 }
-            });
-        });
-
-        // Should NOT snap (remain 0.5s)
+        // Snapping off: it stays where it was dropped
+        fireEvent.click(screen.getByRole('button', { name: 'Snap' }));
+        act(() => dragBy(timelineItem('test.mp4'), -95));
         expect(useProjectStore.getState().clips['clip-1'].start).toBe(0.5);
     });
 
     it('toggles overlap permission and affects drag behavior', () => {
         renderWithStrata(<App />);
 
-        // Setup: Add a second clip to collide with
         act(() => {
              useProjectStore.setState(state => {
                  state.clips['clip-2'] = {
@@ -160,44 +109,17 @@ describe('Comprehensive Timeline Editing Integration', () => {
                      type: 'video'
                  };
                  state.tracks['track-1'].clips.push('clip-2');
+                 state.settings.snapToGrid = false;
              });
         });
 
-        // 1. Initial State: Overlap OFF
-        // Move clip-1 (10s) to 27s (overlaps clip-2 starting at 30s)
-        // Delta = (27 - 10) * 10 = 170px
-        act(() => {
-            capturedOnDragEnd({
-                active: { id: 'clip-1', data: { current: { type: 'Clip' } } },
-                over: { id: 'track-1' },
-                delta: { x: 170, y: 0 }
-            });
-        });
+        // Overlaps off: a move onto the next clip (10s to 27s) is refused and says why
+        act(() => dragBy(screen.getAllByRole('button', { name: /^test\.mp4, 0:10/ })[0], 170));
+        expect(useProjectStore.getState().clips['clip-1'].start).toBe(10);
 
-        // Should resolve to 25s (nearest valid spot before 30s)
-        expect(useProjectStore.getState().clips['clip-1'].start).toBe(25);
-
-        // Reset clip-1
-        act(() => {
-            useProjectStore.setState(state => {
-                state.clips['clip-1'].start = 10;
-            });
-        });
-
-        // 2. Toggle Overlap ON
-        const overlapCheckbox = screen.getByRole('button', { name: 'Allow overlaps' });
-        fireEvent.click(overlapCheckbox);
-
-        // Move to 27s again
-        act(() => {
-            capturedOnDragEnd({
-                active: { id: 'clip-1', data: { current: { type: 'Clip' } } },
-                over: { id: 'track-1' },
-                delta: { x: 170, y: 0 }
-            });
-        });
-
-        // Should allow 27s
+        // Overlaps on: the same move is made
+        fireEvent.click(screen.getByRole('button', { name: 'Allow overlaps' }));
+        act(() => dragBy(screen.getAllByRole('button', { name: /^test\.mp4, 0:10/ })[0], 170));
         expect(useProjectStore.getState().clips['clip-1'].start).toBe(27);
     });
 });

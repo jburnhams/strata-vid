@@ -92,32 +92,28 @@ describe('Timeline Editing Integration', () => {
 
     it('can zoom to fit', () => {
         render(<TimelinePanel />);
+        expect(useProjectStore.getState().zoomLevel).toBe(10);
 
-        const zoom = screen.getByRole('slider', { name: 'Zoom' });
-        expect(zoom).toHaveValue('10');
+        fireEvent.click(screen.getByRole('button', { name: 'Fit to view' }));
 
-        const fitBtn = screen.getByRole('button', { name: 'Zoom to fit' });
-        fireEvent.click(fitBtn);
-
-        // Max time = 10+5 = 15. Buffer 10% = 16.5.
-        // Width 1000. Zoom = 1000/16.5 = 60.606...
-        // Round to 61
-
-        expect(zoom).toHaveValue('61');
+        // The clips end at 15s; with 5% room that fills the lanes: this file mocks clientWidth as
+        // 1000, less the 160px track headers, so 840 / 15.75
+        expect(useProjectStore.getState().zoomLevel).toBeCloseTo(840 / 15.75, 3);
     });
 
     it('can delete selected clip via keyboard shortcut', () => {
         render(<TimelinePanel />);
 
         // Click to select
-        const clipElement = screen.getByTestId('clip-item-clip-1');
-        fireEvent.click(clipElement!);
+        const clipElement = screen.getByTestId('clip-item-clip-1').closest('[data-item]')!;
+        fireEvent.pointerDown(clipElement, { button: 0, clientX: 100, clientY: 10 });
+        fireEvent.pointerUp(clipElement, { button: 0, clientX: 100, clientY: 10 });
 
         // Verify selection state in store
         expect(useProjectStore.getState().selectedClipId).toBe('clip-1');
 
-        // Press Delete key
-        fireEvent.keyDown(window, { key: 'Delete' });
+        // Press Delete on the clip
+        fireEvent.keyDown(clipElement, { key: 'Delete' });
 
         // Verify clip is gone
         expect(useProjectStore.getState().clips['clip-1']).toBeUndefined();

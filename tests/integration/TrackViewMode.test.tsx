@@ -1,16 +1,9 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
+import { renderWithStrata } from 'strata-react/testing';
 import { TimelinePanel } from '../../src/components/TimelinePanel';
 import { useProjectStore } from '../../src/store/useProjectStore';
 import type { Track, Clip, Asset } from '../../src/types';
-import { DndContext } from '@dnd-kit/core';
-
-// Mock ResizeObserver
-global.ResizeObserver = class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-};
 
 // Mock AudioEngine
 jest.mock('../../src/services/AudioEngine', () => ({
@@ -92,56 +85,30 @@ describe('Track View Mode Integration', () => {
     return { trackId, clipId, assetId };
   };
 
-  test('toggles track view mode and updates rendering', async () => {
+  test('switches what clips show from the track settings', async () => {
     setupTest();
 
-    render(
-      <DndContext>
-        <TimelinePanel />
-      </DndContext>
-    );
+    renderWithStrata(<TimelinePanel />);
 
-    // Initial State: View Mode is 'frames' (default)
-    // Expect at least one thumbnail
-    const thumbnails = screen.getAllByTestId('clip-thumbnail');
-    expect(thumbnails.length).toBeGreaterThan(0);
-
-    // Check for waveform overlay (should be absent)
+    // Frames by default: thumbnails, no waveform
+    expect(screen.getAllByTestId('clip-thumbnail').length).toBeGreaterThan(0);
     expect(screen.queryByTestId('waveform-overlay')).not.toBeInTheDocument();
 
-    const toggleButton = screen.getByRole('button', { name: 'Show Video Frames Only' });
-    expect(toggleButton).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Video Track settings' }));
+    await screen.findByRole('dialog', { name: 'Video Track settings' });
 
-    // Click to toggle -> 'waveform'
-    fireEvent.click(toggleButton);
-
+    fireEvent.click(screen.getByRole('radio', { name: 'Waveform' }));
     expect(useProjectStore.getState().tracks['track-1'].viewMode).toBe('waveform');
-
-    const toggleButtonWaveform = screen.getByRole('button', { name: 'Show Waveform Only' });
-    expect(toggleButtonWaveform).toBeInTheDocument();
-
     expect(screen.queryByTestId('clip-thumbnail')).not.toBeInTheDocument();
-    const waveforms = screen.getAllByTestId('waveform-overlay');
-    expect(waveforms.length).toBeGreaterThan(0);
+    expect(screen.getAllByTestId('waveform-overlay').length).toBeGreaterThan(0);
 
-    // Click to toggle -> 'both'
-    fireEvent.click(toggleButtonWaveform);
-
+    fireEvent.click(screen.getByRole('radio', { name: 'Both' }));
     expect(useProjectStore.getState().tracks['track-1'].viewMode).toBe('both');
-
-    const toggleButtonBoth = screen.getByRole('button', { name: 'Show Both Video and Waveform' });
-    expect(toggleButtonBoth).toBeInTheDocument();
-
     expect(screen.getAllByTestId('clip-thumbnail').length).toBeGreaterThan(0);
     expect(screen.getAllByTestId('waveform-overlay').length).toBeGreaterThan(0);
 
-    // Click to toggle -> 'frames'
-    fireEvent.click(toggleButtonBoth);
-
+    fireEvent.click(screen.getByRole('radio', { name: 'Frames' }));
     expect(useProjectStore.getState().tracks['track-1'].viewMode).toBe('frames');
-
-    expect(screen.getByRole('button', { name: 'Show Video Frames Only' })).toBeInTheDocument();
-    expect(screen.getAllByTestId('clip-thumbnail').length).toBeGreaterThan(0);
     expect(screen.queryByTestId('waveform-overlay')).not.toBeInTheDocument();
   });
 
@@ -186,16 +153,13 @@ describe('Track View Mode Integration', () => {
     state.addTrack(track);
     state.addClip(clip);
 
-    render(
-      <DndContext>
-        <TimelinePanel />
-      </DndContext>
-    );
+    renderWithStrata(<TimelinePanel />);
 
     const overlays = screen.getAllByTestId('waveform-overlay');
     expect(overlays.length).toBeGreaterThan(0);
 
-    // Should NOT show toggle button in header
-    expect(screen.queryByRole('button', { name: 'Show Video Frames Only' })).not.toBeInTheDocument();
+    // Audio tracks have no choice of what clips show
+    fireEvent.click(screen.getByRole('button', { name: 'Audio Track settings' }));
+    expect(screen.queryByRole('radiogroup', { name: 'Clips show' })).not.toBeInTheDocument();
   });
 });

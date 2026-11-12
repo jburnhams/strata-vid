@@ -1,6 +1,16 @@
-import React, { useState, useMemo, useCallback } from 'react';
+/**
+ * The route's height along its length, on strata-react's LineChart (issue #79): the playhead's
+ * place on the route is the chart's current rule, a reading follows the pointer or the arrow keys,
+ * and choosing a point seeks the clip there. The chart is drawn in real pixels with every reading in
+ * a table for a screen reader, which the hand-drawn SVG (stretched with preserveAspectRatio="none")
+ * had none of.
+ *
+ * Distance maps to clip time the way the old profile did: by the share of the track's own time at
+ * that distance, stretched over the clip.
+ */
+import React, { useMemo, useState } from 'react';
+import { Field, LineChart, NativeSelect, format } from 'strata-react';
 import type { GpxPoint, Asset, ExtraTrack } from '../../types';
-import { useProjectStore } from '../../store/useProjectStore';
 
 interface ElevationProfileProps {
   gpxAssets: (Asset | undefined)[];
@@ -11,128 +21,91 @@ interface ElevationProfileProps {
   clipDuration: number;
 }
 
+type Reading = { dist: number; ele: number; time: number };
+
+/** A distance on the axis: metres under a kilometre, kilometres above. */
+const formatDistance = (m: number) => (m < 1000 ? `${format.integer(m)} m` : `${format.decimal(m / 1000)} km`);
+
+/** Axis ticks at a step a person would write (1, 2, 2.5 or 5 × 10ⁿ metres), about four of them. */
+export const distanceTicks = (total: number): number[] => {
+  if (!(total > 0)) return [0];
+  const rough = total / 4;
+  const mag = 10 ** Math.floor(Math.log10(rough));
+  const step = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((s) => s >= rough) ?? 10 * mag;
+  const ticks: number[] = [];
+  for (let t = 0; t <= total + 1e-9; t += step) ticks.push(Math.round(t * 1000) / 1000);
+  return ticks;
+};
+
+/** Linear interpolation of `to` at `at` along `by`, over readings sorted by `by`. */
+const along = (rows: Reading[], by: 'dist' | 'time', at: number, to: 'dist' | 'time'): number => {
+  if (rows.length === 0) return 0;
+  if (at <= rows[0][by]) return rows[0][to];
+  for (let i = 1; i < rows.length; i++) {
+    const a = rows[i - 1], b = rows[i];
+    if (b[by] >= at) {
+      const span = b[by] - a[by];
+      const r = span > 0 ? (at - a[by]) / span : 0;
+      return a[to] + (b[to] - a[to]) * r;
+    }
+  }
+  return rows[rows.length - 1][to];
+};
+
 const ElevationProfile: React.FC<ElevationProfileProps> = ({ gpxAssets, mainAssetId, extraTracks, onSeek, currentTime, clipDuration }) => {
   const [selectedTrackId, setSelectedTrackId] = useState<string>(mainAssetId);
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; dist: number; ele: number } | null>(null);
+  const selectedAsset = gpxAssets.find(asset => asset?.id === selectedTrackId);
 
-  const selectedAsset = useMemo(() => gpxAssets.find(asset => asset?.id === selectedTrackId), [gpxAssets, selectedTrackId]);
-  const points = useMemo(() => selectedAsset?.gpxPoints || [], [selectedAsset]);
+  const rows = useMemo<Reading[]>(
+    () => (selectedAsset?.gpxPoints || [])
+      .filter((p: GpxPoint) => typeof p.ele === 'number' && typeof p.dist === 'number')
+      .map((p: GpxPoint) => ({ dist: p.dist!, ele: p.ele!, time: p.time })),
+    [selectedAsset],
+  );
 
-  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    const svg = e.currentTarget;
-    const pt = svg.createSVGPoint();
-    pt.x = e.clientX;
-    const cursorPoint = pt.matrixTransform(svg.getScreenCTM()?.inverse());
+  const first = rows[0], last = rows[rows.length - 1];
+  const trackDuration = rows.length > 1 ? last.time - first.time : 0;
 
-    if (points.length > 1) {
-      const totalDistance = points[points.length - 1].dist!;
-      const distanceAtCursor = (cursorPoint.x / svg.clientWidth) * totalDistance;
-
-      let closestPoint = points[0];
-      for (const point of points) {
-        if (point.dist! > distanceAtCursor) break;
-        closestPoint = point;
-      }
-
-      setTooltip({
-        x: cursorPoint.x,
-        y: e.clientY - svg.getBoundingClientRect().top,
-        dist: distanceAtCursor,
-        ele: closestPoint.ele!,
-      });
-    }
-  };
-
-  const handleMouseLeave = () => setTooltip(null);
-
-  const handleClick = (e: React.MouseEvent<SVGSVGElement>) => {
-    const svg = e.currentTarget;
-    const pt = svg.createSVGPoint();
-    pt.x = e.clientX;
-    const cursorPoint = pt.matrixTransform(svg.getScreenCTM()?.inverse());
-
-    if (points.length > 0) {
-      const totalDistance = points[points.length - 1].dist!;
-      const totalDuration = points[points.length - 1].time - points[0].time;
-      const distanceAtCursor = (cursorPoint.x / svg.clientWidth) * totalDistance;
-
-      let timeRatio = 0;
-      for (let i = 1; i < points.length; i++) {
-        if (points[i].dist! >= distanceAtCursor) {
-          const prev = points[i-1];
-          const curr = points[i];
-          const segmentDist = curr.dist! - prev.dist!;
-          const distIntoSegment = distanceAtCursor - prev.dist!;
-          const ratio = segmentDist > 0 ? distIntoSegment / segmentDist : 0;
-          const timeInSegment = (curr.time - prev.time) * ratio;
-          timeRatio = (prev.time + timeInSegment - points[0].time) / totalDuration;
-          break;
-        }
-      }
-      onSeek(timeRatio * clipDuration);
-    }
-  };
-
-  const { pathData, minEle, maxEle } = useMemo(() => {
-    if (points.length < 2) return { pathData: '', minEle: 0, maxEle: 0 };
-
-    const eleValues = points.map((p: GpxPoint) => p.ele).filter((e): e is number => e !== undefined);
-    const min = Math.min(...eleValues);
-    const max = Math.max(...eleValues);
-    const totalDist = points[points.length - 1].dist!;
-
-    const path = points.map((p: GpxPoint, i: number) => {
-      const x = (p.dist! / totalDist) * 100;
-      const y = ((p.ele! - min) / (max - min)) * 100;
-      return `${i === 0 ? 'M' : 'L'} ${x} ${100 - y}`;
-    }).join(' ');
-
-    return { pathData: path, minEle: min, maxEle: max };
-  }, [points]);
+  // Clip time and distance, both ways, through the track's own clock
+  const distanceAt = (t: number) =>
+    trackDuration > 0 && clipDuration > 0 ? along(rows, 'time', first.time + (t / clipDuration) * trackDuration, 'dist') : 0;
+  const timeAt = (d: number) =>
+    trackDuration > 0 ? ((along(rows, 'dist', d, 'time') - first.time) / trackDuration) * clipDuration : 0;
 
   return (
-    <div className="bg-card text-foreground p-2">
-      <div className="flex justify-between items-center mb-2">
-        <h4 className="type-body-sm font-bold">Elevation Profile</h4>
+    <div className="bg-card text-foreground p-2 grid gap-1">
+      <div className="flex justify-between items-center gap-2">
+        <h4 className="type-body-sm font-bold">Elevation profile</h4>
         {extraTracks.length > 0 && (
-          <select
-            value={selectedTrackId}
-            onChange={e => setSelectedTrackId(e.target.value)}
-            className="bg-muted text-foreground type-caption rounded-control p-1"
-          >
-            <option value={mainAssetId}>Main Track</option>
-            {extraTracks.map(track => (
-              <option key={track.assetId} value={track.assetId}>
-                {gpxAssets.find(a => a?.id === track.assetId)?.name || track.assetId}
-              </option>
-            ))}
-          </select>
+          <Field label="Route" className="flex items-center gap-2">
+            <NativeSelect value={selectedTrackId} onChange={e => setSelectedTrackId(e.target.value)}>
+              <option value={mainAssetId}>{gpxAssets.find(a => a?.id === mainAssetId)?.name ?? 'Main route'}</option>
+              {extraTracks.map(track => (
+                <option key={track.assetId} value={track.assetId}>
+                  {gpxAssets.find(a => a?.id === track.assetId)?.name || track.assetId}
+                </option>
+              ))}
+            </NativeSelect>
+          </Field>
         )}
       </div>
-      <svg
-        data-testid="elevation-profile-svg"
-        className="w-full h-24"
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        onClick={handleClick}
-      >
-        <path d={pathData} fill="rgba(107, 114, 128, 0.5)" stroke="#6b7280" strokeWidth="0.5"/>
-        {tooltip && (
-          <line x1={tooltip.x} y1="0" x2={tooltip.x} y2="100" stroke="rgba(250, 204, 21, 0.7)" strokeWidth="0.5" />
-        )}
-      </svg>
-      {tooltip && (
-        <div className="type-caption absolute" style={{ left: tooltip.x, top: tooltip.y - 30 }}>
-            Dist: {tooltip.dist.toFixed(0)}m, Ele: {tooltip.ele.toFixed(0)}m
-        </div>
+      {rows.length < 2 ? (
+        <p className="type-caption text-muted-foreground">This route has no heights to draw.</p>
+      ) : (
+        <LineChart
+          label={`Elevation along ${selectedAsset?.name ?? 'the route'}`}
+          series={rows.map(r => ({ x: r.dist, y: r.ele }))}
+          seriesLabel="Elevation"
+          formatX={formatDistance}
+          formatY={(m) => `${format.integer(m)} m`}
+          xTicks={distanceTicks(last.dist)}
+          current={distanceAt(currentTime)}
+          readout
+          onPick={(d) => onSeek(timeAt(d))}
+          area
+          height={88}
+        />
       )}
-      <div className="flex justify-between type-caption text-muted-foreground mt-1">
-        <span>{minEle.toFixed(0)}m</span>
-        <span>{((points[points.length - 1]?.dist ?? 0) / 2).toFixed(0)}m</span>
-        <span>{maxEle.toFixed(0)}m</span>
-      </div>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, fireEvent, act } from '@testing-library/react';
+import { render, fireEvent, act, screen } from '@testing-library/react';
 import { TimelinePanel } from '../../src/components/TimelinePanel';
 import { useProjectStore } from '../../src/store/useProjectStore';
 import { AudioEngine } from '../../src/services/AudioEngine';
@@ -83,7 +83,9 @@ describe('Audio Control Integration', () => {
         expect(trackGain.gain.value).toBe(1.0);
 
         // 4. Change Volume in UI (Input is in %, e.g. 100)
-        const volumeInput = getByRole('textbox', { name: 'Track volume' });
+        // Volume lives in the track's settings popover
+        fireEvent.click(getByRole('button', { name: 'Video Track settings' }));
+        const volumeInput = await screen.findByRole('textbox', { name: 'Track volume' });
 
         await act(async () => {
             fireEvent.change(volumeInput, { target: { value: '50' } });
@@ -120,7 +122,7 @@ describe('Audio Control Integration', () => {
         expect(trackGain.gain.value).toBe(1.0);
 
         // 4. Click Mute
-        const muteButton = getByRole('button', { name: 'Mute' });
+        const muteButton = getByRole('button', { name: 'Mute Video Track' });
         await act(async () => {
             fireEvent.click(muteButton);
         });
@@ -132,7 +134,7 @@ describe('Audio Control Integration', () => {
         expect(trackGain.gain.value).toBe(0);
 
         // 7. Unmute
-        const unmuteButton = getByRole('button', { name: 'Mute' });
+        const unmuteButton = getByRole('button', { name: 'Mute Video Track' });
         expect(unmuteButton).toHaveAttribute('aria-pressed', 'true');
         await act(async () => {
             fireEvent.click(unmuteButton);

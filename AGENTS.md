@@ -15,5 +15,6 @@
 
 - Every change adds an entry to `CHANGELOG.md` in the same PR (format at the top of that file).
 - Adding, removing, replacing or major-pinning a dependency is Jonathan's decision: ask first.
+- Update `docs/FEATURES.md` when a feature is added or its status changes.
 - The UI is moving onto strata-react. Read `docs/PORT.md` before building a UI part here; a missing
   part is a strata-react issue, and app bugs wait until the port is done.

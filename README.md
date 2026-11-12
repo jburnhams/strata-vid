@@ -25,7 +25,7 @@ port stands and what it is waiting on: [docs/PORT.md](docs/PORT.md). What change
   "Add to timeline"; move, trim and change lane with the pointer or the keyboard, snapping on or off;
   a move that would overlap another clip or touch a locked track is refused with its reason; zoom,
   mute and lock, per-track volume and view in a settings popover, markers, crossfade transitions,
-  split, playback rate, and keyframes for a clip's properties.
+  split, duplicate, ripple delete, and keyframes for a clip's properties.
 - **Preview**: the clips under the playhead composed live: video, images, text, a Leaflet map of the
   GPX track with a moving marker (several tracks, a speed or elevation heatmap, an elevation profile),
   and a data overlay (speed, distance, elevation in chosen units). Transport, seek bar, volume and
@@ -39,10 +39,11 @@ port stands and what it is waiting on: [docs/PORT.md](docs/PORT.md). What change
 - **Commands**: every action has a shortcut and appears in the command menu and the Edit menu; the
   shortcuts dialog (the keyboard button) lists them.
 
-Known gaps: library files cannot be dragged onto the timeline (waiting on strata-react #121); HTML clips have a type but are not rendered; no ripple
-editing, track reordering or multi-select on the timeline; no layout for narrow screens; nothing
-shared or cloud-stored (out of scope). Export was verified by its tests, not by a recorded run in a
-browser.
+Every planned feature, done or not, is in [docs/FEATURES.md](docs/FEATURES.md) under its old roadmap
+ID. The main gaps: library files cannot be dragged onto the timeline (waiting on strata-react #121);
+clip speed and video filters render but have no control; HTML clips are not rendered; no ripple move,
+track reordering or multi-select; no layout for narrow screens; no sharing or cloud storage. Export is
+covered by tests but has not been checked by hand in a browser.
 
 ## Running it
 

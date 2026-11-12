@@ -45,10 +45,8 @@ no longer imported; removing it from `package.json` is Jonathan's call.
 
 ## After the port
 
-The app's own work starts once the tables above are empty: the known gaps in the
-[README](../README.md#what-it-does), the bug above, and anything the port turned up. The old section
-task lists (A–M) were removed in the docs cleanup; they are in git history before that commit if a
-past plan is needed.
+The app's own work starts once the table above is empty: the open rows in
+[FEATURES.md](FEATURES.md), the bug above, and anything the port turned up.
 
 ## Testing notes
 

@@ -23,10 +23,15 @@ files and its links were broken.
   an offset in seconds; `Compositor.ts` is used only by its tests.
 - `docs/PORT.md`: **new**. Where the move onto strata-react stands: what is in use (including what
   PR #138 swapped in, #75–#79), and what waits on strata-react (#68, #80, #81, #116, #117, #121, #122).
+- `docs/FEATURES.md`: **new**, added after Jonathan asked that the removed sections be kept as a record.
+  One row per planned feature under its old ID (A2…M9, L1–L5) with its status checked against the code.
+  **Corrections** to the old section files: H5 speed and H7 filters are partial (rendered, no control
+  sets them), H8 keyframes is done, G6 dark mode is done (by #137), J6 frame dropping has no code that
+  names it, and Section I's open items were done under M.
 - `CHANGELOG.md`: **new**, seeded with PR #137 below.
 - `AGENTS.md`: adds the changelog, dependency and port rules.
 - Removed: `docs/IMPLEMENTATION.md`, `docs/QUICKSTART.md`, `docs/complete/` and `docs/sections/` (the
-  A–M task lists, finished work recorded as ticked boxes), and the app template's leftovers
+  A–M task lists; their features and status are now `docs/FEATURES.md`), and the app template's leftovers
   `QUICK_START.md`, `TEMPLATE_CUSTOMIZATION.md` and `.env.example` (the app reads no environment variables).
   All are in git history.
 - `.node-version`: 20 → 26, to match `.nvmrc` and `engines`.

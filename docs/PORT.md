@@ -6,8 +6,7 @@ it; only then fix this app's own problems. So while the port runs:
 
 - A missing UI part is a **strata-react issue**, written as a generic component family with Strata Vid
   as one consumer, not a component built here.
-- App bugs found on the way are noted, not fixed (one known: an audio asset shows the map icon in the
-  library).
+- App bugs found on the way are noted here, and filed once the visual tests found more (below).
 - When a strata-react release closes an issue below, the matching code here is swapped for it in a
   strata-vid PR, and this page and the [CHANGELOG](../CHANGELOG.md) are updated.
 
@@ -48,13 +47,9 @@ no longer imported; removing it from `package.json` is Jonathan's call.
 Found while writing the visual tests (2026-11-12), with the media in `tests/fixtures/media`, and filed
 as issues #141 to #145. Each is struck from this list in the PR that fixes it. Fixed so far: export
 never rendering a frame and always dropping the sound (#141); MP4 details and dates, and GPX dates, not
-read (#142).
+read (#142); the library's race order, "Add to timeline" selecting the file and stacking everything
+on the video track, rows that were buttons holding buttons, and the audio file's map icon (#143).
 
-- **Files added together are listed in a race order**: the library lists them as they finish loading.
-- **"Add to timeline" also selects the file** (the click reaches the row), and it puts audio and GPX on
-  the video track, end to end after the clips.
-- **Library rows are buttons containing buttons**: a row's accessible name includes its "Add … to
-  timeline" and "Remove …" buttons, so each of those names matches two elements.
 - **Sync panel**: the sync offset input has no label (only a placeholder, "Epoch ms at Video 0s"), and its
   dates are written `03/05/2026, 07:41:08` where the inspector writes `3 May 2026, 07:43`.
 - **Elevation profile disagrees with itself**: with the playhead on the route clip it marks 2.6 km (373 m)

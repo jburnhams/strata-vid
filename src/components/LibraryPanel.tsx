@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Asset } from '../types';
 import { FileButton, FileDropZone, FileOutcomes, IconButton, MissingFile, Button, useFileIntake } from 'strata-react';
-import { Trash2, FileVideo, Map, Plus, PlusCircle } from 'lucide-react';
+import { Trash2, FileAudio, FileImage, FileVideo, Map, Plus, PlusCircle } from 'lucide-react';
 
 interface LibraryPanelProps {
   assets: Asset[];
@@ -20,6 +20,14 @@ const acceptFor = (type: Asset['type']): string[] =>
 const ACCEPT = ['video/*', 'audio/*', '.gpx'];
 const ACCEPT_LABEL = 'a video, an audio file or a GPX track';
 
+const KIND_ICON = { video: FileVideo, audio: FileAudio, image: FileImage, gpx: Map } as const;
+
+/**
+ * A library row. The part that selects the file is its own button, and the row's actions ("Add …
+ * to timeline", "Remove …") are its siblings, not inside it (issue #143): until 2026-11-12 the row
+ * was a `role="button"` holding both, so pressing an action also selected the file and each
+ * action's name was part of the row's. The actions show on hover and whenever focus is in the row.
+ */
 const LibraryAssetItem: React.FC<{
   asset: Asset;
   selectedAssetId: string | null;
@@ -29,56 +37,59 @@ const LibraryAssetItem: React.FC<{
   onAddToTimeline?: (id: string) => void;
 }> = ({ asset, selectedAssetId, onSelect, onRemove, onUpdate, onAddToTimeline }) => {
   const isMissing = !asset.file;
+  const selected = asset.id === selectedAssetId;
+  const KindIcon = KIND_ICON[asset.type] ?? FileVideo;
+  const kindBorder = asset.type === 'video' ? 'border-media-video' : asset.type === 'audio' ? 'border-media-audio' : 'border-media-map';
+  const kindDot = asset.type === 'video' ? 'bg-media-video' : asset.type === 'audio' ? 'bg-media-audio' : 'bg-media-map';
+  const kindWord = asset.type === 'video' ? 'Video' : asset.type === 'audio' ? 'Audio' : asset.type === 'image' ? 'Image' : 'GPX';
+
+  const details = (
+    <div className="type-caption text-muted-foreground mt-0.5">
+      <span className={`inline-block w-2 h-2 rounded-pill mr-1 ${kindDot}`}></span>
+      {kindWord}
+      {asset.duration ? ` • ${Math.round(asset.duration)}s` : ''}
+    </div>
+  );
 
   return (
     <li
-      onClick={() => onSelect(asset.id)}
-      className={`p-2 cursor-pointer rounded-control flex gap-3 items-center transition-state group relative ${
-        asset.id === selectedAssetId ? 'bg-muted' : 'hover:bg-card/50'
-      } border-l-4 ${asset.type === 'video' ? 'border-media-video' : asset.type === 'audio' ? 'border-media-audio' : 'border-media-map'}`}
-      role="button"
-      aria-selected={asset.id === selectedAssetId}
-      tabIndex={0}
-      onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-              onSelect(asset.id);
-          }
-      }}
+      className={`rounded-control flex items-center transition-state group relative border-l-4 ${kindBorder} ${
+        selected ? 'bg-muted' : 'hover:bg-card/50'
+      }`}
       data-testid={`asset-item-${asset.id}`}
     >
-      {/* A missing file gives its room to the name, the status and Relink (strata's MissingFile has no stacked layout) */}
-      {isMissing ? null : asset.thumbnail ? (
-        <div className="w-16 h-10 bg-footage rounded-control overflow-hidden flex-shrink-0 relative">
-            <img
-              src={asset.thumbnail}
-              alt={`Thumbnail for ${asset.name}`}
-              className="w-full h-full object-cover"
-            />
+      {isMissing ? (
+        // A missing file gives its room to the name, the status and Relink (strata's MissingFile has no stacked layout)
+        <div className="flex-1 min-w-0 p-2">
+          <MissingFile name={asset.name} accept={acceptFor(asset.type)} onRelink={(file) => onUpdate(asset.id, file)} />
+          {details}
         </div>
       ) : (
-        <div className="w-16 h-10 bg-background rounded-control flex items-center justify-center flex-shrink-0 text-muted-foreground">
-            {asset.type === 'video' ? <FileVideo size={20} /> : <Map size={20} />}
-        </div>
+        <button
+          type="button"
+          className="flex-1 min-w-0 p-2 flex gap-3 items-center text-left cursor-pointer rounded-control"
+          aria-current={selected ? 'true' : undefined}
+          onClick={() => onSelect(asset.id)}
+        >
+          {asset.thumbnail ? (
+            <div className="w-16 h-10 bg-footage rounded-control overflow-hidden flex-shrink-0 relative">
+              <img src={asset.thumbnail} alt={`Thumbnail for ${asset.name}`} className="w-full h-full object-cover" />
+            </div>
+          ) : (
+            <div className="w-16 h-10 bg-background rounded-control flex items-center justify-center flex-shrink-0 text-muted-foreground">
+              <KindIcon size={20} aria-hidden />
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="font-medium type-body-sm text-foreground truncate" title={asset.name}>
+              {asset.name}
+            </div>
+            {details}
+          </div>
+        </button>
       )}
 
-      <div className="flex-1 min-w-0">
-        {isMissing ? (
-          <div onClick={(e) => { if ((e.target as HTMLElement).closest('button')) e.stopPropagation(); }}>
-            <MissingFile name={asset.name} accept={acceptFor(asset.type)} onRelink={(file) => onUpdate(asset.id, file)} />
-          </div>
-        ) : (
-          <div className="font-medium type-body-sm text-foreground truncate" title={asset.name}>
-            {asset.name}
-          </div>
-        )}
-        <div className="type-caption text-muted-foreground mt-0.5">
-          <span className={`inline-block w-2 h-2 rounded-pill mr-1 ${asset.type === 'video' ? 'bg-media-video' : asset.type === 'audio' ? 'bg-media-audio' : 'bg-media-map'}`}></span>
-          {asset.type === 'video' ? 'Video' : asset.type === 'audio' ? 'Audio' : 'GPX'}
-          {asset.duration ? ` • ${Math.round(asset.duration)}s` : ''}
-        </div>
-      </div>
-
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute right-2 bg-card/90 rounded-control p-1 shadow-overlay">
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity absolute right-2 bg-card/90 rounded-control p-1 shadow-overlay">
         {onAddToTimeline && (
             <IconButton
                 variant="ghost"
@@ -98,6 +109,9 @@ const LibraryAssetItem: React.FC<{
     </li>
   );
 };
+
+/** The order files were added in; files from before that was recorded keep their stored order, first. */
+const byImportOrder = (a: Asset, b: Asset) => (a.importOrder ?? 0) - (b.importOrder ?? 0);
 
 export const LibraryPanel: React.FC<LibraryPanelProps> = ({
   assets,
@@ -129,7 +143,7 @@ export const LibraryPanel: React.FC<LibraryPanelProps> = ({
       <div className="flex-1 overflow-y-auto p-2 grid grid-cols-1 content-start gap-2">
         {assets.length > 0 && (
           <ul className="space-y-1">
-            {assets.map(asset => (
+            {[...assets].sort(byImportOrder).map(asset => (
               <LibraryAssetItem
                   key={asset.id}
                   asset={asset}

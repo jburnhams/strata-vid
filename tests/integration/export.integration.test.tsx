@@ -110,9 +110,11 @@ describe('Export Integration Flow', () => {
              expect(screen.getByText('Exported')).toBeInTheDocument();
         }, { timeout: 5000 });
 
-        // Since audio is generated in worker, we don't expect transferable arrays anymore
+        // jsdom has no OfflineAudioContext, so the sound cannot be mixed: the worker is told, and the
+        // finished export says it has no sound (the mixing itself is in exportWithAudio's test).
         expect(mockWorker.postMessage).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'start' })
+            expect.objectContaining({ type: 'start', payload: expect.objectContaining({ audioData: null, audioNote: expect.stringMatching(/^Saved without sound/) }) }),
+            [],
         );
     });
 });

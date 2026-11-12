@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { ExportModal } from '../../src/components/ExportModal';
 import { useProjectStore } from '../../src/store/useProjectStore';
-import { Asset, Clip, Track } from '../../src/types';
+import type { Asset, Clip, Track } from '../../src/types';
 import { createExportWorker } from '../../src/utils/workerUtils';
 import { AudioCompositor } from '../../src/services/AudioCompositor';
 

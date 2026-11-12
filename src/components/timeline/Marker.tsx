@@ -1,5 +1,5 @@
 import React from 'react';
-import { Marker as MarkerType } from '../../types';
+import type { Marker as MarkerType } from '../../types';
 
 interface MarkerProps {
   marker: MarkerType;

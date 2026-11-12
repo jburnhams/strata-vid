@@ -1,5 +1,5 @@
-import { StateCreator } from 'zustand';
-import { PlaybackSlice, StoreState } from '../types';
+import type { StateCreator } from 'zustand';
+import type { PlaybackSlice, StoreState } from '../types';
 
 export const createPlaybackSlice: StateCreator<
   StoreState,

@@ -1,6 +1,6 @@
 
 import { WorkerCompositor } from '../../../src/services/WorkerCompositor';
-import { Asset, Clip, ProjectSettings, Track } from '../../../src/types';
+import type { Asset, Clip, ProjectSettings, Track } from '../../../src/types';
 import { Input, CanvasSink } from 'mediabunny';
 
 // Mock mediabunny

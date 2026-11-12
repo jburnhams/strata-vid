@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
-import { MapPanel, MapTrackData } from '../MapPanel';
+import { MapPanel, type MapTrackData } from '../MapPanel';
 import DataOverlay from './DataOverlay';
 import ElevationProfile from './ElevationProfile';
-import { Clip, Asset, OverlayProperties, GpxPoint } from '../../types';
+import type { Clip, Asset, OverlayProperties, GpxPoint } from '../../types';
 import { interpolateValue } from '../../utils/animationUtils';
 import { getCoordinateAtTime } from '../../utils/gpxParser';
 

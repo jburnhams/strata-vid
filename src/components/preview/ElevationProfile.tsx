@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { GpxPoint, Asset, ExtraTrack } from '../../types';
+import type { GpxPoint, Asset, ExtraTrack } from '../../types';
 import { useProjectStore } from '../../store/useProjectStore';
 
 interface ElevationProfileProps {

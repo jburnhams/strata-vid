@@ -2,7 +2,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { createPlaybackSlice } from '../../../src/store/slices/playbackSlice';
-import { StoreState } from '../../../src/store/types';
+import type { StoreState } from '../../../src/store/types';
 
 describe('playbackSlice', () => {
   const useTestStore = create<StoreState>()(

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Track, Clip, Asset } from '../../types';
+import type { Track, Clip, Asset } from '../../types';
 import { useDroppable } from '@dnd-kit/core';
 import { ClipItem } from './ClipItem';
 

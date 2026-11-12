@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { TrackHeader } from '../../../../src/components/timeline/TrackHeader';
-import { Track } from '../../../../src/types';
+import type { Track } from '../../../../src/types';
 
 const mockTrack: Track = {
   id: 'track-1',

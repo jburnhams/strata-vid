@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Asset, DataOverlayOptions, ProjectSettings } from '../types';
+import type { Asset, DataOverlayOptions, ProjectSettings } from '../types';
 import { useProjectStore } from '../store/useProjectStore';
 import { MapSyncControl } from './MapSyncControl';
 import { KeyframeList } from './KeyframeList';

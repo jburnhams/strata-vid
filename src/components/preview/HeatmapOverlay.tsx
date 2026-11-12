@@ -2,7 +2,7 @@
 import { useEffect, useMemo } from 'react';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { GpxPoint } from '../../types';
+import type { GpxPoint } from '../../types';
 import { haversineDistance } from '../../utils/gpxParser';
 import { getColor } from '../../utils/color';
 

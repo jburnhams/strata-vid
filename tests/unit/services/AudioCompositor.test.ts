@@ -1,5 +1,5 @@
 import { AudioCompositor } from '../../../src/services/AudioCompositor';
-import { ProjectState } from '../../../src/types';
+import type { ProjectState } from '../../../src/types';
 import { readFileToArrayBuffer } from '../../../src/utils/audioUtils';
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
 

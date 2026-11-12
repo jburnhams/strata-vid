@@ -3,7 +3,7 @@ import React from 'react';
 import { render, fireEvent, screen } from '@testing-library/react';
 import { MetadataPanel } from '../../../src/components/MetadataPanel';
 import { useProjectStore } from '../../../src/store/useProjectStore';
-import { Asset, Clip, ProjectSettings } from '../../../src/types';
+import type { Asset, Clip, ProjectSettings } from '../../../src/types';
 
 // Mock the zustand store
 jest.mock('../../../src/store/useProjectStore');

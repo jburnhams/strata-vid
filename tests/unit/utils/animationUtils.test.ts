@@ -1,5 +1,5 @@
 import { interpolateValue } from '../../../src/utils/animationUtils';
-import { Keyframe } from '../../../src/types';
+import type { Keyframe } from '../../../src/types';
 
 describe('interpolateValue', () => {
   const keyframes: Keyframe[] = [

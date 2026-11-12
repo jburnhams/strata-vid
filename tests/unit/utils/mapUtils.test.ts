@@ -1,5 +1,5 @@
 import { getGpxPositionAtTime, lat2tile, lon2tile, tile2lat, tile2lon, getTileUrl } from '../../../src/utils/mapUtils';
-import { Feature, LineString } from 'geojson';
+import type { Feature, LineString } from 'geojson';
 
 describe('mapUtils', () => {
   describe('Coordinate conversions', () => {

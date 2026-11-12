@@ -1,5 +1,5 @@
-import { ExportManager, ExportSettings } from '../../../src/services/ExportManager';
-import { ProjectSettings } from '../../../src/types';
+import { ExportManager, type ExportSettings } from '../../../src/services/ExportManager';
+import type { ProjectSettings } from '../../../src/types';
 import { createExportWorker } from '../../../src/utils/workerUtils';
 import { AudioCompositor } from '../../../src/services/AudioCompositor';
 

@@ -3,7 +3,7 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../../src/App';
 import { AssetLoader } from '../../src/services/AssetLoader';
-import { Asset } from '../../src/types';
+import type { Asset } from '../../src/types';
 
 // Mock dependencies
 jest.mock('../../src/services/AssetLoader');

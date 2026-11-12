@@ -1,4 +1,4 @@
-import { Feature, Geometry, LineString } from 'geojson';
+import type { Feature, Geometry, LineString } from 'geojson';
 
 export const TILE_SIZE = 256;
 

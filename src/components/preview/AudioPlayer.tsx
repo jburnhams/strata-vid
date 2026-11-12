@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Clip, Asset } from '../../types';
+import type { Clip, Asset } from '../../types';
 import { AudioEngine } from '../../services/AudioEngine';
 
 /**

@@ -4,7 +4,7 @@ import { render, screen, act } from '@testing-library/react';
 import { MapPanel } from '../../../src/components/MapPanel';
 import { MapSyncControl } from '../../../src/components/MapSyncControl';
 import { useProjectStore } from '../../../src/store/useProjectStore';
-import { GpxPoint, Asset, Clip } from '../../../src/types';
+import type { GpxPoint, Asset, Clip } from '../../../src/types';
 import '@testing-library/jest-dom';
 
 // Import fireEvent for the test

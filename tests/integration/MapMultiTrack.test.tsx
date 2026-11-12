@@ -3,7 +3,7 @@ import { render, act } from '@testing-library/react';
 import { PreviewPanel } from '../../src/components/PreviewPanel';
 import { useProjectStore } from '../../src/store/useProjectStore';
 import '@testing-library/jest-dom';
-import { Asset, Clip, Track } from '../../src/types';
+import type { Asset, Clip, Track } from '../../src/types';
 
 // Mock usePlaybackLoop
 jest.mock('../../src/hooks/usePlaybackLoop', () => ({

@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, GeoJSON as LeafletGeoJSON, useMap } from 'react-leaflet';
-import { LatLngExpression, GeoJSON as LGeoJSON } from 'leaflet';
+import { type LatLngExpression, GeoJSON as LGeoJSON } from 'leaflet';
 import L from 'leaflet';
 import ElevationProfile from './preview/ElevationProfile';
 import HeatmapOverlay from './preview/HeatmapOverlay';
-import { FeatureCollection, Geometry, GeoJsonProperties } from 'geojson';
-import { GpxPoint, TrackStyle, MarkerStyle, Asset, ExtraTrack } from '../types';
+import type { FeatureCollection, Geometry, GeoJsonProperties } from 'geojson';
+import type { GpxPoint, TrackStyle, MarkerStyle, Asset, ExtraTrack } from '../types';
 import { getCoordinateAtTime } from '../utils/gpxParser';
 
 // Fix for default marker icon

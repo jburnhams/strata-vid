@@ -1,5 +1,5 @@
 import React from 'react';
-import { Track, TrackViewMode } from '../../types';
+import type { Track, TrackViewMode } from '../../types';
 import { Volume2, VolumeX, Lock, Unlock, Trash2, Film, AudioWaveform, Layers } from 'lucide-react';
 
 interface TrackHeaderProps {

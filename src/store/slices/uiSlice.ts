@@ -1,5 +1,5 @@
-import { StateCreator } from 'zustand';
-import { UiSlice, StoreState } from '../types';
+import type { StateCreator } from 'zustand';
+import type { UiSlice, StoreState } from '../types';
 
 export const createUiSlice: StateCreator<
   StoreState,

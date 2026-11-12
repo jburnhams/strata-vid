@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useProjectStore } from '../store/useProjectStore';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
-import { Toast as ToastType } from '../store/types';
+import type { Toast as ToastType } from '../store/types';
 
 const ToastItem: React.FC<{ toast: ToastType; onDismiss: (id: string) => void }> = ({ toast, onDismiss }) => {
   useEffect(() => {

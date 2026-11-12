@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ExportManager, ExportProgress, ExportSettings } from '../services/ExportManager';
+import { ExportManager, type ExportProgress, type ExportSettings } from '../services/ExportManager';
 import { useProjectStore } from '../store/useProjectStore';
 import { Download, Settings, AlertCircle, CheckCircle, XCircle, X, ChevronDown, ChevronRight } from 'lucide-react';
 

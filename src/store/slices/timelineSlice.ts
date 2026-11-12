@@ -1,6 +1,6 @@
-import { StateCreator } from 'zustand';
-import { TimelineSlice, StoreState } from '../types';
-import { Clip } from '../../types';
+import type { StateCreator } from 'zustand';
+import type { TimelineSlice, StoreState } from '../types';
+import type { Clip } from '../../types';
 import { checkCollision } from '../../utils/timelineUtils';
 
 export const createTimelineSlice: StateCreator<

@@ -1,7 +1,7 @@
 
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import { useProjectStore } from '../../../src/store/useProjectStore';
-import { Marker } from '../../../src/types';
+import type { Marker } from '../../../src/types';
 
 // Helper to reset store
 const resetStore = () => {

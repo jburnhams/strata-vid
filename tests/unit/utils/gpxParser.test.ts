@@ -1,5 +1,5 @@
 import { parseGpxFile, simplifyTrack, getCoordinateAtTime, haversineDistance } from '../../../src/utils/gpxParser';
-import { GpxPoint } from '../../../src/types';
+import type { GpxPoint } from '../../../src/types';
 
 describe('gpxParser', () => {
   describe('parseGpxFile', () => {

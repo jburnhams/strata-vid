@@ -1,6 +1,6 @@
-import { Asset, Clip, ProjectSettings, Track, TextStyle, TrackStyle, MarkerStyle, OverlayProperties } from '../types';
+import type { Asset, Clip, ProjectSettings, Track, TextStyle, TrackStyle, MarkerStyle, OverlayProperties } from '../types';
 import { getGpxPositionAtTime, lat2tile, lon2tile, getTileUrl, TILE_SIZE } from '../utils/mapUtils';
-import { Feature, LineString } from 'geojson';
+import type { Feature, LineString } from 'geojson';
 import { interpolateValue } from '../utils/animationUtils';
 import { calculateObjectFit } from '../utils/layoutUtils';
 

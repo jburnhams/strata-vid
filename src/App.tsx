@@ -6,7 +6,7 @@ import { TimelinePanel } from './components/TimelinePanel';
 import { ProjectMenu } from './components/ProjectMenu';
 import { EditMenu } from './components/EditMenu';
 import { useProjectStore } from './store/useProjectStore';
-import { Asset, Track, Clip } from './types';
+import type { Asset, Track, Clip } from './types';
 import { AssetLoader } from './services/AssetLoader';
 import { ExportModal } from './components/ExportModal';
 import { HelpModal } from './components/HelpModal';
@@ -18,19 +18,7 @@ import { handleError, showSuccess } from './utils/errorHandler';
 import { Tooltip } from './components/Tooltip';
 import { useAutoSave } from './hooks/useAutoSave';
 import { HelpCircle } from 'lucide-react';
-import {
-  DndContext,
-  DragOverlay,
-  useSensors,
-  useSensor,
-  PointerSensor,
-  DragStartEvent,
-  DragEndEvent,
-  DragMoveEvent,
-  defaultDropAnimationSideEffects,
-  DropAnimation,
-  pointerWithin
-} from '@dnd-kit/core';
+import { DndContext, DragOverlay, useSensors, useSensor, PointerSensor, type DragStartEvent, type DragEndEvent, type DragMoveEvent, defaultDropAnimationSideEffects, type DropAnimation, pointerWithin } from '@dnd-kit/core';
 import { ClipItem } from './components/timeline/ClipItem';
 import {
   checkCollision,

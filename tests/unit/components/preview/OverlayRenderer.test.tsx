@@ -2,7 +2,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { OverlayRenderer } from '../../../../src/components/preview/OverlayRenderer';
-import { Clip, Asset } from '../../../../src/types';
+import type { Clip, Asset } from '../../../../src/types';
 
 // Mock child components
 const mockMapPanel = jest.fn();

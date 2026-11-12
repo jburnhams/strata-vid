@@ -1,4 +1,4 @@
-import { Clip } from '../types';
+import type { Clip } from '../types';
 
 /**
  * Checks if a clip with the given time range overlaps with any other clips on the track.

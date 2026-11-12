@@ -5,7 +5,7 @@ import { AudioPlayer } from './preview/AudioPlayer';
 import { OverlayRenderer } from './preview/OverlayRenderer';
 import { TransportControls } from './TransportControls';
 import { usePlaybackLoop } from '../hooks/usePlaybackLoop';
-import { Clip, ProjectSettings } from '../types';
+import type { Clip, ProjectSettings } from '../types';
 import { SafeAreaGuides } from './preview/SafeAreaGuides';
 import { AudioEngine } from '../services/AudioEngine';
 

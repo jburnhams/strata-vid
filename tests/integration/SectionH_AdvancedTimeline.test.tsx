@@ -3,7 +3,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import App from '../../src/App';
 import { useProjectStore } from '../../src/store/useProjectStore';
-import { Clip, Track } from '../../src/types';
+import type { Clip, Track } from '../../src/types';
 
 // Mock map
 jest.mock('../../src/components/MapPanel', () => ({

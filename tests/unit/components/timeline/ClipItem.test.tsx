@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ClipItem } from '../../../../src/components/timeline/ClipItem';
-import { Clip, Asset } from '../../../../src/types';
+import type { Clip, Asset } from '../../../../src/types';
 
 // Mock dnd-kit
 jest.mock('@dnd-kit/core', () => ({

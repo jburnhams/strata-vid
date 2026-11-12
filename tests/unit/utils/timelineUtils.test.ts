@@ -1,6 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
 import { checkCollision, getSnapPoints, findNearestSnapPoint, findNearestValidTime } from '../../../src/utils/timelineUtils';
-import { Clip } from '../../../src/types';
+import type { Clip } from '../../../src/types';
 
 const createMockClip = (id: string, start: number, duration: number, trackId: string = 'track-1'): Clip => ({
   id,

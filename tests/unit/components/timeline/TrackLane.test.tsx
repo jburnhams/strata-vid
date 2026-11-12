@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { TrackLane } from '../../../../src/components/timeline/TrackLane';
-import { Track, Clip, Asset } from '../../../../src/types';
+import type { Track, Clip, Asset } from '../../../../src/types';
 
 // Mock dnd-kit
 jest.mock('@dnd-kit/core', () => ({

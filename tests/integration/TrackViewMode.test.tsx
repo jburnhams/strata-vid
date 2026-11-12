@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { TimelinePanel } from '../../src/components/TimelinePanel';
 import { useProjectStore } from '../../src/store/useProjectStore';
-import { Track, Clip, Asset } from '../../src/types';
+import type { Track, Clip, Asset } from '../../src/types';
 import { DndContext } from '@dnd-kit/core';
 
 // Mock ResizeObserver

@@ -1,7 +1,7 @@
 
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import { useProjectStore } from '../../../src/store/useProjectStore';
-import { Track, Clip } from '../../../src/types';
+import type { Track, Clip } from '../../../src/types';
 
 // Helper to reset store
 const resetStore = () => {

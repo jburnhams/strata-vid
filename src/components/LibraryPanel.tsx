@@ -1,5 +1,5 @@
 import React from 'react';
-import { Asset } from '../types';
+import type { Asset } from '../types';
 import { Tooltip } from './Tooltip';
 import { Trash2, AlertTriangle, FileVideo, Map, PlusCircle } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';

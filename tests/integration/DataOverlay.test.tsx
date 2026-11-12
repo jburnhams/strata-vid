@@ -3,7 +3,7 @@ import { render, screen, fireEvent, act, waitFor, within } from '@testing-librar
 import '@testing-library/jest-dom';
 import App from '../../src/App';
 import { useProjectStore } from '../../src/store/useProjectStore';
-import { Asset, Clip, GpxPoint } from '../../src/types';
+import type { Asset, Clip, GpxPoint } from '../../src/types';
 
 // Define mock data directly in the test file
 const mockGpxPoints: GpxPoint[] = [

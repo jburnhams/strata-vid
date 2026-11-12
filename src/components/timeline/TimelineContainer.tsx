@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useMemo, forwardRef, useImperativeHandle } from 'react';
-import { Track, Clip, Asset, ProjectSettings, Transition, Marker } from '../../types';
+import type { Track, Clip, Asset, ProjectSettings, Transition, Marker } from '../../types';
 import { Marker as MarkerComponent } from './Marker';
 import { TrackLane } from './TrackLane';
 import { TrackHeader } from './TrackHeader';

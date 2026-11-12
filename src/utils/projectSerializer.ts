@@ -1,5 +1,5 @@
-import { StoreState } from '../store/types';
-import { Asset, ProjectSettings, Track, Clip, DeserializedState } from '../types';
+import type { StoreState } from '../store/types';
+import type { Asset, ProjectSettings, Track, Clip, DeserializedState } from '../types';
 
 /**
  * Serialized representation of an Asset.

@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import App from '../../src/App';
 import { useProjectStore } from '../../src/store/useProjectStore';
-import { Asset, Clip, Track } from '../../src/types';
+import type { Asset, Clip, Track } from '../../src/types';
 
 // Mock dependencies
 jest.mock('../../src/services/AssetLoader');

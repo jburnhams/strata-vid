@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { LibraryPanel } from '../../src/components/LibraryPanel';
-import { Asset } from '../../src/types';
+import type { Asset } from '../../src/types';
 
 describe('LibraryPanel', () => {
   const mockAssets: Asset[] = [

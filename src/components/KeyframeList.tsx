@@ -1,6 +1,6 @@
 import React from 'react';
 import { useProjectStore } from '../store/useProjectStore';
-import { Keyframe } from '../types';
+import type { Keyframe } from '../types';
 import { Trash2, Plus } from 'lucide-react';
 import { formatTime } from '../utils/timeUtils';
 import { interpolateValue } from '../utils/animationUtils';

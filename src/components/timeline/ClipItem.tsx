@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Clip, Asset, TrackViewMode } from '../../types';
+import type { Clip, Asset, TrackViewMode } from '../../types';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { formatTime } from '../../utils/timeUtils';

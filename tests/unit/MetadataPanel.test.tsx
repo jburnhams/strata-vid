@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, act, within } from '@testing-library/react';
 import { MetadataPanel } from '../../src/components/MetadataPanel';
-import { Asset } from '../../src/types';
+import type { Asset } from '../../src/types';
 import { useProjectStore } from '../../src/store/useProjectStore';
 
 // Mock MapSyncControl to simplify test

@@ -1,5 +1,5 @@
 import React from 'react';
-import { DataOverlayOptions, TextStyle } from '../../types';
+import type { DataOverlayOptions, TextStyle } from '../../types';
 
 interface GpxDataPoint {
   ele?: number;

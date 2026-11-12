@@ -127,10 +127,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({ onClose }) => {
           />
 
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Container format" id="export-format">
+            <Field label="Container format" id="export-format" hint={settings.format === 'mp4' ? 'Plays everywhere.' : 'Open formats; not every player opens it.'}>
               <NativeSelect value={settings.format} onChange={e => handleFormatChange(e.target.value as 'mp4' | 'webm')}>
-                <option value="mp4">MP4 (plays everywhere)</option>
-                <option value="webm">WebM (open formats)</option>
+                <option value="mp4">MP4</option>
+                <option value="webm">WebM</option>
               </NativeSelect>
             </Field>
             <Field label="Frame rate" id="export-fps">

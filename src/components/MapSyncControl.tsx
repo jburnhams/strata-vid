@@ -68,7 +68,7 @@ export const MapSyncControl: React.FC<MapSyncControlProps> = ({ clipId, classNam
   };
 
   return (
-    <div className={`flex flex-col gap-4 type-body-sm ${className}`}>
+    <div className={`flex min-w-0 flex-col gap-4 type-body-sm ${className ?? ''}`}>
       <div className="flex flex-col gap-1 border-b border-border pb-2">
         <h3 className="font-bold text-foreground">Synchronization</h3>
         <div className="type-caption text-muted-foreground">
@@ -101,7 +101,7 @@ export const MapSyncControl: React.FC<MapSyncControlProps> = ({ clipId, classNam
             type="number"
             value={manualOffset}
             onChange={handleOffsetChange}
-            className="flex-1 px-2 py-1 bg-background border border-border rounded-control text-foreground focus:border-primary outline-none"
+            className="flex-1 min-w-0 px-2 py-1 bg-background border border-border rounded-control text-foreground focus:border-primary outline-none"
             placeholder="Epoch ms at Video 0s"
           />
           <Button onClick={applyOffset}>Set</Button>

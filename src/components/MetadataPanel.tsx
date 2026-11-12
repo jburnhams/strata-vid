@@ -75,7 +75,7 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
       a.type === 'gpx' && a.id !== activeClip.assetId && !(activeClip.extraTrackAssets || []).some(et => et.assetId === a.id));
 
     return (
-      <div className="h-full overflow-y-auto" data-testid="metadata-panel-clip">
+      <div className="h-full overflow-y-auto p-3" data-testid="metadata-panel-clip">
         <Inspector
           title={clipAsset?.name ?? activeClip.id}
           kind={KIND[activeClip.type] ?? activeClip.type}
@@ -204,7 +204,7 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                 ))}
               </InspectorSection>
               <InspectorSection id="units" title="Units">
-                <PropertyRow label="Speed">
+                <PropertyRow label="Speed unit">
                   <NativeSelect value={props.dataOverlay?.speedUnit || 'kmh'}
                     onChange={(e) => updateClipProperties(activeClip.id, { dataOverlay: { ...props.dataOverlay, speedUnit: e.target.value } })}>
                     <option value="kmh">km/h</option>
@@ -212,7 +212,7 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                     <option value="m/s">m/s</option>
                   </NativeSelect>
                 </PropertyRow>
-                <PropertyRow label="Distance">
+                <PropertyRow label="Distance unit">
                   <NativeSelect value={props.dataOverlay?.distanceUnit || 'km'}
                     onChange={(e) => updateClipProperties(activeClip.id, { dataOverlay: { ...props.dataOverlay, distanceUnit: e.target.value } })}>
                     <option value="km">kilometres</option>
@@ -220,7 +220,7 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                     <option value="m">metres</option>
                   </NativeSelect>
                 </PropertyRow>
-                <PropertyRow label="Elevation">
+                <PropertyRow label="Elevation unit">
                   <NativeSelect value={props.dataOverlay?.elevationUnit || 'm'}
                     onChange={(e) => updateClipProperties(activeClip.id, { dataOverlay: { ...props.dataOverlay, elevationUnit: e.target.value } })}>
                     <option value="m">metres</option>
@@ -299,7 +299,7 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
   ] satisfies Property[] : [];
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto p-3">
       <Inspector
         title={activeAsset?.name ?? null}
         kind={activeAsset ? ASSET_KIND[activeAsset.type] ?? activeAsset.type : undefined}
@@ -310,7 +310,7 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
         ) : undefined}
         empty={<EmptyState title="Nothing selected">Select a file in the library or a clip on the timeline to see its details here.</EmptyState>}
       >
-        <InspectorSection id="file" title="File">
+        <InspectorSection id="file" title="Details">
           <PropertyList items={file} />
         </InspectorSection>
         {video.length > 0 && (
@@ -324,7 +324,7 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
           </InspectorSection>
         )}
         {activeAsset?.type === 'gpx' && (
-          <InspectorSection id="gpx-processing" title="Route detail" defaultOpen={false}>
+          <InspectorSection id="gpx-processing" title="Route detail">
             <PropertyRow label="Simplification" hint="Higher values drop more points from the route.">
               <Slider min={0} max={0.001} step={0.00001} places={5} value={settings.simplificationTolerance}
                 onChange={(v) => setSettings({ simplificationTolerance: v })} />

@@ -36,11 +36,11 @@ export const TrackHeader: React.FC<TrackHeaderProps> = ({
   };
 
   return (
-    <div className="h-16 min-w-[200px] w-[200px] border-b border-border bg-card flex flex-col justify-center px-2 shrink-0">
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex-1 truncate type-body-sm font-medium text-foreground mr-2">
-          {track.label || `Track ${track.id}`}
-        </div>
+    <div className="h-16 min-w-[240px] w-[240px] border-b border-border bg-card flex flex-col justify-center gap-0.5 px-2 shrink-0">
+      <div className="truncate type-body-sm font-medium text-foreground">
+        {track.label || `Track ${track.id}`}
+      </div>
+      <div className="flex items-center gap-2">
         <Toolbar label={`${track.label || `Track ${track.id}`} controls`} className="flex gap-0.5">
           {track.type === 'video' && (
             <IconButton
@@ -54,18 +54,17 @@ export const TrackHeader: React.FC<TrackHeaderProps> = ({
           <Toggle size="sm" iconOnly icon={Lock} label="Lock" pressed={!!track.isLocked} onChange={() => onToggleLock?.(track.id)} />
           <IconButton variant="ghost" icon={Trash2} label="Delete track" onPress={() => onRemove(track.id)} />
         </Toolbar>
+        <NumberField
+          aria-label="Track volume"
+          className="ml-auto w-20"
+          min={0}
+          max={500}
+          step={1}
+          unit="%"
+          value={Math.round((track.volume ?? 1.0) * 100)}
+          onChange={(v) => v !== null && onUpdateVolume?.(track.id, v / 100)}
+        />
       </div>
-
-      <NumberField
-        aria-label="Track volume"
-        className="w-28"
-        min={0}
-        max={500}
-        step={1}
-        unit="%"
-        value={Math.round((track.volume ?? 1.0) * 100)}
-        onChange={(v) => v !== null && onUpdateVolume?.(track.id, v / 100)}
-      />
     </div>
   );
 };

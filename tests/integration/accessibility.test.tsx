@@ -1,30 +1,44 @@
 import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import App from '../../src/App';
 
 // Mock dependencies
 jest.mock('../../src/components/LibraryPanel', () => ({
-  LibraryPanel: () => <div role="region" aria-label="Library">Library</div>
+  LibraryPanel: () => <div>Library</div>
 }));
 jest.mock('../../src/components/PreviewPanel', () => ({
-  PreviewPanel: () => <div role="region" aria-label="Preview">Preview</div>
+  PreviewPanel: () => <div>Preview</div>
 }));
 jest.mock('../../src/components/TimelinePanel', () => ({
-  TimelinePanel: () => <div role="region" aria-label="Timeline">Timeline</div>
+  TimelinePanel: () => <div>Timeline</div>
 }));
 jest.mock('../../src/components/MetadataPanel', () => ({
-  MetadataPanel: () => <div role="complementary" aria-label="Metadata">Metadata</div>
+  MetadataPanel: () => <div>Metadata</div>
 }));
 
 describe('Integration: Accessibility', () => {
-  it('main regions have accessible roles or labels', () => {
+  it('each pane of the workspace is a named region', () => {
     renderWithStrata(<App />);
 
-    expect(screen.getByRole('region', { name: /library/i })).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: /timeline/i })).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: /preview/i })).toBeInTheDocument();
-    expect(screen.getByRole('complementary', { name: /metadata/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Editor' })).toBeInTheDocument();
+    for (const name of ['Library', 'Preview', 'Inspector', 'Timeline']) {
+      expect(screen.getByRole('region', { name })).toBeInTheDocument();
+    }
+  });
+
+  it('a pane folds from the View menu and its own header', async () => {
+    const user = userEvent.setup();
+    renderWithStrata(<App />);
+
+    await user.click(screen.getByRole('button', { name: 'Hide Library' }));
+    const fold = () => document.querySelector('[aria-controls="pane-body-library"]');
+    expect(fold()).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(screen.getByRole('button', { name: 'View' }));
+    await user.click(await screen.findByRole('menuitem', { name: /Show library/ }));
+    expect(fold()).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('header buttons have accessible labels', () => {

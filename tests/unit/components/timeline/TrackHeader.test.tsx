@@ -57,4 +57,14 @@ describe('TrackHeader', () => {
     await screen.findByRole('dialog', { name: 'Footage settings' });
     expect(screen.queryByRole('radiogroup', { name: 'Clips show' })).not.toBeInTheDocument();
   });
+
+  it('moves the track up or down, and not past the first place', async () => {
+    const onMove = jest.fn();
+    render(<TrackHeader {...props()} onMove={onMove} isFirst />);
+    fireEvent.click(screen.getByRole('button', { name: 'Footage settings' }));
+    await screen.findByRole('dialog', { name: 'Footage settings' });
+    expect(screen.getByRole('button', { name: 'Move up' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Move down' }));
+    expect(onMove).toHaveBeenCalledWith('track-1', 1);
+  });
 });

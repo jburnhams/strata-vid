@@ -6,7 +6,7 @@ import { createAssetsSlice } from './slices/assetsSlice';
 import { createTimelineSlice } from './slices/timelineSlice';
 import { createPlaybackSlice } from './slices/playbackSlice';
 import { createUiSlice } from './slices/uiSlice';
-import { historyMiddleware } from './middleware/historyMiddleware';
+import { historyMiddleware, type DocumentRecorder } from './middleware/historyMiddleware';
 
 export const useProjectStore = create<StoreState>()(
   historyMiddleware(
@@ -18,4 +18,4 @@ export const useProjectStore = create<StoreState>()(
       ...createUiSlice(set, get, store),
     }))
   )
-) as UseBoundStore<StoreApi<StoreState>> & { undo: () => void; redo: () => void };
+) as UseBoundStore<StoreApi<StoreState>> & DocumentRecorder;

@@ -76,8 +76,8 @@ describe('ProjectMenu', () => {
     expect(confirm).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Start new project' }));
 
-    expect(mockStore.removeAsset).toHaveBeenCalled();
-    expect(mockStore.setSettings).toHaveBeenCalled();
+    // One load of an empty project, so the undo history starts again
+    expect(mockStore.loadProject).toHaveBeenCalledWith(expect.objectContaining({ assets: {}, tracks: {}, clips: {}, trackOrder: [] }));
   });
 
   it('handles Load Project', async () => {

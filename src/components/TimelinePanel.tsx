@@ -8,10 +8,12 @@
  * a named item per clip ("run-02.mp4, 0:12 to 0:47, Footage"), announcements, and a refusal shown
  * with its reason while dragging.
  *
- * Gaps, kept as small as they can be here (strata-react issues): lanes are one control high, so
- * thumbnails and waveforms are a strip; a clip's kind colour is the chart palette in order of
- * appearance, not the library's media colours; nothing can be dropped on a lane from outside, so
- * library files go on with their "Add to timeline" button.
+ * Since strata-react #121: lanes are two control heights, so thumbnails and waveforms have room; each
+ * kind's stripe is the library's media colour (`kindColours`), fixed whatever kinds are on the
+ * timeline; and a library file dragged onto a lane lands where it is dropped, snapped like a move,
+ * refused with a reason while it is over a lane that cannot take it (a locked track, sound on a
+ * picture track, an overlap). The drag is the browser's own (a native drag from the library row,
+ * which React Aria's drop target reads), so the keyboard's way in is the row's "Add to timeline".
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Copy, Plus, Scissors, Trash2 } from 'lucide-react';
@@ -27,15 +29,22 @@ import {
   noOverlap,
   type MenuEntry,
   type TimelineChange,
+  type TimelineDrop,
   type TimelineItem,
 } from 'strata-react';
 import { useProjectStore } from '../store/useProjectStore';
 import { AudioEngine } from '../services/AudioEngine';
 import type { Clip } from '../types';
+import { ASSET_DRAG_TYPE, clipAt, lengthOf, refuseOnTrack } from '../utils/timelinePlacement';
 import { TrackHeader, trackName } from './timeline/TrackHeader';
 import { WaveformOverlay } from './timeline/WaveformOverlay';
 
 const KIND: Record<Clip['type'], string> = { video: 'Video', audio: 'Audio', map: 'Map', image: 'Image', text: 'Text', data: 'Data' };
+/** Each kind's stripe: the library's media colours (theme.css), so a file and its clips match. */
+const KIND_COLOURS: Record<string, string> = {
+  Video: 'var(--color-media-video)', Audio: 'var(--color-media-audio)', Map: 'var(--color-media-map)',
+  Data: 'var(--color-media-map)', Image: 'var(--color-media-image)', Text: 'var(--color-media-image)',
+};
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 200;
 const clampZoom = (z: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z));
@@ -51,6 +60,7 @@ export const TimelinePanel: React.FC = () => {
   const selectedClipId = useProjectStore((state) => state.selectedClipId);
   const settings = useProjectStore((state) => state.settings);
   const zoomLevel = useProjectStore((state) => state.zoomLevel);
+  const draggedAsset = useProjectStore((state) => (state.draggedAssetId ? state.assets[state.draggedAssetId] : undefined));
   const store = useProjectStore.getState;
 
   const box = useRef<HTMLDivElement>(null);
@@ -103,6 +113,29 @@ export const TimelinePanel: React.FC = () => {
     return settings.allowOverlaps ? null : overlap(id, next);
   };
 
+  // A library file dragged over a lane: judged while it is over the lane, placed where it lands.
+  const validateDrop = (next: TimelineChange): string | null => {
+    const track = tracks[next.lane];
+    if (!track || !draggedAsset) return null;
+    const refusal = refuseOnTrack(draggedAsset, track);
+    if (refusal) return refusal;
+    return settings.allowOverlaps ? null : overlap('', next);
+  };
+  const handleDrop = async (drop: TimelineDrop) => {
+    let assetId: string | undefined;
+    for (const item of drop.items) {
+      if (item.kind === 'text' && item.types.has(ASSET_DRAG_TYPE)) assetId = await item.getText(ASSET_DRAG_TYPE);
+    }
+    const s = store();
+    const asset = assetId ? s.assets[assetId] : undefined;
+    const track = s.tracks[drop.lane];
+    s.setDraggedAsset(null);
+    if (!asset || !track || refuseOnTrack(asset, track)) return;
+    const clip = clipAt(asset, track.id, drop.start, Math.random().toString(36).slice(2, 11));
+    s.addClip(clip);
+    s.selectClip(clip.id);
+  };
+
   const applyChange = (id: string, next: TimelineChange) => {
     const clip = clips[id];
     if (!clip) return;
@@ -110,8 +143,8 @@ export const TimelinePanel: React.FC = () => {
     if (next.length !== clip.duration) {
       // A trim. From the start, the in-point moves by as much as the start did.
       const shift = next.start - clip.start;
-      resizeClip(id, next.length, Math.max(0, clip.offset + shift));
-      if (shift !== 0) moveClip(id, next.start);
+      // One store change, so it is one undo step ("trim clip").
+      resizeClip(id, next.length, Math.max(0, clip.offset + shift), next.start);
     } else {
       moveClip(id, next.start, next.lane !== clip.trackId ? next.lane : undefined);
     }
@@ -192,6 +225,9 @@ export const TimelinePanel: React.FC = () => {
         onToggleLock={(id) => store().updateTrack(id, { isLocked: !store().tracks[id]?.isLocked })}
         onUpdateVolume={(id, volume) => store().updateTrack(id, { volume })}
         onSetViewMode={(id, mode) => store().setTrackViewMode(id, mode)}
+        onMove={(id, by) => store().moveTrack(id, by)}
+        isFirst={trackOrder[0] === track.id}
+        isLast={trackOrder[trackOrder.length - 1] === track.id}
       />
     ),
   }));
@@ -229,6 +265,12 @@ export const TimelinePanel: React.FC = () => {
           step={1 / fps}
           minLength={0.1}
           renderItem={renderClip}
+          laneRows={2}
+          kindColours={KIND_COLOURS}
+          dropTypes={[ASSET_DRAG_TYPE]}
+          dropLength={draggedAsset ? lengthOf(draggedAsset) : undefined}
+          onDrop={(drop) => void handleDrop(drop)}
+          validateDrop={validateDrop}
           empty={
             <EmptyState title="No tracks yet">
               <Button size="sm" onClick={addTrack}><Plus aria-hidden />Add track</Button>

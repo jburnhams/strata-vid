@@ -10,7 +10,111 @@ a factual error. Work before 2026-11-12 is in the git history only.
 
 ## 2026-11-12
 
-**Decide which open features to build and which to drop** (branch `claude/project-thread-3drc3w`).
+**Reorder tracks** (branch `claude/project-thread-3drc3w`).
+The last feature Jonathan kept (B6b). Track order is also the drawing order, so this is how a route inset goes
+over or under footage. strata-react's Timeline has no lane drag, so it is two buttons, which work by keyboard.
+- `src/store/slices/timelineSlice.ts`, `src/store/types.ts`: `moveTrack(id, -1 | 1)`; one undo step,
+  "reorder tracks".
+- `src/components/timeline/TrackHeader.tsx`, `src/components/TimelinePanel.tsx`: "Move up" and "Move down"
+  in the track's settings popover, disabled at either end, with "Lower tracks draw over higher ones."
+- Tests: **new** `tests/unit/store/moveTrack.test.ts`; `tests/unit/components/timeline/TrackHeader.test.tsx`.
+- No baseline changed (no visual state opens a track's settings). `docs/FEATURES.md`, `docs/PORT.md`,
+  `README.md`: updated.
+
+**Clip speed and colour controls** (branch `claude/project-thread-3drc3w`).
+Two of the features Jonathan kept (H5, H7): both already rendered and had no control. Speed needed the map to
+follow it, which found that the preview and export counted a route clip's time differently.
+- `src/utils/routeClock.ts`: **new**. A route clip's clock runs at the speed of the top video clip under it
+  (1× where there is none) and starts at the clip's own trim, with the inverse for seeking. **Corrects** the
+  preview, which counted `t - clip.start` and so restarted a split route clip, while the export counted its
+  trim; both now use this.
+- `src/components/preview/OverlayRenderer.tsx`, `src/components/PreviewPanel.tsx`,
+  `src/services/WorkerCompositor.ts`: map, data overlay, elevation profile and the exported map use the route
+  clock; a pick on the profile seeks through its inverse.
+- `src/components/ClipSpeedRow.tsx`: **new**. "Speed" for a video clip, 0.25× to 8×; a slower speed that would
+  run into the next clip is refused with that clip named, unless overlaps are allowed.
+- `src/components/preview/VideoPlayer.tsx`: a clip at another speed no longer keeps its pitch in preview, so
+  it sounds as the export mixes it (a Web Audio source at that rate).
+- `src/utils/colourFilter.ts`, `src/components/ClipColourRows.tsx`: **new**. Brightness, contrast and
+  saturation (0 to 200%) for video and image clips, read from and written to the clip's CSS `filter`, keeping
+  any other filter functions an older project had.
+- `src/components/MetadataPanel.tsx`: new Colour and Timing sections. `src/utils/historyLabels.ts`: "change
+  speed" is told apart before "trim clip" (speed also changes the length); a filter change is "change colour".
+- Tests: **new** `tests/unit/utils/routeClock.test.ts`, `tests/unit/utils/colourFilter.test.ts`,
+  `tests/unit/components/ClipSpeedRow.test.tsx`, `tests/unit/components/ClipColourRows.test.tsx`.
+- `tests/visual/baselines/`: `clip-selected` and `inspector-edits` (light and dark) re-recorded: the
+  inspector shows the Colour section.
+- `docs/FEATURES.md` (H5, H7), `docs/PORT.md`, `README.md`: updated. Not done: watching a 2× clip's map in a
+  browser by eye.
+
+**Drag library files onto the timeline; taller lanes and fixed kind colours** (branch `claude/project-thread-3drc3w`).
+The last strata-react swap available now (#121). The drag source is the browser's own drag on the library
+row, read by React Aria's drop target in strata's Timeline: React Aria's `useDrag` (as strata-react's own
+story uses) would need `react-aria` as a direct dependency, which is Jonathan's call, so the keyboard keeps
+"Add to timeline".
+- `src/components/LibraryPanel.tsx`: a file's row is draggable, carrying its id as
+  `application/x-strata-vid-asset`; the store remembers which file is being dragged.
+- `src/components/TimelinePanel.tsx`: `dropTypes`, `onDrop` (the clip lands at the snapped time, and is
+  selected), `validateDrop` (locked track, sound on a picture track or the reverse, an overlap), `dropLength`
+  from the file; `laneRows={2}`; `kindColours` from the library's media colours. A trim from the start is now
+  one store change (`resizeClip` takes the new start), so it is one undo step.
+- `src/utils/timelinePlacement.ts`: `ASSET_DRAG_TYPE`, `refuseOnTrack`, `lengthOf` and `clipAt` (**new**
+  exports); "Add to timeline" is unchanged.
+- `src/store/types.ts`, `src/store/slices/uiSlice.ts`, `src/store/slices/timelineSlice.ts`: `draggedAssetId`
+  and `setDraggedAsset`; `resizeClip`'s optional `newStart`.
+- `src/App.tsx`: the timeline pane starts 330px high (was 240) so three two-row lanes fit.
+- Tests: **new** `tests/integration/timelineDrop.test.tsx` (a drop lands where it should; footage over an
+  audio lane is refused with the reason); `tests/unit/utils/timelinePlacement.test.ts` covers the new helpers.
+- `tests/visual/baselines/`: all 32 re-recorded after looking at them: taller lanes with room for thumbnails
+  and the waveform, stripes in the library's colours (blue footage, orange route, pink sound) in both
+  schemes, and a shorter stage. A second run matched all 32.
+- `docs/PORT.md`, `docs/FEATURES.md`, `README.md`: updated.
+
+**Undo, redo and auto-save on strata-react's history and save state** (branch `claude/project-thread-3drc3w`).
+The next port swap (strata-react #81). The map swap (#80) was tried first and stopped: `RouteMap` cannot
+hold the clip's zoom on the runner or show one marker per track, so that is strata-react #161 and the
+Leaflet panel stays for now.
+- `src/store/middleware/historyMiddleware.ts`: rewritten. It no longer keeps its own stacks; it reports
+  each change to the document (now including markers) as a before/after pair and restores a side quietly,
+  keeping playback, the selection where it still exists, and each file's current thumbnail. Opening a
+  project reports a reset. **Corrects** the old behaviour, where undo also put back the playhead and the
+  playing state, and a thumbnail arriving after a file was added became an undo step.
+- `src/utils/historyLabels.ts`: **new**. Names a change from what differs ("trim clip", "change opacity",
+  "ripple delete") and keys continuous controls so a slider drag merges into one step.
+- `src/hooks/useDocumentHistory.ts`: **new**. strata-react `useHistory` (50 steps) fed by the store.
+- `src/hooks/useAutoSave.ts`: on strata-react's `useAutoSave` and `useLeaveGuard`: saves 1.5 s after a
+  change instead of every 60 s, says why a save failed (storage full), and an empty project removes the save.
+- `src/hooks/useKeyboardShortcuts.ts`, `src/components/EditMenu.tsx`, `src/App.tsx`: Undo and Redo are the
+  history's commands, named after the step and disabled with a reason; `SaveStatus` sits in the header.
+- `src/components/ProjectMenu.tsx`, `src/store/slices/projectSlice.ts`: "New project" loads an empty project
+  in one step, so the history starts again instead of recording each removal; opening a project clears
+  markers (they are not saved in `.svp` files yet).
+- Tests: `tests/unit/store/historyMiddleware.test.ts`, `tests/unit/hooks/useAutoSave.test.ts` and
+  `tests/unit/components/EditMenu.test.tsx` rewritten against the real store; **new**
+  `tests/unit/utils/historyLabels.test.ts` and `tests/unit/hooks/useDocumentHistory.test.ts`;
+  `tests/integration/undoRedo.integration.test.tsx` checks the step's name and the disabled Redo.
+- `tests/visual/flows.ts`, `strata-visual.config.ts`: every state ends with `settleSave`, which waits for the
+  save to settle and prints a fixed time in the save sign. All 32 baselines re-recorded (the header gains
+  "Saved 09:30"); a second run matched all 32.
+- `docs/PORT.md`, `docs/FEATURES.md` (D2, F4, F5), `docs/ARCHITECTURE.md`, `README.md`: updated.
+
+**Editor panels as strata-react workspace panes** (branch `claude/project-thread-3drc3w`).
+The first port swap after Jonathan's feature decisions (PR #147, merged). strata-react #68 is closed, so the
+fixed CSS grid gave way to its `Workspace`.
+- `src/App.tsx`: the header stays; below it a `Workspace` ("Editor") of a row (Library, Preview growing,
+  Inspector) over the Timeline. Library, Inspector and Timeline are `collapsible`; sizes and folds are kept
+  by `useWorkspaceState('strata-vid.workspace')`. A new View menu shows or hides each pane and resets the
+  layout. The header's height is `h-12` (48px) instead of an arbitrary 50px.
+- `src/components/LibraryPanel.tsx`: its own "Library" heading is gone, as the pane's header names it;
+  "Add files" keeps its row.
+- `tests/integration/accessibility.test.tsx`: the mocked panels no longer pretend to be regions; the test
+  checks that each pane is a named region and that a pane folds from its header and comes back from the
+  View menu.
+- `tests/visual/baselines/`: all 32 re-recorded after looking at the diffs: every shot gains the pane
+  headers, so the stage, library and timeline move down a little and the timeline is 240px high (was 200).
+- `docs/PORT.md`, `docs/FEATURES.md` (G7), `docs/ARCHITECTURE.md`, `tests/visual/README.md`: updated.
+
+**Decide which open features to build and which to drop** (branch `claude/project-thread-3drc3w`, PR #147).
 Jonathan asked to go through the docs and settle the remaining features. He agreed to the proposal: finish
 the port now that every strata-react issue it waited on is closed, then build four kept features, and drop
 the rest.

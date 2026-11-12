@@ -10,12 +10,15 @@ interface OverlayRendererProps {
   clip: Clip;
   asset?: Asset;
   currentTime: number;
+  /** Seconds of the route for a map or data clip (`routeSeconds`): follows the footage's speed and the clip's trim. Default: real time from the clip's start. */
+  routeTime?: number;
   allAssets?: Record<string, Asset>;
   onToggleElevationProfile?: () => void;
   onSeek?: (time: number) => void;
 }
 
-export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, currentTime, allAssets, onToggleElevationProfile, onSeek }) => {
+export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, currentTime, routeTime, allAssets, onToggleElevationProfile, onSeek }) => {
+  const route = routeTime ?? currentTime - clip.start;
   // Helper to get animated value
   const getValue = (prop: keyof OverlayProperties, defaultValue: any) => {
     if (typeof defaultValue === 'number' && clip.keyframes && clip.keyframes[prop]) {
@@ -142,7 +145,7 @@ export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, c
               <MapPanel
                 className="w-full h-full"
                 tracks={tracks}
-                currentTime={currentTime - clip.start} // MapPanel expects time relative to clip
+                currentTime={route} // seconds of the route since the clip's sync point
                 mapStyle={clip.properties.mapStyle}
                 customMapStyleUrl={clip.properties.customMapStyleUrl}
                 zoom={mapZoom}
@@ -162,7 +165,7 @@ export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, c
   if (clip.type === 'data' && asset && asset.gpxPoints) {
     const currentGpxPoint = getCoordinateAtTime(
       asset.gpxPoints,
-      (clip.syncOffset || (asset.gpxPoints[0]?.time ?? 0)) + (currentTime - clip.start) * 1000,
+      (clip.syncOffset || (asset.gpxPoints[0]?.time ?? 0)) + route * 1000,
     );
 
     if (!currentGpxPoint) {

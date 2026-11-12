@@ -2,99 +2,95 @@ import type { StateCreator } from 'zustand';
 import type { StoreState } from '../types';
 
 /**
- * History Middleware for Zustand
+ * Records changes to the document for strata-react's `useHistory` (issue #81), which owns the steps,
+ * their names, grouping and the Undo and Redo commands. The store only says what changed: each set
+ * that changes a document slice is reported as a (before, after) pair of those slices, and
+ * `restoreDocument` puts a pair's side back. Playback, selection and UI state are never part of a
+ * step, so undo does not move the playhead. Opening or starting a project reports a reset, which
+ * clears the history.
  *
- * Implements Undo/Redo functionality by maintaining a stack of past and future states.
- * It wraps the store's `set` function to intercept state changes.
- *
- * Key features:
- * - Snapshots the entire state (except excluded slices) when relevant changes occur.
- * - Limits history size to prevent memory issues.
- * - Excludes high-frequency updates (like playback time) from triggering snapshots,
- *   but includes them in the restored state if they are part of the snapshot.
- *   (Note: Current implementation snapshots everything in the state object).
+ * Before 2026-11-12 this middleware kept its own 50-step stacks of whole-store snapshots, with no
+ * names and no way to tell whether undo was possible.
  */
+
+/** The slices a step changes. Everything else in the store is not the document. */
+export type DocumentSnapshot = Pick<StoreState, 'assets' | 'tracks' | 'clips' | 'trackOrder' | 'settings' | 'markers'>;
+
+export type DocumentChange = { type: 'change'; before: DocumentSnapshot; after: DocumentSnapshot } | { type: 'reset' };
+
+export type DocumentRecorder = {
+  /** Calls `listener` for every change to the document; returns the unsubscribe. */
+  recordDocument: (listener: (change: DocumentChange) => void) => () => void;
+  /** Puts a snapshot's document back without reporting it as a change. */
+  restoreDocument: (snapshot: DocumentSnapshot) => void;
+};
+
+const DOCUMENT_KEYS = ['assets', 'tracks', 'clips', 'trackOrder', 'settings', 'markers'] as const;
+
+export const snapshotOf = (state: StoreState): DocumentSnapshot => ({
+  assets: state.assets,
+  tracks: state.tracks,
+  clips: state.clips,
+  trackOrder: state.trackOrder,
+  settings: state.settings,
+  markers: state.markers,
+});
+
 export const historyMiddleware = (
   config: StateCreator<StoreState, [], [['zustand/immer', never]]>
 ): StateCreator<StoreState, [], [['zustand/immer', never]]> => {
   return (set, get, api) => {
-    const past: StoreState[] = [];
-    const future: StoreState[] = [];
-    const HISTORY_LIMIT = 50;
+    const listeners = new Set<(change: DocumentChange) => void>();
+    let quiet = false;
+    const emit = (change: DocumentChange) => listeners.forEach((listener) => listener(change));
 
-    // Flag to prevent recursive history tracking when applying undo/redo
-    let isHistoryOperation = false;
-
-    const undo = () => {
-      if (past.length === 0) return;
-
-      const previous = past.pop();
-      if (previous) {
-        // Save current state to future before restoring past
-        future.push(get());
-
-        isHistoryOperation = true;
-        set(previous);
-        isHistoryOperation = false;
-      }
-    };
-
-    const redo = () => {
-      if (future.length === 0) return;
-
-      const next = future.pop();
-      if (next) {
-        // Save current state to past before restoring future
-        past.push(get());
-
-        isHistoryOperation = true;
-        set(next);
-        isHistoryOperation = false;
-      }
-    };
-
-    // Attach undo/redo methods to the store API
-    // Note: The store type definition must include these methods for TypeScript to recognize them
-    (api as any).undo = undo;
-    (api as any).redo = redo;
-
-    // Wrapped setter
-    const setWithHistory: typeof set = (args, ...rest) => {
-        const currentState = get();
-
-        // Apply the update using the original setter (Immer-powered)
-        (set as any)(args, ...rest);
-
-        const nextState = get();
-
-        // Only record history if:
-        // 1. It's not an undo/redo operation itself
-        // 2. Significant state slices have changed
-        if (!isHistoryOperation) {
-           // We compare top-level references.
-           // Since we use Immer, structural sharing ensures that if a slice hasn't changed,
-           // its reference remains the same.
-           const hasChanged =
-             currentState.assets !== nextState.assets ||
-             currentState.tracks !== nextState.tracks ||
-             currentState.clips !== nextState.clips ||
-             currentState.trackOrder !== nextState.trackOrder ||
-             currentState.settings !== nextState.settings;
-
-           if (hasChanged) {
-             past.push(currentState);
-
-             // Enforce history limit
-             if (past.length > HISTORY_LIMIT) {
-                 past.shift();
-             }
-
-             // Clear redo stack when a new action occurs (branching history)
-             future.length = 0;
-           }
+    const recorder: DocumentRecorder = {
+      recordDocument: (listener) => {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+      restoreDocument: (snapshot) => {
+        const current = get();
+        quiet = true;
+        try {
+          (set as (partial: Partial<StoreState>) => void)({
+            ...snapshot,
+            // A file's thumbnail, waveform and link arrive after it is added and are not steps: keep
+            // the current copy of every file the snapshot has.
+            assets: Object.fromEntries(Object.entries(snapshot.assets).map(([id, asset]) => [id, current.assets[id] ?? asset])),
+            selectedClipId: current.selectedClipId && snapshot.clips[current.selectedClipId] ? current.selectedClipId : null,
+            selectedAssetId: current.selectedAssetId && snapshot.assets[current.selectedAssetId] ? current.selectedAssetId : null,
+          });
+        } finally {
+          quiet = false;
         }
+      },
+    };
+    Object.assign(api, recorder);
+
+    const recordingSet: typeof set = (args, ...rest) => {
+      const before = get();
+      (set as any)(args, ...rest);
+      const after = get();
+      if (quiet || listeners.size === 0) return;
+      if (DOCUMENT_KEYS.some((key) => before[key] !== after[key])) {
+        emit({ type: 'change', before: snapshotOf(before), after: snapshotOf(after) });
+      }
     };
 
-    return config(setWithHistory, get, api);
+    const state = config(recordingSet, get, api);
+    const loadProject = state.loadProject;
+    return {
+      ...state,
+      loadProject: (project) => {
+        quiet = true;
+        try {
+          loadProject(project);
+        } finally {
+          quiet = false;
+        }
+        emit({ type: 'reset' });
+      },
+    };
   };
 };

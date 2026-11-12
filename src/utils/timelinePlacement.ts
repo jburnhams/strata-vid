@@ -29,6 +29,42 @@ const clipType = (asset: Asset): Clip['type'] =>
 const endOf = (track: Track, clips: Record<string, Clip>) =>
   track.clips.reduce((end, id) => (clips[id] ? Math.max(end, clips[id].start + clips[id].duration) : end), 0);
 
+/** The drag type a library file carries onto the timeline; its data is the asset's id. */
+export const ASSET_DRAG_TYPE = 'application/x-strata-vid-asset';
+
+/** Whether a file can go on a track: sound on audio tracks, pictures and routes on the others. A reason when not. */
+export function refuseOnTrack(asset: Asset, track: Track): string | null {
+  if (track.isLocked) return `${track.label} is locked.`;
+  const sound = asset.type === 'audio';
+  if (sound && track.type !== 'audio') return `${asset.name} is sound; put it on an audio track.`;
+  if (!sound && track.type === 'audio') return `${track.label} is for sound.`;
+  return null;
+}
+
+/** How long a file runs when placed, before any trim. */
+export function lengthOf(asset: Asset): number {
+  if (asset.type === 'gpx') {
+    const routeSeconds = asset.stats?.time?.duration ? asset.stats.time.duration / 1000 : 0;
+    return routeSeconds > 0 ? routeSeconds : DEFAULT_SECONDS;
+  }
+  return asset.duration || DEFAULT_SECONDS;
+}
+
+/** The clip for a file dropped on a track at a time (a drag from the library). */
+export function clipAt(asset: Asset, trackId: string, start: number, id: string): Clip {
+  return {
+    id,
+    assetId: asset.id,
+    trackId,
+    start,
+    duration: lengthOf(asset),
+    offset: 0,
+    type: clipType(asset),
+    properties: { ...(asset.type === 'gpx' ? ROUTE_INSET : FULL_FRAME) },
+    volume: 1,
+  };
+}
+
 /** Decides the track and span for a file added with "Add to timeline". `newId` makes ids. */
 export function placeOnTimeline(
   asset: Asset,

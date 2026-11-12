@@ -16,8 +16,9 @@ import { ToastContainer } from './components/Toast';
 import { LoadingOverlay } from './components/LoadingOverlay';
 import { handleError, showSuccess } from './utils/errorHandler';
 import { useAutoSave } from './hooks/useAutoSave';
+import { useDocumentHistory } from './hooks/useDocumentHistory';
 import { Keyboard } from 'lucide-react';
-import { AlertDialog, Button, ColorSchemeChoice, CommandMenu, IconButton } from 'strata-react';
+import { AlertDialog, Button, ColorSchemeChoice, CommandMenu, IconButton, Menu, Pane, SaveStatus, Split, Workspace, useWorkspaceState, type Command } from 'strata-react';
 
 function App() {
   const [showExport, setShowExport] = React.useState(false);
@@ -28,8 +29,10 @@ function App() {
   });
 
   const toggleHelp = () => setShowHelp(prev => !prev);
-  const commands = useKeyboardShortcuts(toggleHelp);
-  useAutoSave();
+  const history = useDocumentHistory();
+  const autoSave = useAutoSave();
+  const commands = useKeyboardShortcuts(toggleHelp, history.commands);
+  const workspace = useWorkspaceState('strata-vid.workspace');
 
   const {
     assets: assetsRecord,
@@ -130,21 +133,32 @@ function App() {
       showSuccess('Added to timeline');
   };
 
-  return (
-        <div className="grid h-screen w-screen bg-background text-foreground font-sans overflow-hidden"
-             style={{
-                 gridTemplateAreas: '"header header header" "library preview metadata" "timeline timeline timeline"',
-                 gridTemplateColumns: '300px 1fr 300px',
-                 gridTemplateRows: '50px 1fr 200px'
-             }}>
+  const panes = [
+    { id: 'library', label: 'Library' },
+    { id: 'inspector', label: 'Inspector' },
+    { id: 'timeline', label: 'Timeline' },
+  ];
+  const viewCommands: Command[] = [
+    ...panes.map(({ id, label }) => ({
+      id: `show-${id}`,
+      label: `Show ${label.toLowerCase()}`,
+      checked: !workspace.isCollapsed(id),
+      run: () => workspace.toggle(id),
+    })),
+    { id: 'reset-layout', label: 'Reset layout', run: workspace.reset },
+  ];
 
-          {/* Header */}
-          <header className="[grid-area:header] border-b border-border bg-card flex items-center px-4 gap-2">
+  return (
+        <div className="flex h-screen w-screen flex-col bg-background text-foreground font-sans overflow-hidden">
+
+          <header className="h-12 shrink-0 border-b border-border bg-card flex items-center px-4 gap-2">
             <span className="type-label mr-2">Strata Vid</span>
             <ProjectMenu />
-            <EditMenu />
+            <EditMenu commands={history.commands} />
+            <Menu label="View" items={viewCommands} trigger={<Button variant="ghost">View</Button>} />
 
             <div className="ml-auto flex items-center gap-2">
+              <SaveStatus state={autoSave.state} onRetry={() => void autoSave.saveNow()} />
               <IconButton variant="ghost" icon={Keyboard} label="Keyboard shortcuts" hint="?" onClick={toggleHelp} />
               <ColorSchemeChoice compact />
               <Button variant="default" onClick={() => setShowExport(true)}>
@@ -155,33 +169,42 @@ function App() {
             <div className="type-caption text-muted-foreground border-l border-border pl-4 ml-2">v0.1.0</div>
           </header>
 
-          {/* Library */}
-          <div className="[grid-area:library] border-r border-border bg-card flex flex-col overflow-hidden" data-testid="library">
-            <LibraryPanel
-                assets={assets}
-                selectedAssetId={selectedAssetId}
-                onAddFile={handleAddFile}
-                onAssetSelect={selectAsset}
-                onAssetRemove={handleAssetRemove}
-                onAssetUpdate={handleAssetUpdate}
-                onAddToTimeline={addToTimeline}
-            />
-          </div>
-
-          {/* Preview */}
-          <div className="[grid-area:preview] bg-footage flex items-center justify-center relative overflow-hidden" data-testid="preview">
-            <PreviewPanel />
-          </div>
-
-          {/* Metadata */}
-          <div className="[grid-area:metadata] border-l border-border bg-card flex flex-col overflow-hidden" data-testid="metadata">
-            <MetadataPanel assets={assets} selectedAssetId={selectedAssetId} settings={settings} setSettings={setSettings} />
-          </div>
-
-          {/* Timeline */}
-          <div className="[grid-area:timeline] border-t border-border bg-card flex flex-col overflow-hidden" data-testid="timeline">
-            <TimelinePanel />
-          </div>
+          {/* The editor's panes (strata-react Workspace, issue #68): library and inspector beside the
+              stage, the timeline below; each resizes and folds, and the sizes are remembered. */}
+          <Workspace label="Editor" state={workspace} className="min-h-0 flex-1">
+            <Split direction="column">
+              <Split direction="row">
+                <Pane id="library" name="Library" size={300} min={220} collapsible>
+                  <div className="flex h-full flex-col" data-testid="library">
+                    <LibraryPanel
+                        assets={assets}
+                        selectedAssetId={selectedAssetId}
+                        onAddFile={handleAddFile}
+                        onAssetSelect={selectAsset}
+                        onAssetRemove={handleAssetRemove}
+                        onAssetUpdate={handleAssetUpdate}
+                        onAddToTimeline={addToTimeline}
+                    />
+                  </div>
+                </Pane>
+                <Pane id="preview" name="Preview" grow>
+                  <div className="h-full bg-footage flex items-center justify-center relative overflow-hidden" data-testid="preview">
+                    <PreviewPanel />
+                  </div>
+                </Pane>
+                <Pane id="inspector" name="Inspector" size={300} min={240} collapsible>
+                  <div className="flex h-full flex-col" data-testid="metadata">
+                    <MetadataPanel assets={assets} selectedAssetId={selectedAssetId} settings={settings} setSettings={setSettings} />
+                  </div>
+                </Pane>
+              </Split>
+              <Pane id="timeline" name="Timeline" size={330} min={160} collapsible>
+                <div className="flex h-full flex-col" data-testid="timeline">
+                  <TimelinePanel />
+                </div>
+              </Pane>
+            </Split>
+          </Workspace>
 
           {showExport && <ExportModal onClose={() => setShowExport(false)} />}
           {showHelp && <HelpModal commands={commands} onClose={() => setShowHelp(false)} />}

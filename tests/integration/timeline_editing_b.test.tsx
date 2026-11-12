@@ -10,7 +10,7 @@ global.URL.createObjectURL = jest.fn(() => 'mock-url');
 
 // Mock components/hooks that might interfere
 jest.mock('../../src/hooks/useAutoSave', () => ({
-    useAutoSave: jest.fn()
+    useAutoSave: () => ({ state: { status: 'saved', at: null }, saveNow: async () => {} })
 }));
 
 // Mock mediabunny just in case

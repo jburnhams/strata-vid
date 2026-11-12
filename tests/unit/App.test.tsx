@@ -20,7 +20,7 @@ jest.mock('../../src/components/PreviewPanel', () => ({
 
 // Mock useAutoSave to prevent side effects in tests
 jest.mock('../../src/hooks/useAutoSave', () => ({
-  useAutoSave: () => {},
+  useAutoSave: () => ({ state: { status: 'saved', at: null }, saveNow: async () => {} }),
 }));
 
 describe('App', () => {

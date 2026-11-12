@@ -3,28 +3,19 @@
  * keys (`useCommands`), fills the Edit menu, and draws the shortcuts dialog's legend, so a key, a
  * menu item and the help can no longer disagree, as the hand-kept list in HelpModal used to.
  *
- * Undo is always offered: the history middleware keeps no "can undo" flag yet. Document history
- * with real availability is strata-react issue #81, not released; it replaces `historyCommands`.
+ * Undo and Redo come from the document history (`useDocumentHistory`, strata-react's `useHistory`),
+ * passed in as `history`: named after the step ("Undo trim clip") and disabled when there is none.
  */
 import { useMemo, useRef } from 'react';
 import { useCommands, type Command } from 'strata-react';
-import { Pause, Play, Redo2, Trash2, Undo2 } from 'lucide-react';
+import { Pause, Play, Trash2 } from 'lucide-react';
 import { useProjectStore } from '../store/useProjectStore';
-
-type History = { undo: () => void; redo: () => void };
-const history = () => useProjectStore as unknown as History;
-
-/** Undo and redo, for the Edit menu and the key handler. */
-export const historyCommands: Command[] = [
-  { id: 'undo', label: 'Undo', icon: Undo2, keys: ['Mod+Z'], run: () => history().undo() },
-  { id: 'redo', label: 'Redo', icon: Redo2, keys: ['Mod+Y', 'Mod+Shift+Z'], run: () => history().redo() },
-];
 
 /**
  * Every command the editor binds to keys. `onToggleHelp` opens and closes the shortcuts dialog.
  * Commands read the store when they run, so the list only changes with what it shows.
  */
-export const useEditorCommands = (onToggleHelp?: () => void): Command[] => {
+export const useEditorCommands = (onToggleHelp?: () => void, history: readonly Command[] = []): Command[] => {
   const isPlaying = useProjectStore((state) => state.isPlaying);
   const hasSelectedClip = useProjectStore((state) => state.selectedClipId !== null);
   // Space and K both toggle; a second toggle inside 200ms is dropped, so a bouncing key or a
@@ -71,18 +62,18 @@ export const useEditorCommands = (onToggleHelp?: () => void): Command[] => {
           if (id) store().removeClip(id);
         },
       },
-      ...historyCommands,
+      ...history,
     ];
     if (onToggleHelp) {
       commands.push({ id: 'shortcuts', label: 'Keyboard shortcuts', keys: ['?'], run: onToggleHelp });
     }
     return commands;
-  }, [isPlaying, hasSelectedClip, onToggleHelp]);
+  }, [isPlaying, hasSelectedClip, onToggleHelp, history]);
 };
 
 /** Binds the editor's commands to their keys on the window. Never while typing in a field. */
-export const useKeyboardShortcuts = (onToggleHelp?: () => void): Command[] => {
-  const commands = useEditorCommands(onToggleHelp);
+export const useKeyboardShortcuts = (onToggleHelp?: () => void, history?: readonly Command[]): Command[] => {
+  const commands = useEditorCommands(onToggleHelp, history);
   useCommands(commands);
   return commands;
 };

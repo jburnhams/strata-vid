@@ -26,13 +26,13 @@ export const ProjectMenu: React.FC = () => {
   };
 
   const startNewProject = () => {
-    // Cleanup assets
-    Object.values(store.assets).forEach(asset => AssetLoader.revokeAsset(asset));
-
-    // Clear existing project
-    Object.keys(store.assets).forEach(id => store.removeAsset(id));
-    Object.keys(store.tracks).forEach(id => store.removeTrack(id));
-    store.setSettings({ width: 1920, height: 1080, fps: 30, duration: 60 });
+    // One load of an empty project, so the history starts again (useDocumentHistory) rather than
+    // recording each removal as a step.
+    store.loadProject({
+      id: `project-${Date.now()}`,
+      settings: { ...store.settings, width: 1920, height: 1080, fps: 30, duration: 60 },
+      assets: {}, tracks: {}, clips: {}, trackOrder: [],
+    });
   };
 
   const handleSaveProject = () => {

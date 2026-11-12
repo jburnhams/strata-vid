@@ -30,12 +30,12 @@ features as rows (new IDs continue the letter, or start N).
 | B5 | Collision rules | Done | A move that would overlap is refused with a reason; "Allow overlaps" lifts it |
 | B5b | Ripple move (a move pushes neighbours along) | Dropped | "Add to timeline" places footage end to end, and ripple delete (H3) plus snapping cover the rest |
 | B6 | Multiple tracks; add and delete; move clips between them | Done | |
-| B6b | Reorder tracks | Planned | Track order decides what draws on top (a route inset over footage) |
+| B6b | Reorder tracks | Done | 2026-11-12: "Move up" and "Move down" in a track's settings; lower tracks draw over higher ones. Buttons, as strata-react's Timeline has no lane drag |
 | B7 | Select a clip; context menu; Delete key | Done | |
 | B7b | Multi-select (Shift/Ctrl-click) | Dropped | A run edit has a handful of clips; the store keeps one `selectedClipId` |
 | B8 | Zoom, scroll, zoom to fit | Done | `TimelineZoomControls` |
 | B8b | Zoom anchored to the pointer | Dropped here | Zoom belongs to strata-react's `Timeline`; raise it there if wanted |
-| — | Drag a file from the library onto a lane | Planned | Removed with `@dnd-kit` in #138; strata-react #121 (closed) adds drops from outside, so it comes back with the port |
+| — | Drag a file from the library onto a lane | Done | Back on 2026-11-12 through strata-react #121's drops from outside; refused with a reason over a locked track or the wrong kind of track. Pointer only; the keyboard uses "Add to timeline" |
 
 ## C. Preview rendering
 
@@ -52,7 +52,7 @@ features as rows (new IDs continue the letter, or start N).
 | ID | Feature | Status | Notes |
 |---|---|---|---|
 | D1 | Position at a time (binary search, interpolation) | Done | `getGpxPositionAtTime` |
-| D2 | Map clip with track and moving marker | Done | Leaflet; to move to strata-react #80 |
+| D2 | Map clip with track and moving marker | Done | Leaflet; moves to strata-react `RouteMap` once #161 lands. Preview fits the route and ignores the clip's zoom, which export uses |
 | D3 | Manual sync | Done | `MapSyncControl`; the number is an absolute GPX time in epoch ms |
 | D4 | Auto-sync from the video's creation time | Done | |
 | D5 | Map styles, track and marker styling | Done | |
@@ -73,8 +73,8 @@ features as rows (new IDs continue the letter, or start N).
 | ID | Feature | Status | Notes |
 |---|---|---|---|
 | F1–F3 | Save and open a `.svp` file | Done | Files are not stored in it; an opened project relinks them |
-| F4 | Undo and redo | Done | 50 steps; the UI part waits on strata-react #81 |
-| F5 | Auto-save to `localStorage` | Done | Every 60 s; restored when the editor opens empty |
+| F4 | Undo and redo | Done | strata-react `useHistory` since 2026-11-12: named steps, a slider drag is one step, Undo disabled when there is nothing to undo; 50 steps |
+| F5 | Auto-save to `localStorage` | Done | 1.5 s after a change (was every 60 s), with `SaveStatus` in the header and a reason when it fails; restored when the editor opens empty |
 | F6 | New project | Done | |
 
 ## G. User experience
@@ -86,7 +86,7 @@ features as rows (new IDs continue the letter, or start N).
 | G4 | Asset thumbnails | Done | |
 | G5 | Editable properties panel | Done | strata-react `Inspector` |
 | G6 | Dark and light mode | Done | Was open in the old file; done by #137 (`ThemeProvider`, `ColorSchemeChoice`) |
-| G7 | Layout for narrow screens | Dropped (phone); planned (panes) | Editing and WebCodecs export on a phone is not a goal. Collapsible panes come with strata-react's `Workspace` (#68) in the port |
+| G7 | Layout for narrow screens | Dropped (phone); panes done | Editing and WebCodecs export on a phone is not a goal. Since 2026-11-12 the panels are strata-react `Workspace` panes (#68): they resize, fold, and stack below 720px |
 | G8 | Accessibility | Done | Mostly through strata-react's controls since #137 |
 
 ## H. Advanced timeline
@@ -95,9 +95,9 @@ features as rows (new IDs continue the letter, or start N).
 |---|---|---|---|
 | H1–H3 | Split, duplicate, ripple delete | Done | Clip context menu |
 | H4 | Crossfade transitions | Done | Preview and export |
-| H5 | Speed (per-clip playback rate) | Partial, planned | Store action `updateClipPlaybackRate` and rendering exist; no control calls it. The old file said done. Needs a control, and the map, profile and sound checked at 2× |
+| H5 | Speed (per-clip playback rate) | Done | 2026-11-12: "Speed" in a video clip's Timing section (0.25× to 8×; a slower speed that would run into the next clip is refused). The route on a map, its readings and the elevation profile follow the footage's speed (`routeClock.ts`). Sound at another speed changes pitch in preview as it does in export. Checked by unit tests, not yet by eye in a browser |
 | H6 | Markers | Done | |
-| H7 | Video filters | Partial, planned | `properties.filter` is applied in preview and export; no control sets it. The old file said done. Planned as brightness, contrast and saturation sliders, not a filter library |
+| H7 | Video filters | Done | 2026-11-12: brightness, contrast and saturation sliders in a video or image clip's Colour section, written as the clip's CSS `filter` that preview and export apply |
 | H8 | Keyframe animation | Done | `KeyframeList`; the old file marked it partial |
 
 ## I/M. Audio
@@ -110,7 +110,7 @@ Section I was replaced by M; I's open items (waveforms, volume, export) were don
 | M2, I6 | Waveforms, including from a video's audio | Done | |
 | M3–M5 | Web Audio graph: clip, track and master gain | Done | `AudioEngine` |
 | M6 | Volume controls | Done | Track volume in the track settings popover since #138 |
-| M7 | Waveforms on the timeline | Done | Shown as a strip until strata-react #121 (lane height) |
+| M7 | Waveforms on the timeline | Done | Lanes two rows high since 2026-11-12 (strata-react #121) |
 | M8 | Audio in export | Done | Mixed on the main thread by `AudioCompositor` and encoded in the worker (issue #141). A browser that cannot encode the chosen codec gets another the container takes, and the finished export says so |
 | M9 | Equaliser, compressor, reverb | Dropped | Out of scope for a run video |
 

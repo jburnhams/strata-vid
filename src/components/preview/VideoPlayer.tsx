@@ -74,6 +74,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     if (Math.abs(video.playbackRate - effectiveRate) > 0.01) {
       video.playbackRate = effectiveRate;
     }
+    // A clip at another speed sounds as the export mixes it (a Web Audio source at that rate, so the
+    // pitch moves with it); the transport's own speed keeps the pitch, as a preview aid.
+    video.preservesPitch = clipRate === 1;
 
     // Sync Time
     // If paused, we want precise seeking (scrubbing)

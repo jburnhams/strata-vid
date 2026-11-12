@@ -21,28 +21,28 @@ port stands and what it is waiting on: [docs/PORT.md](docs/PORT.md). What change
   failed with its reason and Try again) shows beside it. Each one gets a thumbnail (first frame for
   video), metadata (codec, frame rate, creation time) and, for audio, a waveform. A missing file is
   relinked in place. Removing an asset in use asks first.
-- **Timeline** (strata-react's `Timeline`): tracks for video, audio and overlays; files go on with
-  "Add to timeline"; move, trim and change lane with the pointer or the keyboard, snapping on or off;
+- **Timeline** (strata-react's `Timeline`): tracks for video, audio and overlays; files go on by dragging
+  them onto a lane or with "Add to timeline"; move, trim and change lane with the pointer or the keyboard, snapping on or off;
   a move that would overlap another clip or touch a locked track is refused with its reason; zoom,
-  mute and lock, per-track volume and view in a settings popover, markers, crossfade transitions,
-  split, duplicate, ripple delete, and keyframes for a clip's properties.
+  mute and lock, per-track volume, view and order in a settings popover, markers, crossfade transitions,
+  split, duplicate, ripple delete, keyframes for a clip's properties, a clip's speed, and its
+  brightness, contrast and saturation.
 - **Preview**: the clips under the playhead composed live: video, images, text, a Leaflet map of the
   GPX track with a moving marker (several tracks, a speed or elevation heatmap, an elevation profile),
   and a data overlay (speed, distance, elevation in chosen units). Transport, seek bar, volume and
   speed below; stage guides and a preview quality setting.
 - **GPX sync**: a map clip's offset is set from the video's creation time or by hand.
 - **Audio**: per-clip and per-track volume through Web Audio, mixed into the export.
-- **Project**: undo and redo (50 steps), save to and open from a `.svp` file, auto-save to
-  `localStorage` every 60 seconds.
+- **Project**: undo and redo of named steps ("Undo trim clip", 50 kept), save to and open from a `.svp`
+  file, auto-save to `localStorage` a moment after each change, with "Saved" and the time in the header.
 - **Export**: MP4 or WebM, rendered frame by frame in a Web Worker with WebCodecs (via mediabunny),
   with progress and cancel.
 - **Commands**: every action has a shortcut and appears in the command menu and the Edit menu; the
   shortcuts dialog (the keyboard button) lists them.
 
 Every planned feature, done or not, is in [docs/FEATURES.md](docs/FEATURES.md) under its old roadmap
-ID, marked **Planned** or **Dropped** where Jonathan decided (2026-11-12). Planned: dragging library files
-onto the timeline (back with the port), a speed control and brightness, contrast and saturation sliders
-(both already render), reordering tracks, and checking an export by hand in Chrome. Dropped: HTML clips,
+ID, marked **Planned** or **Dropped** where Jonathan decided (2026-11-12). Planned: checking an export by hand in
+Chrome; a speed control, brightness, contrast and saturation, and reordering tracks followed on 2026-11-12. Dropped: HTML clips,
 ripple move, multi-select, a phone layout, audio effects, and sharing or cloud storage.
 
 ## Running it

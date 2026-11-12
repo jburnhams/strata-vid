@@ -33,4 +33,9 @@ export const createUiSlice: StateCreator<
     set((state) => {
       state.zoomLevel = zoomLevel;
     }),
+  draggedAssetId: null,
+  setDraggedAsset: (id) =>
+    set((state) => {
+      state.draggedAssetId = id;
+    }),
 });

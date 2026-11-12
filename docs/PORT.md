@@ -32,16 +32,33 @@ is refused with a reason instead of landing at the nearest free spot, track volu
 moved into a per-track settings popover, and the time readout shows milliseconds (#122). `recharts`
 was removed from `package.json` on 2026-11-12 (Jonathan's yes).
 
+## Swapped on 2026-11-12
+
+- [#68](https://github.com/jburnhams/strata-react/issues/68) Workspace layout: the editor's four panels are
+  `Pane`s in a `Workspace` (library, preview, inspector, timeline); each resizes, the side panes and the
+  timeline fold, sizes are remembered, and a View menu shows or hides them.
+- [#81](https://github.com/jburnhams/strata-react/issues/81) Document history and save state: `useHistory`
+  holds named undo steps fed by the store, and `useAutoSave` with `SaveStatus` replaces the 60-second
+  timer (see ARCHITECTURE.md, Saving).
+- [#121](https://github.com/jburnhams/strata-react/issues/121) Timeline for editors: library files drag onto
+  a lane (a native drag from the row; the keyboard keeps "Add to timeline"), refused with a reason over a
+  lane that cannot take them; lanes are two rows high; each kind's stripe is the library's media colour.
+
+## Waiting on strata-react again
+
+- [#80](https://github.com/jburnhams/strata-react/issues/80) Map is closed, but `RouteMap` cannot yet draw
+  the map clip as the export does: it fits the route instead of holding the clip's zoom on the runner, and
+  has one position, where a clip with extra tracks shows one marker per track in its colour. Filed as
+  [strata-react #161](https://github.com/jburnhams/strata-react/issues/161); the preview keeps its Leaflet
+  panel until then. Found on the way: preview and export already disagree here (preview fits the route
+  and ignores the zoom; export centres on the runner at the zoom), which the swap will end.
+
 ## Closed in strata-react, to swap here
 
 | Issue | What it is for |
 |---|---|
-| [#68](https://github.com/jburnhams/strata-react/issues/68) Workspace layout | Docked, resizable, collapsible panes for the editor's four panels |
-| [#80](https://github.com/jburnhams/strata-react/issues/80) Map | Themed map with routes, a moving position and overlays (replaces the Leaflet panel in preview) |
-| [#81](https://github.com/jburnhams/strata-react/issues/81) Document history and save state | Undo/redo and "Saved" (replaces `historyMiddleware` wiring and auto-save notices) |
 | [#116](https://github.com/jburnhams/strata-react/issues/116) Fixes from the port | Controlled dialog warning, inspector overflow, colour picker names, Jest setup docs |
 | [#117](https://github.com/jburnhams/strata-react/issues/117) Density | One density setting reaching overlays; small sizes across controls |
-| [#121](https://github.com/jburnhams/strata-react/issues/121) Timeline for editors | Drops from outside, lane height, kind colours, header width |
 | [#122](https://github.com/jburnhams/strata-react/issues/122) Media and files in narrow panes | MissingFile layout, LineChart x label, frame timecode |
 
 ## App bugs noted
@@ -58,13 +75,14 @@ as issues #141 to #145. All fixed on 2026-11-12 (branch `claude/project-thread-6
 - #145: the empty stage's "0.00s"; the waveform invisible in light.
 
 Left for strata-react: the profile still labels the route's end "now", which LineChart always does
-(passed on as a framework gap), and clip kind colours that swap between schemes (#121).
+(passed on as a framework gap; strata-react #138, closed). Clip kind colours that swapped between schemes
+were fixed with `kindColours` (#121).
 
 ## After the port
 
 Jonathan decided on 2026-11-12 which open features to build and which to drop; FEATURES.md marks them
-**Planned** or **Dropped**. Planned: clip speed (H5), brightness, contrast and saturation (H7), reordering
-tracks (B6b), and checking an export by hand in Chrome.
+**Planned** or **Dropped**. Planned: clip speed (H5) and brightness, contrast and saturation (H7), both done
+on 2026-11-12; reordering tracks (B6b), done the same day; and checking an export by hand in Chrome.
 
 ## Testing notes
 

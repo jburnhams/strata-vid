@@ -48,13 +48,10 @@ Found while writing the visual tests (2026-11-12), with the media in `tests/fixt
 as issues #141 to #145. Each is struck from this list in the PR that fixes it. Fixed so far: export
 never rendering a frame and always dropping the sound (#141); MP4 details and dates, and GPX dates, not
 read (#142); the library's race order, "Add to timeline" selecting the file and stacking everything
-on the video track, rows that were buttons holding buttons, and the audio file's map icon (#143).
+on the video track, rows that were buttons holding buttons, and the audio file's map icon (#143); the sync panel's unlabelled epoch field and
+mixed date styles, and the elevation profile marking a different place from the map (#144). The
+profile still labels the route's end "now": strata-react's LineChart always does.
 
-- **Sync panel**: the sync offset input has no label (only a placeholder, "Epoch ms at Video 0s"), and its
-  dates are written `03/05/2026, 07:41:08` where the inspector writes `3 May 2026, 07:43`.
-- **Elevation profile disagrees with itself**: with the playhead on the route clip it marks 2.6 km (373 m)
-  with a line and labels the route's end "216 m now", while the map's marker is at the start. Its height
-  axis runs from 0 m for a route between 215 m and 429 m.
 - **The empty stage shows "0.00s"** in monospace in its middle.
 - **In the light scheme the audio clip's waveform is invisible** (it shows in dark).
 

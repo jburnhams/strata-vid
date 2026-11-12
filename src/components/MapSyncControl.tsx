@@ -1,5 +1,15 @@
-import { Button } from 'strata-react';
-import React, { useState, useEffect } from 'react';
+/**
+ * Sync with footage: which moment of the route the map clip starts at.
+ *
+ * The clip stores that moment as `syncOffset`, the route's time (epoch ms) at the clip's start, and
+ * the map's marker and the elevation profile both read it. Until 2026-11-12 this panel asked people
+ * to type that epoch number into an unlabelled field ("Epoch ms at Video 0s") and wrote dates with
+ * `toLocaleString`, unlike the inspector above it (issue #144). Now the number a person edits is
+ * how far into the route the clip starts, in seconds, labelled, with the moment it names written
+ * beside it; the epoch value stays internal. Dates go through strata's `format`, as everywhere else.
+ */
+import React from 'react';
+import { Button, Field, NumberField, PropertyList, format } from 'strata-react';
 import { useProjectStore } from '../store/useProjectStore';
 
 interface MapSyncControlProps {
@@ -7,109 +17,71 @@ interface MapSyncControlProps {
   className?: string;
 }
 
+/** A time of day to the second, for lining up a route with footage. */
+const timeOfDay = (at: Date) => at.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
 export const MapSyncControl: React.FC<MapSyncControlProps> = ({ clipId, className }) => {
   const clips = useProjectStore((state) => state.clips);
   const assets = useProjectStore((state) => state.assets);
   const updateClipSyncOffset = useProjectStore((state) => state.updateClipSyncOffset);
-  const currentTime = useProjectStore((state) => state.currentTime);
 
   const clip = clips[clipId];
   const asset = clip ? assets[clip.assetId] : null;
 
-  const [manualOffset, setManualOffset] = useState<string>('');
-  const [gpxTimeInput, setGpxTimeInput] = useState<string>('');
-
-  useEffect(() => {
-    if (clip?.syncOffset !== undefined) {
-      setManualOffset(clip.syncOffset.toString());
-    }
-  }, [clip?.syncOffset]);
-
-  if (!clip || !asset || clip.type !== 'map') {
+  if (!clip || !asset || (clip.type !== 'map' && clip.type !== 'data')) {
     return null;
   }
 
-  // Find reference video (first video clip) to sync against
-  // In a complex app, we might allow selecting which video to sync with.
+  // The footage to sync against: the first video clip.
   const referenceVideoClip = Object.values(clips).find(c => c.type === 'video');
   const referenceAsset = referenceVideoClip ? assets[referenceVideoClip.assetId] : null;
 
-  const handleOffsetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setManualOffset(e.target.value);
-  };
-
-  const applyOffset = () => {
-    const offset = parseFloat(manualOffset);
-    if (!isNaN(offset)) {
-      updateClipSyncOffset(clipId, offset);
-    }
-  };
+  // The route's own first time, from its points; a route without times cannot be synced.
+  const routeStart = asset.gpxPoints?.[0]?.time ?? null;
+  // An offset of 0 (or none) means the clip starts at the route's first point.
+  const syncedTo = clip.syncOffset || routeStart;
+  const secondsIn = routeStart !== null && syncedTo !== null ? (syncedTo - routeStart) / 1000 : null;
 
   const handleAutoSync = () => {
-    if (referenceAsset && referenceAsset.creationTime) {
-      // syncOffset = Video Creation Time (Epoch ms)
-      // This assumes Video Start (0s) == Creation Time
-      // If the video clip has an 'offset' (trimmed), we should account for it?
-      // Video Time 0 (Timeline) = Video Source Time 'offset'.
-      // Creation Time corresponds to Video Source Time 0.
-      // So at Timeline 0, Source is 'offset'. Real Time is Creation + 'offset' * 1000.
-      // So syncOffset (Timeline 0 -> Real Time) should be Creation + offset*1000.
-
-      const videoStartRealTime = referenceAsset.creationTime.getTime() + (referenceVideoClip!.offset * 1000);
-
-      setManualOffset(videoStartRealTime.toString());
-      updateClipSyncOffset(clipId, videoStartRealTime);
+    if (referenceAsset?.creationTime && referenceVideoClip) {
+      // The footage's recorded time is its source's 0 s; the clip shows it from `offset` seconds in.
+      updateClipSyncOffset(clipId, referenceAsset.creationTime.getTime() + referenceVideoClip.offset * 1000);
     }
   };
 
-  const formatTime = (date?: Date) => {
-      if (!date) return 'Unknown';
-      return date.toLocaleString();
-  };
+  const rows = [
+    { term: 'Route starts', value: routeStart !== null ? format.dateTime(new Date(routeStart)) : null },
+    ...(referenceAsset ? [{ term: `${referenceAsset.name} recorded`, value: referenceAsset.creationTime ? format.dateTime(referenceAsset.creationTime) : null }] : []),
+  ];
 
   return (
-    <div className={`flex min-w-0 flex-col gap-4 type-body-sm ${className ?? ''}`}>
-      <div className="flex flex-col gap-1 border-b border-border pb-2">
-        <h3 className="font-bold text-foreground">Synchronization</h3>
-        <div className="type-caption text-muted-foreground">
-          GPX Start: {formatTime(asset.stats?.time?.start)}
-        </div>
-        {referenceAsset && (
-            <div className="type-caption text-muted-foreground mt-1">
-            Ref Video: {referenceAsset.name}<br/>
-            Created: {formatTime(referenceAsset.creationTime)}
-            </div>
-        )}
-      </div>
+    <div className={`grid min-w-0 gap-3 type-body-sm ${className ?? ''}`}>
+      <PropertyList items={rows} />
 
-      {/* Auto Sync */}
-      <div className="flex flex-col gap-2">
-         <Button
-            onClick={handleAutoSync}
-            disabled={!referenceAsset?.creationTime}
-            title={referenceAsset ? "Syncs to " + referenceAsset.name + " creation time" : "No video found to sync with"}
-         >
-            Auto-Sync to Video Metadata
-         </Button>
-      </div>
+      {referenceAsset ? (
+        <Button onPress={handleAutoSync} disabled={!referenceAsset.creationTime}>
+          {`Match ${referenceAsset.name}'s recorded time`}
+        </Button>
+      ) : (
+        <p className="type-caption text-muted-foreground">Put footage on the timeline to match the route to it.</p>
+      )}
 
-      {/* Manual Sync - Offset */}
-      <div className="flex flex-col gap-1">
-        <label className="type-caption text-muted-foreground uppercase font-semibold">Sync Offset (ms)</label>
-        <div className="flex gap-2">
-          <input
-            type="number"
-            value={manualOffset}
-            onChange={handleOffsetChange}
-            className="flex-1 min-w-0 px-2 py-1 bg-background border border-border rounded-control text-foreground focus:border-primary outline-none"
-            placeholder="Epoch ms at Video 0s"
+      {secondsIn === null ? (
+        <p className="type-caption text-muted-foreground">This route has no times, so the map cannot follow the footage.</p>
+      ) : (
+        <Field
+          label="Clip starts into the route"
+          hint={`At the clip's start the route is at ${timeOfDay(new Date(syncedTo!))}. Negative when the footage starts before the route.`}
+        >
+          <NumberField
+            value={secondsIn}
+            step={1}
+            places={1}
+            unit="s"
+            onChange={(v) => { if (v !== null && routeStart !== null) updateClipSyncOffset(clipId, routeStart + v * 1000); }}
           />
-          <Button onClick={applyOffset}>Set</Button>
-        </div>
-        <p className="type-caption text-muted-foreground">
-           Value represents the absolute GPX timestamp (epoch ms) that corresponds to Video Time 00:00.
-        </p>
-      </div>
+        </Field>
+      )}
     </div>
   );
 };

@@ -62,7 +62,6 @@ interface MapPanelProps {
   gpxAssets?: (Asset | undefined)[];
   mainAssetId?: string;
   extraTracks?: ExtraTrack[];
-  clipDuration?: number;
 }
 
 const TILE_PROVIDERS = {
@@ -183,7 +182,6 @@ export const MapPanel: React.FC<MapPanelProps> = ({
   gpxAssets = [],
   mainAssetId = '',
   extraTracks = [],
-  clipDuration = 0
 }) => {
   const tileProvider = useMemo(() => {
     const provider = TILE_PROVIDERS[mapStyle] || TILE_PROVIDERS.osm;
@@ -288,7 +286,7 @@ export const MapPanel: React.FC<MapPanelProps> = ({
             extraTracks={extraTracks}
             onSeek={onSeek}
             currentTime={currentTime}
-            clipDuration={clipDuration}
+            syncOffset={effectiveTracks[0]?.syncOffset}
           />
         </div>
       )}

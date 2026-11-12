@@ -1,15 +1,11 @@
 import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { fireEvent } from '@testing-library/react';
 import App from '../../src/App';
 import { useProjectStore } from '../../src/store/useProjectStore';
+import { dragBy, timelineItem } from '../utils/timeline';
 
 // Mock Browser APIs
-global.ResizeObserver = class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-};
 global.URL.createObjectURL = jest.fn(() => 'mock-url');
 
 // Mock components/hooks that might interfere
@@ -51,40 +47,27 @@ describe('Section B: Timeline Editing Integration', () => {
         });
     });
 
-    it('updates clip duration and tooltip when resizing via handles', () => {
+    it('trims the end of a clip by dragging its right edge', () => {
         renderWithStrata(<App />);
 
-        // Find the clip. Using testid instead of text to be robust against dynamic naming.
-        const clipElement = screen.getByTestId('clip-item-clip-1');
+        // The edges are the timeline's own pointer handles beside the clip's button
+        const clip = timelineItem('video.mp4');
+        const [, endEdge] = clip.parentElement!.querySelectorAll('span.cursor-ew-resize');
+        if (!endEdge) throw new Error('End edge not found');
 
-        // Locate the right resize handle.
-        // We look for the sibling div with cursor-e-resize class.
-        // The structure is <div data-testid="clip-item-..."><span>text</span><div>handleL</div><div>handleR</div></div>
-        const handles = clipElement.querySelectorAll('div.cursor-e-resize');
-        const rightHandle = handles?.[0];
+        // +20px at 10px a second is +2 seconds
+        dragBy(endEdge, 20);
 
-        if (!rightHandle) throw new Error('Right resize handle not found');
-
-        // Simulate Resize
-        // 1. Pointer Down
-        fireEvent(rightHandle, new MouseEvent('pointerdown', { bubbles: true, clientX: 200 }));
-
-        // 2. Pointer Move (Window) - move +20px => +2 seconds (at zoom 10)
-        fireEvent(window, new MouseEvent('pointermove', { bubbles: true, clientX: 220 }));
-
-        // Check Tooltip
-        expect(screen.getByTestId('resize-tooltip')).toBeInTheDocument();
-        expect(screen.getByText(/End:/)).toBeInTheDocument();
-
-        // 3. Pointer Up (Window)
-        fireEvent(window, new MouseEvent('pointerup', { bubbles: true }));
-
-        // Verify Store Update
-        const state = useProjectStore.getState();
-        expect(state.clips['clip-1'].duration).toBe(12); // 10 + 2 = 12
+        expect(useProjectStore.getState().clips['clip-1'].duration).toBe(12);
+        expect(useProjectStore.getState().clips['clip-1'].start).toBe(10);
     });
 
-    // Note: Full drag-and-drop integration with @dnd-kit in JSDOM is extremely brittle
-    // and usually requires mocking the sensors or DndContext itself, which we did in unit tests.
-    // In this integration test, we verify the resizing interaction which uses custom pointer events.
+    it('trims the end of a clip from the keyboard', () => {
+        renderWithStrata(<App />);
+
+        fireEvent.keyDown(timelineItem('video.mp4'), { key: 'ArrowRight', altKey: true });
+
+        expect(useProjectStore.getState().clips['clip-1'].duration).toBeGreaterThan(10);
+        expect(useProjectStore.getState().clips['clip-1'].start).toBe(10);
+    });
 });

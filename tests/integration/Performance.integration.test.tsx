@@ -11,24 +11,6 @@ global.ResizeObserver = jest.fn().mockImplementation(() => ({
     disconnect: jest.fn(),
 }));
 
-// Mock dnd-kit to avoid complex drag logic in this test
-jest.mock('@dnd-kit/core', () => ({
-    ...jest.requireActual('@dnd-kit/core'),
-    DndContext: ({ children }: any) => <div>{children}</div>,
-    DragOverlay: () => null,
-    useDraggable: () => ({
-        attributes: {},
-        listeners: {},
-        setNodeRef: jest.fn(),
-        transform: null,
-        isDragging: false,
-    }),
-    useDroppable: () => ({
-        setNodeRef: jest.fn(),
-        isOver: false,
-    }),
-}));
-
 describe('Performance Integration (Section J)', () => {
     beforeEach(() => {
         act(() => {

@@ -3,7 +3,6 @@ import { render, screen } from '@testing-library/react';
 import { TimelinePanel } from '../../src/components/TimelinePanel';
 import { useProjectStore } from '../../src/store/useProjectStore';
 import { AudioEngine } from '../../src/services/AudioEngine';
-import { DndContext } from '@dnd-kit/core';
 
 // Mock AudioEngine
 jest.mock('../../src/services/AudioEngine', () => ({
@@ -76,9 +75,7 @@ describe('Audio Waveform Integration', () => {
 
   it('renders waveform overlay on audio clip in timeline', async () => {
     render(
-      <DndContext>
-        <TimelinePanel />
-      </DndContext>
+      <TimelinePanel />
     );
 
     // Check if clip item exists

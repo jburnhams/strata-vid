@@ -50,8 +50,8 @@ describe('App', () => {
     expect(screen.getByText('Strata Vid')).toBeInTheDocument();
     expect(screen.getByText('Library')).toBeInTheDocument();
     expect(screen.getByText('Nothing selected')).toBeInTheDocument();
-    expect(screen.getByText('TIMELINE')).toBeInTheDocument();
-    expect(screen.getByRole('slider', { name: 'Zoom' })).toHaveValue('10');
+    expect(screen.getByRole('group', { name: 'Timeline' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /zoom in/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Export video' })).toHaveAttribute('data-variant', 'default');
     expect(screen.getByText('Mock Preview Panel')).toBeInTheDocument();
   });

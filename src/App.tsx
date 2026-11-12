@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import { LibraryPanel } from './components/LibraryPanel';
 import { PreviewPanel } from './components/PreviewPanel';
 import { MetadataPanel } from './components/MetadataPanel';
@@ -17,14 +17,6 @@ import { handleError, showSuccess } from './utils/errorHandler';
 import { useAutoSave } from './hooks/useAutoSave';
 import { Keyboard } from 'lucide-react';
 import { AlertDialog, Button, ColorSchemeChoice, CommandMenu, IconButton } from 'strata-react';
-import { DndContext, DragOverlay, useSensors, useSensor, PointerSensor, type DragStartEvent, type DragEndEvent, type DragMoveEvent, defaultDropAnimationSideEffects, type DropAnimation, pointerWithin } from '@dnd-kit/core';
-import { ClipItem } from './components/timeline/ClipItem';
-import {
-  checkCollision,
-  getSnapPoints,
-  findNearestSnapPoint,
-  findNearestValidTime,
-} from './utils/timelineUtils';
 
 function App() {
   const [showExport, setShowExport] = React.useState(false);
@@ -33,15 +25,6 @@ function App() {
     isOpen: false,
     assetId: null,
   });
-
-  // Drag State
-  const [activeDragId, setActiveDragId] = useState<string | null>(null);
-  const [activeDragType, setActiveDragType] = useState<'Clip' | 'Asset' | null>(null);
-  const [snapLine, setSnapLine] = useState<number | null>(null);
-  const [isValidDrop, setIsValidDrop] = useState(true);
-
-  // Ref for accessing timeline geometry
-  const timelineScrollRef = React.useRef<HTMLDivElement>(null);
 
   const toggleHelp = () => setShowHelp(prev => !prev);
   const commands = useKeyboardShortcuts(toggleHelp);
@@ -61,25 +44,12 @@ function App() {
     addClip,
     addTrack,
     removeClipsByAssetId,
-    moveClip,
-    selectClip,
-    trackOrder,
-    currentTime,
-    zoomLevel
   } = useProjectStore();
 
   // Convert Records to Arrays for UI consumption and logic
   const assets = Object.values(assetsRecord || {});
   const clips = Object.values(clipsRecord || {});
   const tracks = Object.values(tracksRecord || {});
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5, // 5px movement required to start drag
-      },
-    })
-  );
 
   /** Loads one file for the library's file intake: a throw becomes that file's "Failed" row, with a retry. */
   const handleAddFile = async (file: File) => {
@@ -135,207 +105,6 @@ function App() {
       removeAsset(confirmModal.assetId);
       setConfirmModal({ isOpen: false, assetId: null });
     }
-  };
-
-  // --- Drag & Drop Handlers ---
-
-  const handleDragStart = (event: DragStartEvent) => {
-    const { active } = event;
-    const type = active.data.current?.type;
-
-    setActiveDragId(active.id as string);
-    setActiveDragType(type);
-    setIsValidDrop(true);
-    setSnapLine(null);
-
-    if (type === 'Clip') {
-      selectClip(active.id as string);
-    }
-  };
-
-  const handleDragMove = (event: DragMoveEvent) => {
-    const { active, over, delta } = event;
-    if (!active) return;
-
-    // Reset feedback
-    setSnapLine(null);
-    setIsValidDrop(true);
-
-    const type = active.data.current?.type;
-
-    // Logic for Clips (Moving existing)
-    if (type === 'Clip') {
-        const clipId = active.id as string;
-        const clip = clipsRecord[clipId];
-        if (!clip) return;
-
-        const deltaSeconds = delta.x / zoomLevel;
-        let newStart = clip.start + deltaSeconds;
-        newStart = Math.max(0, newStart);
-
-        // Snap Logic
-        if (settings.snapToGrid) {
-            const snapPoints = getSnapPoints(clipsRecord, currentTime);
-            const snapTolerance = 10 / zoomLevel;
-            const snappedStart = findNearestSnapPoint(newStart, snapPoints, snapTolerance);
-
-            if (snappedStart !== null) {
-                setSnapLine(snappedStart);
-                newStart = snappedStart;
-            } else {
-                 const newEnd = newStart + clip.duration;
-                 const snappedEnd = findNearestSnapPoint(newEnd, snapPoints, snapTolerance);
-                 if (snappedEnd !== null) {
-                    setSnapLine(snappedEnd);
-                 }
-            }
-        }
-
-        // Collision Logic
-        if (over) {
-            const targetTrackId = over.id as string;
-            const targetTrack = tracksRecord[targetTrackId];
-            if (targetTrack) {
-                const trackClips = targetTrack.clips
-                    .map(id => clipsRecord[id])
-                    .filter(c => c && c.id !== clipId);
-
-                if (checkCollision(newStart, clip.duration, trackClips)) {
-                    if (!settings.allowOverlaps) {
-                        setIsValidDrop(false);
-                    }
-                }
-            }
-        }
-    }
-  };
-
-  // Improved Drag Logic using the ref
-  const getTimelineTime = (screenX: number): number | null => {
-      if (!timelineScrollRef.current) return null;
-      const rect = timelineScrollRef.current.getBoundingClientRect();
-      const scrollLeft = timelineScrollRef.current.scrollLeft;
-      const relativeX = screenX - rect.left + scrollLeft;
-      return Math.max(0, relativeX / zoomLevel);
-  };
-
-  const handleDragMoveImproved = (event: DragMoveEvent) => {
-      handleDragMove(event); // Run existing logic
-
-      const { active, over } = event;
-      if (active.data.current?.type !== 'Asset' || !over) return;
-
-      // Asset Drag Logic
-      const screenX = event.active.rect.current.translated?.left || 0;
-
-      const time = getTimelineTime(screenX + 20); // Add small offset
-      if (time === null) return;
-
-      const trackId = over.id as string;
-      const track = tracksRecord[trackId];
-      if (!track) return;
-
-      // Calculate snap to nearest start/end on THIS track
-      const trackClips = track.clips.map(id => clipsRecord[id]).filter(Boolean);
-      let snapCandidates = [0];
-      trackClips.forEach(c => snapCandidates.push(c.start + c.duration));
-
-      // Find closest
-      let closest = snapCandidates[0];
-      let minDiff = Math.abs(time - closest);
-
-      snapCandidates.forEach(t => {
-          const diff = Math.abs(time - t);
-          if (diff < minDiff) {
-              minDiff = diff;
-              closest = t;
-          }
-      });
-
-      setSnapLine(closest);
-      setIsValidDrop(true);
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over, delta } = event;
-    setActiveDragId(null);
-    setActiveDragType(null);
-    setSnapLine(null);
-    setIsValidDrop(true);
-
-    if (!over) return;
-
-    const type = active.data.current?.type;
-
-    if (type === 'Clip') {
-        const clipId = active.id as string;
-        const clip = clipsRecord[clipId];
-        if (!clip) return;
-
-        const targetTrackId = over.id as string;
-
-        // Re-calculate new start (same logic as Move)
-        const deltaSeconds = delta.x / zoomLevel;
-        let newStart = clip.start + deltaSeconds;
-        newStart = Math.max(0, newStart);
-
-        if (settings.snapToGrid) {
-             const snapPoints = getSnapPoints(clipsRecord, currentTime);
-             const snapTolerance = 10 / zoomLevel;
-             const snappedStart = findNearestSnapPoint(newStart, snapPoints, snapTolerance);
-             if (snappedStart !== null) newStart = snappedStart;
-             else {
-                 const newEnd = newStart + clip.duration;
-                 const snappedEnd = findNearestSnapPoint(newEnd, snapPoints, snapTolerance);
-                 if (snappedEnd !== null) newStart = snappedEnd - clip.duration;
-             }
-        }
-
-        // Collision check
-         const targetTrack = tracksRecord[targetTrackId];
-         if (targetTrack) {
-            const trackClips = targetTrack.clips.map(id => clipsRecord[id]).filter(c => c && c.id !== clipId);
-            if (checkCollision(newStart, clip.duration, trackClips)) {
-                if (!settings.allowOverlaps) {
-                    const validStart = findNearestValidTime(newStart, clip.duration, trackClips, 20 / zoomLevel);
-                    if (validStart !== null) newStart = validStart;
-                    else return; // Cancel move
-                }
-            }
-         }
-
-         moveClip(clipId, newStart, targetTrackId);
-    }
-    else if (type === 'Asset') {
-         const assetId = active.id as string;
-         const asset = assetsRecord[assetId];
-         const trackId = over.id as string;
-
-         // Use the snapLine we calculated
-         if (snapLine !== null && asset) {
-              addClip({
-                 id: Math.random().toString(36).substr(2, 9),
-                 assetId: asset.id,
-                 trackId: trackId,
-                 start: snapLine,
-                 duration: asset.duration || 10,
-                 offset: 0,
-                 type: asset.type === 'image' ? 'image' : asset.type === 'video' ? 'video' : asset.type === 'audio' ? 'audio' : 'map',
-                 properties: {
-                     x: 0, y: 0, width: 100, height: 100, rotation: 0, opacity: 1, zIndex: 0
-                 },
-                 volume: 1.0
-             });
-         }
-    }
-  };
-
-  const dropAnimation: DropAnimation = {
-      sideEffects: defaultDropAnimationSideEffects({
-        styles: {
-          active: { opacity: '0.5' },
-        },
-      }),
   };
 
   // Add Asset Helper (Button)
@@ -394,13 +163,6 @@ function App() {
   };
 
   return (
-    <DndContext
-      sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragMove={handleDragMoveImproved}
-      onDragEnd={handleDragEnd}
-      collisionDetection={pointerWithin}
-    >
         <div className="grid h-screen w-screen bg-background text-foreground font-sans overflow-hidden"
              style={{
                  gridTemplateAreas: '"header header header" "library preview metadata" "timeline timeline timeline"',
@@ -450,11 +212,7 @@ function App() {
 
           {/* Timeline */}
           <div className="[grid-area:timeline] border-t border-border bg-card flex flex-col overflow-hidden" data-testid="timeline">
-            <TimelinePanel
-                ref={timelineScrollRef}
-                snapLine={snapLine}
-                isValidDrop={isValidDrop}
-            />
+            <TimelinePanel />
           </div>
 
           {showExport && <ExportModal onClose={() => setShowExport(false)} />}
@@ -471,25 +229,7 @@ function App() {
           <ToastContainer />
           <LoadingOverlay />
 
-          <DragOverlay dropAnimation={dropAnimation}>
-            {activeDragType === 'Clip' && activeDragId ? (
-               <div style={{ width: clipsRecord[activeDragId]?.duration * zoomLevel }}>
-                <ClipItem
-                    clip={clipsRecord[activeDragId]}
-                    asset={assetsRecord[clipsRecord[activeDragId].assetId]}
-                    zoomLevel={zoomLevel}
-                    isSelected={true}
-                />
-               </div>
-            ) : activeDragType === 'Asset' && activeDragId ? (
-               <div className="bg-primary/50 border border-primary rounded-control p-1 type-caption text-foreground whitespace-nowrap overflow-hidden"
-                    style={{ width: (assetsRecord[activeDragId]?.duration || 10) * zoomLevel }}>
-                   {assetsRecord[activeDragId]?.name}
-               </div>
-            ) : null}
-          </DragOverlay>
         </div>
-    </DndContext>
   );
 }
 

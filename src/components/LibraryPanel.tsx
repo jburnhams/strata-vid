@@ -2,8 +2,6 @@ import React from 'react';
 import type { Asset } from '../types';
 import { FileButton, FileDropZone, FileOutcomes, IconButton, MissingFile, Button, useFileIntake } from 'strata-react';
 import { Trash2, FileVideo, Map, Plus, PlusCircle } from 'lucide-react';
-import { useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 
 interface LibraryPanelProps {
   assets: Asset[];
@@ -32,27 +30,10 @@ const LibraryAssetItem: React.FC<{
 }> = ({ asset, selectedAssetId, onSelect, onRemove, onUpdate, onAddToTimeline }) => {
   const isMissing = !asset.file;
 
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: asset.id,
-    data: {
-      type: 'Asset',
-      asset
-    }
-  });
-
-  const style = {
-    transform: CSS.Translate.toString(transform),
-    opacity: isDragging ? 0.5 : 1,
-  };
-
   return (
     <li
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
       onClick={() => onSelect(asset.id)}
-      className={`p-2 cursor-grab rounded-control flex gap-3 items-center transition-state group relative ${
+      className={`p-2 cursor-pointer rounded-control flex gap-3 items-center transition-state group relative ${
         asset.id === selectedAssetId ? 'bg-muted' : 'hover:bg-card/50'
       } border-l-4 ${asset.type === 'video' ? 'border-media-video' : asset.type === 'audio' ? 'border-media-audio' : 'border-media-map'}`}
       role="button"

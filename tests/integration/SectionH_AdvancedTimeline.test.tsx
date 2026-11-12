@@ -72,7 +72,7 @@ describe('Section H: Advanced Timeline Features', () => {
         });
 
         // Verify marker rendered
-        let markerEl = await screen.findByTitle('M (0.00s)');
+        let markerEl = await screen.findByRole('button', { name: 'Marker: M, 0:00' });
         expect(markerEl).toBeInTheDocument();
 
         // 2. Add Marker at 5s
@@ -83,7 +83,7 @@ describe('Section H: Advanced Timeline Features', () => {
            fireEvent.click(addMarkerBtn);
         });
 
-        markerEl = await screen.findByTitle('M (5.00s)');
+        markerEl = await screen.findByRole('button', { name: 'Marker: M, 0:05' });
         expect(markerEl).toBeInTheDocument();
 
         // 3. Jump to marker
@@ -91,7 +91,7 @@ describe('Section H: Advanced Timeline Features', () => {
            useProjectStore.getState().setPlaybackState({ currentTime: 2 });
         });
 
-        const marker0 = screen.getByTitle('M (0.00s)');
+        const marker0 = screen.getByRole('button', { name: 'Marker: M, 0:00' });
         await act(async () => {
            fireEvent.click(marker0);
         });

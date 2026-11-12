@@ -12,6 +12,7 @@ import { useProjectStore } from '../../src/store/useProjectStore';
 jest.mock('../../src/services/AssetLoader', () => ({
   AssetLoader: {
     loadAsset: jest.fn(),
+    loadThumbnail: jest.fn(async () => 'blob:thumb'),
   },
 }));
 
@@ -54,7 +55,8 @@ describe('UX Integration Flow', () => {
                 src: 'blob:url',
                 duration: 10,
                 resolution: { width: 1920, height: 1080 },
-                thumbnail: 'blob:thumb'
+                thumbnail: 'blob:thumb',
+                file: f
             };
         });
 

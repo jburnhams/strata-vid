@@ -1,7 +1,7 @@
 
 import { AssetLoader } from '../../../src/services/AssetLoader';
 import * as gpxParser from '../../../src/utils/gpxParser';
-import { Asset, GpxPoint } from '../../../src/types';
+import type { Asset, GpxPoint } from '../../../src/types';
 
 // Mock gpxParser
 jest.mock('../../../src/utils/gpxParser', () => ({

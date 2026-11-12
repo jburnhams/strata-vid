@@ -1,4 +1,4 @@
-import { Clip, ProjectState, Track } from '../types';
+import type { Clip, ProjectState, Track } from '../types';
 import { readFileToArrayBuffer } from '../utils/audioUtils';
 
 /**

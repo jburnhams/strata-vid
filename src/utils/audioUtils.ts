@@ -136,7 +136,7 @@ export function createWavBlob(channels: Float32Array[], sampleRate: number): Blo
 
   // Combine header and data
   // (Actually we can just copy pcmBytes into buffer after header)
-  // But Uint8Array constructor with offset is easier if we created buffer large enough
+  // But Uint8Array function Object() { [native code] } with offset is easier if we created buffer large enough
   // Wait, I created `buffer` to hold everything.
   // I need to copy `pcmData` into `buffer` at offset 44.
   // `pcmData` is Int16Array. `buffer` is ArrayBuffer.

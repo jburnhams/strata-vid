@@ -1,3 +1,4 @@
+import { renderWithStrata } from 'strata-react/testing';
 import { describe, it, expect } from '@jest/globals';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import * as fs from 'fs';
@@ -37,21 +38,21 @@ describe('Browser Integration Tests', () => {
 
   describe('App component integration', () => {
     it('renders the app with all required panels', () => {
-      render(<App />);
+      renderWithStrata(<App />);
 
       // Check main heading
       expect(screen.getByText('Strata Vid')).toBeInTheDocument();
 
       // Check panels
       expect(screen.getByText('Library')).toBeInTheDocument();
-      expect(screen.getByText(/^Metadata$/)).toBeInTheDocument();
+      expect(screen.getByText('Nothing selected')).toBeInTheDocument();
       // Timeline panel now has a static "Timeline" header
       expect(screen.getByText('TIMELINE')).toBeInTheDocument();
-      expect(screen.getByText('10px')).toBeInTheDocument();
+      expect(screen.getByRole('slider', { name: 'Zoom' })).toHaveValue('10');
     });
 
     it('allows adding a video file to the library', async () => {
-      render(<App />);
+      renderWithStrata(<App />);
 
       const input = document.querySelector('input[accept*="video"]') as HTMLInputElement;
       const file = new File(['dummy content'], 'run_video.mp4', { type: 'video/mp4' });

@@ -1,9 +1,10 @@
+import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../../src/App';
 import { AssetLoader } from '../../src/services/AssetLoader';
-import { Asset } from '../../src/types';
+import type { Asset } from '../../src/types';
 
 // Mock dependencies
 jest.mock('../../src/services/AssetLoader');
@@ -46,7 +47,7 @@ describe('Undo/Redo Integration', () => {
     };
     (AssetLoader.loadAsset as jest.Mock).mockResolvedValue(mockAsset);
 
-    render(<App />);
+    renderWithStrata(<App />);
 
     // 2. Add Asset
     const libraryInput = screen.getByTestId('add-asset-input') as HTMLInputElement;
@@ -75,7 +76,7 @@ describe('Undo/Redo Integration', () => {
     await user.click(clipElement);
 
     // 4. Delete Clip
-    fireEvent.keyDown(window, { code: 'Delete' });
+    fireEvent.keyDown(window, { key: 'Delete', code: 'Delete' });
 
     // Verify clip is gone
     await waitFor(() => {
@@ -85,8 +86,8 @@ describe('Undo/Redo Integration', () => {
 
     // 5. Undo via Menu
     // Hover Edit menu
-    await user.hover(screen.getByText('Edit'));
-    await user.click(screen.getByText('Undo'));
+    await user.click(screen.getByRole('button', { name: 'Edit' }));
+    await user.click(screen.getByRole('menuitem', { name: /Undo/ }));
 
     // Verify clip is back
     await waitFor(() => {
@@ -95,8 +96,8 @@ describe('Undo/Redo Integration', () => {
     });
 
     // 6. Redo via Menu
-    await user.hover(screen.getByText('Edit'));
-    await user.click(screen.getByText('Redo'));
+    await user.click(screen.getByRole('button', { name: 'Edit' }));
+    await user.click(screen.getByRole('menuitem', { name: /Redo/ }));
 
     // Verify clip is gone again
     await waitFor(() => {

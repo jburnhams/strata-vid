@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TimelineContainer } from '../../../../src/components/timeline/TimelineContainer';
-import { Track, Clip } from '../../../../src/types';
+import type { Track, Clip } from '../../../../src/types';
 
 // Mock dnd-kit
 jest.mock('@dnd-kit/core', () => ({
@@ -24,15 +24,16 @@ jest.mock('@dnd-kit/core', () => ({
 
 // Mock TrackLane
 jest.mock('../../../../src/components/timeline/TrackLane', () => ({
-  TrackLane: ({ onContextMenu, clips }: any) => (
+  TrackLane: ({ clipMenu, clips }: any) => (
     <div data-testid="track-lane">
       {clips.map((clip: any) => (
-        <div
-          key={clip.id}
-          data-testid={`clip-${clip.id}`}
-          onContextMenu={(e) => onContextMenu(e, clip.id)}
-        >
+        <div key={clip.id} data-testid={`clip-${clip.id}`}>
           {clip.id}
+          {clipMenu(clip.id).filter((e: any) => e !== 'separator').map((c: any) => (
+            <button key={c.id} data-testid={`menu-option-${c.label}`} disabled={!!c.disabled} title={typeof c.disabled === 'string' ? c.disabled : undefined} onClick={c.run}>
+              {c.label}
+            </button>
+          ))}
         </div>
       ))}
     </div>
@@ -46,23 +47,6 @@ jest.mock('../../../../src/components/timeline/ZoomControls', () => ({
   ),
 }));
 
-// Mock ContextMenu
-jest.mock('../../../../src/components/timeline/ContextMenu', () => ({
-  ContextMenu: ({ options }: any) => (
-    <div data-testid="context-menu">
-      {options.map((opt: any, i: number) => (
-        <button
-          key={i}
-          data-testid={`menu-option-${opt.label}`}
-          onClick={opt.onClick}
-          disabled={opt.disabled}
-        >
-          {opt.label}
-        </button>
-      ))}
-    </div>
-  ),
-}));
 
 // Mock ResizeObserver
 const mockResizeObserver = jest.fn(() => ({
@@ -170,13 +154,8 @@ describe('TimelineContainer Interactions', () => {
   it('opens context menu and handles actions', () => {
     render(<TimelineContainer {...defaultProps} currentTime={5} />); // Playhead at 5s (inside clip-1)
 
-    // Right click clip-1
-    fireEvent.contextMenu(screen.getByTestId('clip-clip-1'));
-
-    expect(screen.getByTestId('context-menu')).toBeInTheDocument();
-
-    // Test Split Clip
-    const splitBtn = screen.getByTestId('menu-option-Split Clip');
+    // Split clip, from clip-1's menu
+    const splitBtn = screen.getAllByTestId('menu-option-Split clip')[0];
     expect(splitBtn).not.toBeDisabled();
     fireEvent.click(splitBtn);
     expect(defaultProps.onSplitClip).toHaveBeenCalledWith('clip-1', 5);
@@ -185,9 +164,9 @@ describe('TimelineContainer Interactions', () => {
   it('disables Split Clip when playhead is outside', () => {
     render(<TimelineContainer {...defaultProps} currentTime={15} />); // Playhead at 15s (between clips)
 
-    fireEvent.contextMenu(screen.getByTestId('clip-clip-1'));
-    const splitBtn = screen.getByTestId('menu-option-Split Clip');
+    const splitBtn = screen.getAllByTestId('menu-option-Split clip')[0];
     expect(splitBtn).toBeDisabled();
+    expect(splitBtn).toHaveAttribute('title', 'Move the playhead inside the clip');
   });
 
   it('handles Delete key for selected clip', () => {
@@ -216,7 +195,7 @@ describe('TimelineContainer Interactions', () => {
     render(<TimelineContainer {...defaultProps} />);
 
     // Add Marker
-    fireEvent.click(screen.getByText('+ Marker'));
+    fireEvent.click(screen.getByRole('button', { name: 'Add marker' }));
     expect(defaultProps.onAddMarker).toHaveBeenCalled();
 
     // Add Track
@@ -224,11 +203,11 @@ describe('TimelineContainer Interactions', () => {
     expect(defaultProps.onAddTrack).toHaveBeenCalled();
 
     // Snap Checkbox
-    fireEvent.click(screen.getByLabelText(/Snap/i));
+    fireEvent.click(screen.getByRole('button', { name: 'Snap' }));
     expect(defaultProps.setSettings).toHaveBeenCalledWith({ snapToGrid: false }); // defaulted to true
 
     // Overlap Checkbox
-    fireEvent.click(screen.getByLabelText(/Overlap/i));
+    fireEvent.click(screen.getByRole('button', { name: 'Allow overlaps' }));
     expect(defaultProps.setSettings).toHaveBeenCalledWith({ allowOverlaps: true }); // defaulted to false
   });
 

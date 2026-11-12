@@ -1,9 +1,10 @@
+import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../../src/App';
 import { AssetLoader } from '../../src/services/AssetLoader';
-import { Asset } from '../../src/types';
+import type { Asset } from '../../src/types';
 
 // Mock dependencies
 jest.mock('../../src/services/AssetLoader');
@@ -59,7 +60,7 @@ describe('AutoSave Integration', () => {
     };
     (AssetLoader.loadAsset as jest.Mock).mockResolvedValue(mockAsset);
 
-    render(<App />);
+    renderWithStrata(<App />);
 
     // 2. Add Asset to trigger state change - use accessible selector
     const libraryInput = screen.getByLabelText('Add Asset');

@@ -3,7 +3,7 @@ import { render, waitFor, act } from '@testing-library/react';
 import { PreviewPanel } from '../../src/components/PreviewPanel';
 import { useProjectStore } from '../../src/store/useProjectStore';
 import { AudioEngine } from '../../src/services/AudioEngine';
-import { Asset, Clip, Track } from '../../src/types';
+import type { Asset, Clip, Track } from '../../src/types';
 
 // Integration test for Audio Preview Wiring (M4/M5)
 describe('Audio Preview Integration', () => {

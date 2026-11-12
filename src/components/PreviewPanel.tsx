@@ -1,3 +1,4 @@
+import { Toggle, ToggleGroup, Toolbar, ToolbarSeparator } from 'strata-react';
 import React, { useState, useEffect } from 'react';
 import { useProjectStore } from '../store/useProjectStore';
 import { VideoPlayer } from './preview/VideoPlayer';
@@ -5,7 +6,7 @@ import { AudioPlayer } from './preview/AudioPlayer';
 import { OverlayRenderer } from './preview/OverlayRenderer';
 import { TransportControls } from './TransportControls';
 import { usePlaybackLoop } from '../hooks/usePlaybackLoop';
-import { Clip, ProjectSettings } from '../types';
+import type { Clip, ProjectSettings } from '../types';
 import { SafeAreaGuides } from './preview/SafeAreaGuides';
 import { AudioEngine } from '../services/AudioEngine';
 
@@ -58,37 +59,26 @@ export const PreviewPanel: React.FC = () => {
   const displayScale = 1 / renderScale;
 
   return (
-    <div className="flex flex-col w-full h-full bg-neutral-900">
-      <div className="relative flex-1 bg-black flex items-center justify-center overflow-hidden">
+    <div className="flex flex-col w-full h-full bg-background">
+      <div className="relative flex-1 bg-footage flex items-center justify-center overflow-hidden">
 
         {/* Preview Toolbar */}
-        <div className="absolute top-4 right-4 z-50 flex gap-2 bg-neutral-800/80 p-2 rounded backdrop-blur-sm">
-           <button
-             onClick={() => setShowSafeAreas(!showSafeAreas)}
-             className={`px-2 py-1 text-xs rounded transition-colors ${showSafeAreas ? 'bg-blue-600 text-white' : 'bg-neutral-700 text-gray-300 hover:bg-neutral-600'}`}
-             title="Toggle Safe Areas"
-           >
-             Safe Areas
-           </button>
-           <button
-             onClick={() => setShowGrid(!showGrid)}
-             className={`px-2 py-1 text-xs rounded transition-colors ${showGrid ? 'bg-blue-600 text-white' : 'bg-neutral-700 text-gray-300 hover:bg-neutral-600'}`}
-             title="Toggle Grid"
-           >
-             Grid
-           </button>
-           <div className="w-px bg-neutral-600 mx-1"></div>
-           <select
-             value={settings.previewQuality}
-             onChange={(e) => setSettings({ previewQuality: e.target.value as ProjectSettings['previewQuality'] })}
-             className="bg-neutral-700 text-gray-300 text-xs rounded px-2 py-1 border-none outline-none cursor-pointer hover:bg-neutral-600"
-             title="Preview Quality"
-           >
-             <option value="low">Low (50%)</option>
-             <option value="medium">Medium (75%)</option>
-             <option value="high">High (100%)</option>
-           </select>
-        </div>
+        <Toolbar label="Preview options" className="absolute top-4 right-4 z-50 flex items-center gap-2 bg-card/80 p-2 rounded-control backdrop-blur-sm">
+          <Toggle size="sm" label="Safe areas" pressed={showSafeAreas} onChange={setShowSafeAreas} />
+          <Toggle size="sm" label="Grid" pressed={showGrid} onChange={setShowGrid} />
+          <ToolbarSeparator />
+          <ToggleGroup
+            size="sm"
+            label="Preview quality"
+            value={settings.previewQuality}
+            onChange={(value) => setSettings({ previewQuality: value as ProjectSettings['previewQuality'] })}
+            options={[
+              { value: 'low', label: '50%' },
+              { value: 'medium', label: '75%' },
+              { value: 'high', label: '100%' },
+            ]}
+          />
+        </Toolbar>
 
         {/* Aspect Ratio Container */}
         <div
@@ -102,7 +92,7 @@ export const PreviewPanel: React.FC = () => {
              backgroundColor: '#000',
              overflow: 'hidden'
            }}
-           className="shadow-lg ring-1 ring-neutral-800"
+           className="shadow-overlay ring-1 ring-card"
            data-testid="preview-container"
         >
              {/* Scaled Content Layer */}
@@ -170,7 +160,7 @@ export const PreviewPanel: React.FC = () => {
 
              {activeClips.length === 0 && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                    <div className="text-gray-600 text-sm font-mono">
+                    <div className="text-muted-foreground type-body-sm font-mono">
                        {currentTime.toFixed(2)}s
                     </div>
                 </div>

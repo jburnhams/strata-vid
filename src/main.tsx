@@ -1,5 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { createBrowserRouter, RouterProvider } from 'react-router';
+import { StrataQueryProvider, StrataToastRegion, ThemeProvider } from 'strata-react';
 import App from './App';
 import 'leaflet/dist/leaflet.css';
 import './index.css';
@@ -24,8 +26,18 @@ if (isStrictMode) {
 
 const Root = isStrictMode ? React.StrictMode : React.Fragment;
 
+// One screen, but the router is part of strata-react's stack: panes and open items will move
+// into the URL as the editor's state does.
+const router = createBrowserRouter([{ path: '*', element: <App /> }]);
+
+// Dark by default: an editor judges footage against a dark surround (see theme.css).
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <Root>
-    <App />
+    <ThemeProvider defaultPreference="dark">
+      <StrataQueryProvider>
+        <RouterProvider router={router} />
+        <StrataToastRegion />
+      </StrataQueryProvider>
+    </ThemeProvider>
   </Root>,
 );

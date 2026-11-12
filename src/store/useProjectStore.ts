@@ -1,6 +1,6 @@
-import { create, StoreApi, UseBoundStore } from 'zustand';
+import { create, type StoreApi, type UseBoundStore } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import { StoreState } from './types';
+import type { StoreState } from './types';
 import { createProjectSlice } from './slices/projectSlice';
 import { createAssetsSlice } from './slices/assetsSlice';
 import { createTimelineSlice } from './slices/timelineSlice';

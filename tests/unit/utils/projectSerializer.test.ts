@@ -1,6 +1,6 @@
-import { serializeProject, deserializeProject, SerializedProject } from '../../../src/utils/projectSerializer';
-import { StoreState } from '../../../src/store/types';
-import { Asset, ProjectSettings, Track, Clip } from '../../../src/types';
+import { serializeProject, deserializeProject, type SerializedProject } from '../../../src/utils/projectSerializer';
+import type { StoreState } from '../../../src/store/types';
+import type { Asset, ProjectSettings, Track, Clip } from '../../../src/types';
 
 describe('projectSerializer', () => {
   const mockSettings: ProjectSettings = {

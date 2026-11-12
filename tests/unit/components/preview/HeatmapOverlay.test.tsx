@@ -4,7 +4,7 @@ import { render, screen } from '@testing-library/react';
 import { useMap } from 'react-leaflet';
 import HeatmapOverlay from '../../../../src/components/preview/HeatmapOverlay';
 import L from 'leaflet';
-import { GpxPoint } from '../../../../src/types';
+import type { GpxPoint } from '../../../../src/types';
 
 // Mock dependencies
 jest.mock('react-leaflet', () => ({

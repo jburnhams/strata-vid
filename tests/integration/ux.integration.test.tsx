@@ -1,3 +1,5 @@
+import { StrataToastRegion } from 'strata-react';
+import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -55,7 +57,7 @@ describe('UX Integration Flow', () => {
             };
         });
 
-        render(<App />);
+        renderWithStrata(<><App /><StrataToastRegion /></>);
 
         // The input is hidden inside the label. We find the input associated with the label text "+ Add"
         // Wait for it to be ready
@@ -89,7 +91,7 @@ describe('UX Integration Flow', () => {
 
         (AssetLoader.loadAsset as jest.Mock).mockRejectedValue(new Error('Corrupt file'));
 
-        render(<App />);
+        renderWithStrata(<><App /><StrataToastRegion /></>);
 
         const fileInput = screen.getByLabelText('Add Asset');
 

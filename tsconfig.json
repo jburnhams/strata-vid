@@ -17,6 +17,7 @@
     ],
     "moduleResolution": "bundler",
     "isolatedModules": true,
+    "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "allowJs": true,
     "jsx": "react-jsx",

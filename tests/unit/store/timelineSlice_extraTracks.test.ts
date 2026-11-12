@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import { act } from '@testing-library/react';
 import { useProjectStore } from '../../../src/store/useProjectStore';
-import { Track, Clip } from '../../../src/types';
+import type { Track, Clip } from '../../../src/types';
 
 // Helper to reset store to a clean state before each test
 const resetStore = () => {

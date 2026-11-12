@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { EditMenu } from '../../../src/components/EditMenu';
 import { useProjectStore } from '../../../src/store/useProjectStore';
 import '@testing-library/jest-dom';
@@ -16,20 +17,29 @@ describe('EditMenu', () => {
     jest.clearAllMocks();
   });
 
-  it('renders correctly', () => {
+  it('renders a menu button', () => {
     render(<EditMenu />);
-    expect(screen.getByText('Edit')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
   });
 
-  it('calls undo when clicked', () => {
+  it('lists undo and redo with their shortcuts', async () => {
     render(<EditMenu />);
-    fireEvent.click(screen.getByText('Undo'));
+    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    expect(screen.getByRole('menuitem', { name: /Undo/ })).toHaveTextContent('Ctrl+Z');
+    expect(screen.getByRole('menuitem', { name: /Redo/ })).toHaveTextContent('Ctrl+Y');
+  });
+
+  it('calls undo when chosen', async () => {
+    render(<EditMenu />);
+    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: /Undo/ }));
     expect((useProjectStore as any).undo).toHaveBeenCalled();
   });
 
-  it('calls redo when clicked', () => {
+  it('calls redo when chosen', async () => {
     render(<EditMenu />);
-    fireEvent.click(screen.getByText('Redo'));
+    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: /Redo/ }));
     expect((useProjectStore as any).redo).toHaveBeenCalled();
   });
 });

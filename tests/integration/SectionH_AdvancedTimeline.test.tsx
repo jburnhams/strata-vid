@@ -1,9 +1,10 @@
+import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import App from '../../src/App';
 import { useProjectStore } from '../../src/store/useProjectStore';
-import { Clip, Track } from '../../src/types';
+import type { Clip, Track } from '../../src/types';
 
 // Mock map
 jest.mock('../../src/components/MapPanel', () => ({
@@ -62,10 +63,10 @@ describe('Section H: Advanced Timeline Features', () => {
     });
 
     it('Markers: can add via UI and jump to marker', async () => {
-        render(<App />);
+        renderWithStrata(<App />);
 
         // 1. Add Marker at 0s
-        const addMarkerBtn = screen.getByText('+ Marker');
+        const addMarkerBtn = screen.getByRole('button', { name: 'Add marker' });
         await act(async () => {
            fireEvent.click(addMarkerBtn);
         });
@@ -100,7 +101,7 @@ describe('Section H: Advanced Timeline Features', () => {
 
     it('Filters: render in Preview', async () => {
         useProjectStore.getState().updateClipProperties('c1', { filter: 'grayscale(1)' });
-        render(<App />);
+        renderWithStrata(<App />);
         const videoEl = document.querySelector('video');
         expect(videoEl).toBeInTheDocument();
         expect(videoEl?.style.filter).toBe('grayscale(1)');
@@ -108,19 +109,19 @@ describe('Section H: Advanced Timeline Features', () => {
 
     it('Speed: affects VideoPlayer playbackRate', async () => {
         useProjectStore.getState().updateClipPlaybackRate('c1', 2);
-        render(<App />);
+        renderWithStrata(<App />);
         const videoEl = document.querySelector('video') as HTMLVideoElement;
         await new Promise(r => setTimeout(r, 10)); // clear tick
         expect(videoEl.playbackRate).toBe(2);
     });
 
     it('Duplicate Clip: duplicates clip via Context Menu', async () => {
-        render(<App />);
+        renderWithStrata(<App />);
 
         const clipEl = screen.getByTestId('clip-item-c1');
         fireEvent.contextMenu(clipEl);
 
-        const duplicateOption = screen.getByText('Duplicate Clip');
+        const duplicateOption = screen.getByRole('menuitem', { name: 'Duplicate clip' });
         await act(async () => {
             fireEvent.click(duplicateOption);
         });
@@ -136,7 +137,7 @@ describe('Section H: Advanced Timeline Features', () => {
     });
 
     it('Split Clip: splits clip via Context Menu', async () => {
-        render(<App />);
+        renderWithStrata(<App />);
 
         // Move playhead to 5s
         await act(async () => {
@@ -146,7 +147,7 @@ describe('Section H: Advanced Timeline Features', () => {
         const clipEl = screen.getByTestId('clip-item-c1');
         fireEvent.contextMenu(clipEl);
 
-        const splitOption = screen.getByText('Split Clip');
+        const splitOption = screen.getByRole('menuitem', { name: 'Split clip' });
         // Option should be enabled
         expect(splitOption).not.toBeDisabled();
 
@@ -179,12 +180,12 @@ describe('Section H: Advanced Timeline Features', () => {
             return state;
         });
 
-        render(<App />);
+        renderWithStrata(<App />);
 
         const clip1El = screen.getByTestId('clip-item-c1');
         fireEvent.contextMenu(clip1El);
 
-        const rippleDeleteOption = screen.getByText('Ripple Delete');
+        const rippleDeleteOption = screen.getByRole('menuitem', { name: 'Ripple delete' });
         await act(async () => {
             fireEvent.click(rippleDeleteOption);
         });
@@ -208,12 +209,12 @@ describe('Section H: Advanced Timeline Features', () => {
             return state;
         });
 
-        render(<App />);
+        renderWithStrata(<App />);
 
         const clip2El = screen.getByTestId('clip-item-c2');
         fireEvent.contextMenu(clip2El);
 
-        const fadeOption = screen.getByText('Add Crossfade (1s)');
+        const fadeOption = screen.getByRole('menuitem', { name: 'Add crossfade (1s)' });
         await act(async () => {
             fireEvent.click(fadeOption);
         });

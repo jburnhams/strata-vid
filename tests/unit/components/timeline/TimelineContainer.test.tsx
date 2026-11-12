@@ -1,11 +1,11 @@
 import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { TimelineContainer } from '../../../../src/components/timeline/TimelineContainer';
-import { Track, Clip } from '../../../../src/types';
+import type { Track, Clip } from '../../../../src/types';
 
 // Mock TrackLane
 jest.mock('../../../../src/components/timeline/TrackLane', () => ({
-  TrackLane: ({ onClipResize, onContextMenu, clips }: any) => (
+  TrackLane: ({ onClipResize, clipMenu, clips }: any) => (
     <div data-testid="track-lane">
       {clips.map((clip: any) => (
         <div key={clip.id}>
@@ -15,12 +15,9 @@ jest.mock('../../../../src/components/timeline/TrackLane', () => ({
             >
             Resize {clip.id}
             </button>
-            <button
-            data-testid={`context-btn-${clip.id}`}
-            onClick={(e) => onContextMenu(e, clip.id)}
-            >
-            Context {clip.id}
-            </button>
+            {clipMenu(clip.id).filter((e: any) => e !== 'separator').map((c: any) => (
+              <button key={c.id} disabled={!!c.disabled} onClick={c.run}>{c.label}</button>
+            ))}
         </div>
       ))}
     </div>
@@ -100,8 +97,8 @@ describe('TimelineContainer', () => {
 
   it('handles zoom controls', () => {
     render(<TimelineContainer {...defaultProps} />);
-    const zoomInBtn = screen.getByTitle('Zoom In');
-    const zoomOutBtn = screen.getByTitle('Zoom Out');
+    const zoomInBtn = screen.getByRole('button', { name: 'Zoom in' });
+    const zoomOutBtn = screen.getByRole('button', { name: 'Zoom out' });
 
     fireEvent.click(zoomInBtn);
     expect(defaultProps.setZoomLevel).toHaveBeenCalledWith(11);
@@ -127,16 +124,16 @@ describe('TimelineContainer', () => {
 
   it('toggles settings via toolbar', () => {
       render(<TimelineContainer {...defaultProps} />);
-      const snapCheckbox = screen.getByLabelText('Snap');
-      const overlapCheckbox = screen.getByLabelText('Overlap');
+      const snapCheckbox = screen.getByRole('button', { name: 'Snap' });
+      const overlapCheckbox = screen.getByRole('button', { name: 'Allow overlaps' });
 
       // Starts true
-      expect(snapCheckbox).toBeChecked();
+      expect(snapCheckbox).toHaveAttribute('aria-pressed', 'true');
       fireEvent.click(snapCheckbox);
       expect(defaultProps.setSettings).toHaveBeenCalledWith({ snapToGrid: false });
 
       // Starts false
-      expect(overlapCheckbox).not.toBeChecked();
+      expect(overlapCheckbox).toHaveAttribute('aria-pressed', 'false');
       fireEvent.click(overlapCheckbox);
       expect(defaultProps.setSettings).toHaveBeenCalledWith({ allowOverlaps: true });
   });
@@ -156,11 +153,9 @@ describe('TimelineContainer', () => {
       expect(defaultProps.onAddTrack).toHaveBeenCalled();
   });
 
-  it('opens context menu and deletes clip', () => {
+  it('offers Delete clip in the clip menu', () => {
       render(<TimelineContainer {...defaultProps} />);
-      const btn = screen.getByTestId('context-btn-clip-1');
-      fireEvent.click(btn);
-      const deleteOption = screen.getByText('Delete Clip');
+      const deleteOption = screen.getAllByRole('button', { name: 'Delete clip' })[0];
       fireEvent.click(deleteOption);
       expect(defaultProps.onRemoveClip).toHaveBeenCalledWith('clip-1');
   });

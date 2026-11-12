@@ -77,7 +77,7 @@ describe('Timeline Editing Integration', () => {
         fireEvent.contextMenu(clipElement!);
 
         // Check context menu
-        const deleteOption = screen.getByText('Delete Clip');
+        const deleteOption = screen.getByRole('menuitem', { name: 'Delete clip' });
         expect(deleteOption).toBeInTheDocument();
 
         // Click delete
@@ -93,17 +93,17 @@ describe('Timeline Editing Integration', () => {
     it('can zoom to fit', () => {
         render(<TimelinePanel />);
 
-        // Initial check: The slider or text shows 10px
-        expect(screen.getByText('10px')).toBeInTheDocument();
+        const zoom = screen.getByRole('slider', { name: 'Zoom' });
+        expect(zoom).toHaveValue('10');
 
-        const fitBtn = screen.getByTitle('Zoom to Fit');
+        const fitBtn = screen.getByRole('button', { name: 'Zoom to fit' });
         fireEvent.click(fitBtn);
 
         // Max time = 10+5 = 15. Buffer 10% = 16.5.
         // Width 1000. Zoom = 1000/16.5 = 60.606...
         // Round to 61
 
-        expect(screen.getByText('61px')).toBeInTheDocument();
+        expect(zoom).toHaveValue('61');
     });
 
     it('can delete selected clip via keyboard shortcut', () => {
@@ -133,7 +133,7 @@ describe('Timeline Editing Integration', () => {
         fireEvent.contextMenu(clipElement!);
 
         // Duplicate
-        const duplicateOption = screen.getByText('Duplicate Clip');
+        const duplicateOption = screen.getByRole('menuitem', { name: 'Duplicate clip' });
         fireEvent.click(duplicateOption);
 
         // Should have 2 clips now
@@ -168,7 +168,7 @@ describe('Timeline Editing Integration', () => {
         fireEvent.contextMenu(clipElement!);
 
         // Split
-        const splitOption = screen.getByText('Split Clip');
+        const splitOption = screen.getByRole('menuitem', { name: 'Split clip' });
         // Check enabled (disabled attribute absent?)
         expect(splitOption).not.toBeDisabled();
 
@@ -203,8 +203,9 @@ describe('Timeline Editing Integration', () => {
         fireEvent.contextMenu(clipElement!);
 
         // Split option should be disabled
-        const splitOption = screen.getByText('Split Clip');
-        expect(splitOption).toBeDisabled();
+        const splitOption = screen.getByRole('menuitem', { name: 'Split clip' });
+        expect(splitOption).toHaveAttribute('aria-disabled', 'true');
+        expect(splitOption).toHaveTextContent('Move the playhead inside the clip');
     });
 
     it('can ripple delete a clip', async () => {
@@ -238,7 +239,7 @@ describe('Timeline Editing Integration', () => {
         fireEvent.contextMenu(clipElement!);
 
         // Ripple Delete
-        const rippleOption = screen.getByText('Ripple Delete');
+        const rippleOption = screen.getByRole('menuitem', { name: 'Ripple delete' });
         fireEvent.click(rippleOption);
 
         // Verify c2 gone

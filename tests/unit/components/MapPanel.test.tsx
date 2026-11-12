@@ -3,7 +3,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { MapPanel } from '../../../src/components/MapPanel';
 import '@testing-library/jest-dom';
-import { GpxPoint } from '../../../src/types';
+import type { GpxPoint } from '../../../src/types';
 
 // Mock react-leaflet
 jest.mock('react-leaflet', () => ({

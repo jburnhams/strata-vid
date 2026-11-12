@@ -1,6 +1,6 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { Compositor } from '../../../src/services/Compositor';
-import { Asset, Clip, ProjectSettings, Track } from '../../../src/types';
+import type { Asset, Clip, ProjectSettings, Track } from '../../../src/types';
 import * as mapUtils from '../../../src/utils/mapUtils';
 
 // Mock dependencies

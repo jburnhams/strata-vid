@@ -1,6 +1,6 @@
 import { createTimelineSlice } from '../../../src/store/slices/timelineSlice';
-import { TimelineSlice, StoreState } from '../../../src/store/types';
-import { Track } from '../../../src/types';
+import type { TimelineSlice, StoreState } from '../../../src/store/types';
+import type { Track } from '../../../src/types';
 import { produce } from 'immer';
 
 // Mock set function

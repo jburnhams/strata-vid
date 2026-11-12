@@ -1,4 +1,5 @@
 
+import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import App from '../../src/App';
@@ -63,7 +64,7 @@ describe('Map Sync Integration', () => {
         });
 
         // 2. Render App
-        render(<App />);
+        renderWithStrata(<App />);
 
         // 3. Upload Files
         // Select the Library "Add" input which accepts video and gpx
@@ -139,7 +140,7 @@ describe('Map Sync Integration', () => {
         // Change Map Style to 'Satellite'
 
         // Find the select by label text since we added htmlFor
-        const styleSelect = screen.getByLabelText('Map Style');
+        const styleSelect = screen.getByLabelText('Map style');
         expect(styleSelect).toBeInTheDocument();
 
         // 10. Update Styling via UI

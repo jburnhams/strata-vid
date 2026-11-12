@@ -28,7 +28,7 @@ This project is in active development. Core infrastructure is in place, but many
 ## Quick Start
 
 ### Prerequisites
-- Node.js 20.0.0 or higher
+- Node.js 26 or higher (strata-react needs it; `.nvmrc` names it)
 - Modern browser with WebCodecs support (Chrome 94+, Edge 94+)
 
 ### Installation

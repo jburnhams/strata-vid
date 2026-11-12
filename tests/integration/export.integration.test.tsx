@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { ExportModal } from '../../src/components/ExportModal';
 import { useProjectStore } from '../../src/store/useProjectStore';
-import { Asset, Clip, Track } from '../../src/types';
+import type { Asset, Clip, Track } from '../../src/types';
 import { createExportWorker } from '../../src/utils/workerUtils';
 
 // Mock workerUtils
@@ -85,21 +85,21 @@ describe('Export Integration Flow', () => {
         render(<ExportModal onClose={onClose} />);
 
         // Check Settings UI
-        expect(screen.getByText('Export Settings')).toBeInTheDocument();
+        expect(screen.getByRole('dialog', { name: 'Export video' })).toBeInTheDocument();
 
         // Change preset to 1080p
-        const presetBtn = screen.getByText('1080p Full HD');
+        const presetBtn = screen.getByRole('radio', { name: '1080p Full HD' });
         fireEvent.click(presetBtn);
 
         // Click Export
-        const exportBtn = screen.getByText('Start Export');
+        const exportBtn = screen.getByRole('button', { name: 'Export' });
 
         await act(async () => {
             fireEvent.click(exportBtn);
         });
 
         // Progress view
-        expect(screen.getByText('Exporting Project')).toBeInTheDocument();
+        expect(screen.getByRole('dialog', { name: 'Exporting video' })).toBeInTheDocument();
 
         // Should finish
         await waitFor(() => {
@@ -107,7 +107,7 @@ describe('Export Integration Flow', () => {
              if (error) {
                  throw new Error(`Export failed with: ${error.textContent}`);
              }
-             expect(screen.getByText('Export Complete!')).toBeInTheDocument();
+             expect(screen.getByText('Exported')).toBeInTheDocument();
         }, { timeout: 5000 });
 
         // Since audio is generated in worker, we don't expect transferable arrays anymore

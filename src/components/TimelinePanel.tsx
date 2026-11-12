@@ -109,7 +109,7 @@ export const TimelinePanel = forwardRef<HTMLDivElement, TimelinePanelProps>(({
   };
 
   return (
-    <div className="h-full w-full bg-gray-900 text-white overflow-hidden">
+    <div className="h-full w-full bg-background text-foreground overflow-hidden">
       <TimelineContainer
         ref={ref}
         tracks={tracks}

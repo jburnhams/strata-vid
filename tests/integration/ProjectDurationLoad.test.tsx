@@ -1,3 +1,4 @@
+import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -42,7 +43,7 @@ describe('Project Duration Load Integration', () => {
 
   it('should recalculate duration when loading a project with duration 0 but existing clips', async () => {
     const user = userEvent.setup();
-    render(<App />);
+    renderWithStrata(<App />);
 
     // Create a mock serialized project with a clip but 0 duration
     // The structure must match SerializedProject in projectSerializer.ts

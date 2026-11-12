@@ -1,6 +1,6 @@
 import { act } from '@testing-library/react';
 import { useProjectStore } from '../../../src/store/useProjectStore';
-import { Asset, Track, Clip } from '../../../src/types';
+import type { Asset, Track, Clip } from '../../../src/types';
 
 describe('useProjectStore', () => {
   beforeEach(() => {

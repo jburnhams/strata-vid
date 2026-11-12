@@ -2,7 +2,7 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react';
 import { Marker } from '../../../../src/components/timeline/Marker';
-import { Marker as MarkerType } from '../../../../src/types';
+import type { Marker as MarkerType } from '../../../../src/types';
 
 describe('Marker', () => {
   const mockMarker: MarkerType = {

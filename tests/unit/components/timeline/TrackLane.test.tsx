@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { TrackLane } from '../../../../src/components/timeline/TrackLane';
-import { Track, Clip, Asset } from '../../../../src/types';
+import type { Track, Clip, Asset } from '../../../../src/types';
 
 // Mock dnd-kit
 jest.mock('@dnd-kit/core', () => ({
@@ -79,7 +79,7 @@ describe('TrackLane', () => {
   it('highlights drop zone when isOver (mocked)', () => {
     render(<TrackLane {...defaultProps} />);
     const lane = screen.getByTestId('track-lane');
-    expect(lane).toHaveClass('bg-gray-900'); // default
+    expect(lane).toHaveClass('bg-background'); // default
   });
 
   it('passes isSelected prop to ClipItem', () => {

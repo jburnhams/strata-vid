@@ -1,7 +1,7 @@
 
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { Compositor } from '../../../src/services/Compositor';
-import { Clip, Asset, ProjectSettings, Track } from '../../../src/types';
+import type { Clip, Asset, ProjectSettings, Track } from '../../../src/types';
 
 describe('Compositor - Transitions', () => {
   let compositor: Compositor;

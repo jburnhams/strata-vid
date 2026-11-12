@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { ExportModal } from '../../src/components/ExportModal';
 import { useProjectStore } from '../../src/store/useProjectStore';
-import { Asset, Clip, Track } from '../../src/types';
+import type { Asset, Clip, Track } from '../../src/types';
 import { createExportWorker } from '../../src/utils/workerUtils';
 import { AudioCompositor } from '../../src/services/AudioCompositor';
 
@@ -106,11 +106,11 @@ describe('Export with Audio Integration', () => {
         render(<ExportModal onClose={onClose} />);
 
         // Wait for rendering
-        expect(screen.getByText('Start Export')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Export' })).toBeInTheDocument();
 
         // Click Export
         await act(async () => {
-            fireEvent.click(screen.getByText('Start Export'));
+            fireEvent.click(screen.getByRole('button', { name: 'Export' }));
         });
 
         // Verify AudioCompositor was NOT used in Main Thread
@@ -133,7 +133,7 @@ describe('Export with Audio Integration', () => {
 
         // Wait for completion
         await waitFor(() => {
-             expect(screen.getByText('Export Complete!')).toBeInTheDocument();
+             expect(screen.getByText('Exported')).toBeInTheDocument();
         });
     });
 });

@@ -1,6 +1,6 @@
 import { parseGPX, parseGPXWithCustomParser } from '@we-gold/gpxjs';
-import { FeatureCollection, Geometry, GeoJsonProperties } from 'geojson';
-import { GpxStats, GpxPoint } from '../types';
+import type { FeatureCollection, Geometry, GeoJsonProperties } from 'geojson';
+import type { GpxStats, GpxPoint } from '../types';
 import { DOMParser } from 'xmldom-qsa';
 
 export const parseGpxFile = async (file: File): Promise<{ geoJson: FeatureCollection<Geometry, GeoJsonProperties>; stats: GpxStats | undefined; points: GpxPoint[] }> => {

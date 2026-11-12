@@ -9,4 +9,4 @@
   - `npm run test:unit` (or `npm run test:coverage`) runs only the unit tests.
   - `npm run test:integration` runs only the integration suite.
 - Code coverage must be calculated from the unit suite only.
-- GitHub Actions enforce this separation: the standard workflow runs unit tests with coverage, while a dedicated workflow runs the integration suite on Node.js 25.
+- GitHub Actions enforce this separation: the standard workflow runs unit tests with coverage, while a dedicated workflow runs the integration suite on Node.js 26.

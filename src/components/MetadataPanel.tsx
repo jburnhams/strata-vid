@@ -1,5 +1,37 @@
-import React, { useRef } from 'react';
-import { Asset, DataOverlayOptions, ProjectSettings } from '../types';
+/**
+ * The right-hand panel: what is selected and its properties, on strata-react's `Inspector`
+ * (issue #74). A selected clip is edited; a selected file is read (`PropertyList`). Sections
+ * collapse and are remembered under `strata-vid.inspector`; a new selection gets fresh controls
+ * (`selectionKey`), so a typed value never carries to the next clip.
+ *
+ * Values are strata value controls (issue #73): `NumberField` refuses an out-of-range typed value
+ * and says why instead of clamping it, `Slider` prints its value with its unit, `ColorField` gives
+ * hex entry and a contrast note against the map. A value set on/off at once is a `Switch`.
+ *
+ * Kept as they were, restyled only: `KeyframeList` (keyframes belong to the timeline family,
+ * issue #77, not released) and `MapSyncControl` (map entry, issue #80, not released).
+ */
+import React, { useState } from 'react';
+import {
+  Button,
+  ColorField,
+  EmptyState,
+  Field,
+  Inspector,
+  InspectorSection,
+  NativeSelect,
+  NumberField,
+  PropertyList,
+  PropertyRow,
+  Slider,
+  Switch,
+  Input,
+  IconButton,
+  format,
+  type Property,
+} from 'strata-react';
+import { Trash2 } from 'lucide-react';
+import type { Asset, DataOverlayOptions, ProjectSettings } from '../types';
 import { useProjectStore } from '../store/useProjectStore';
 import { MapSyncControl } from './MapSyncControl';
 import { KeyframeList } from './KeyframeList';
@@ -10,6 +42,15 @@ interface MetadataPanelProps {
   settings: ProjectSettings;
   setSettings: (settings: Partial<ProjectSettings>) => void;
 }
+
+const KIND: Record<string, string> = {
+  video: 'Video clip', audio: 'Audio clip', image: 'Image clip', map: 'Map clip', data: 'Data overlay',
+  text: 'Text clip', html: 'HTML clip',
+};
+const ASSET_KIND: Record<string, string> = { video: 'Video file', audio: 'Audio file', gpx: 'GPX track', image: 'Image file' };
+
+/** The map is drawn on light tiles by default: track and marker colours are checked against them. */
+const MAP_GROUND = '#f2efe9';
 
 export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAssetId, settings, setSettings }) => {
   const activeAsset = assets.find(a => a.id === selectedAssetId) || null;
@@ -23,606 +64,279 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
     removeExtraTrackFromClip,
     updateExtraTrackOnClip,
   } = useProjectStore();
+  const [extraTrackToAdd, setExtraTrackToAdd] = useState('');
 
   const activeClip = selectedClipId ? clips[selectedClipId] : null;
-  const addTrackSelectRef = useRef<HTMLSelectElement>(null);
-
-  // Determine what to show
-  // If a clip is selected, show clip metadata + sync controls
-  // If not, show asset metadata (activeAsset)
 
   if (activeClip) {
-      return (
-          <div className="metadata h-full flex flex-col" data-testid="metadata-panel-clip">
-            <div className="p-2 bg-neutral-800 border-b border-neutral-700 font-bold text-sm">
-                Clip Properties
-            </div>
-            <div className="p-4 flex-1 overflow-y-auto">
-                <div className="mb-4">
-                    <div className="text-xs text-gray-500 mb-1">Type</div>
-                    <div className="text-sm capitalize">{activeClip.type}</div>
-                </div>
+    const clipAsset = assets.find(a => a.id === activeClip.assetId);
+    const props = activeClip.properties;
+    const addableGpx = assets.filter(a =>
+      a.type === 'gpx' && a.id !== activeClip.assetId && !(activeClip.extraTrackAssets || []).some(et => et.assetId === a.id));
+    // The choice is kept across selections, so only a route this clip can take counts.
+    const routeToAdd = addableGpx.some(a => a.id === extraTrackToAdd) ? extraTrackToAdd : '';
 
-                {(activeClip.type === 'video' || activeClip.type === 'audio') && (
-                     <div className="border-t border-neutral-700 pt-4 mb-4">
-                        <h4 className="text-sm font-bold mb-3">Audio</h4>
-                        <div className="mb-3">
-                            <label htmlFor="clip-volume" className="text-xs text-gray-500 block mb-1">
-                                Volume (%)
-                            </label>
-                            <div className="flex items-center gap-2">
-                                <input
-                                    id="clip-volume"
-                                    type="number"
-                                    min="0" max="500"
-                                    value={Math.round((activeClip.volume ?? 1.0) * 100)}
-                                    onChange={(e) => updateClip(activeClip.id, { volume: parseFloat(e.target.value) / 100 })}
-                                    className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
-                                />
-                            </div>
-                            <p className="text-[10px] text-gray-500 mt-1">
-                                Values &gt; 100% will boost volume.
-                            </p>
-                        </div>
-                     </div>
+    return (
+      <div className="h-full overflow-y-auto p-3" data-testid="metadata-panel-clip">
+        <Inspector
+          title={clipAsset?.name ?? activeClip.id}
+          kind={KIND[activeClip.type] ?? activeClip.type}
+          selectionKey={activeClip.id}
+          storageKey="strata-vid.inspector"
+          empty={null}
+        >
+          {(activeClip.type === 'video' || activeClip.type === 'audio') && (
+            <InspectorSection id="audio" title="Audio">
+              <PropertyRow
+                label="Volume"
+                hint="Above 100% boosts the clip."
+                modified={(activeClip.volume ?? 1) !== 1}
+                onReset={() => updateClip(activeClip.id, { volume: 1 })}
+              >
+                <NumberField min={0} max={500} unit="%" value={Math.round((activeClip.volume ?? 1.0) * 100)}
+                  onChange={(v) => v !== null && updateClip(activeClip.id, { volume: v / 100 })} />
+              </PropertyRow>
+            </InspectorSection>
+          )}
+
+          {(activeClip.type === 'map' || activeClip.type === 'data') && (
+            <InspectorSection id="sync" title="Sync with footage">
+              <MapSyncControl clipId={activeClip.id} />
+            </InspectorSection>
+          )}
+
+          {activeClip.type === 'map' && (
+            <>
+              <InspectorSection id="map" title="Map">
+                <PropertyRow label="Zoom level" modified={(props.mapZoom ?? 13) !== 13} onReset={() => updateClipProperties(activeClip.id, { mapZoom: 13 })}>
+                  <Slider min={1} max={18} value={props.mapZoom || 13} onChange={(v) => updateClipProperties(activeClip.id, { mapZoom: v })} />
+                </PropertyRow>
+                <KeyframeList clipId={activeClip.id} property="mapZoom" label="Zoom animation" step={0.1} />
+                <PropertyRow label="Map style">
+                  <NativeSelect value={props.mapStyle || 'osm'} onChange={(e) => updateClipProperties(activeClip.id, { mapStyle: e.target.value })}>
+                    <option value="osm">OpenStreetMap</option>
+                    <option value="mapbox">Mapbox (demo)</option>
+                    <option value="satellite">Satellite (Esri)</option>
+                    <option value="dark">Dark (CARTO)</option>
+                    <option value="custom">Custom tiles</option>
+                  </NativeSelect>
+                </PropertyRow>
+                {props.mapStyle === 'custom' && (
+                  <PropertyRow label="Tile URL" hint="With {z}, {x} and {y} where the tile numbers go.">
+                    <Input placeholder="https://…/{z}/{x}/{y}.png" value={props.customMapStyleUrl || ''}
+                      onChange={(e) => updateClipProperties(activeClip.id, { customMapStyleUrl: e.target.value })} />
+                  </PropertyRow>
                 )}
+                <Switch label="Show elevation profile" on={props.showElevationProfile || false}
+                  onChange={(on) => updateClipProperties(activeClip.id, { showElevationProfile: on })} />
+              </InspectorSection>
 
-                {activeClip.type === 'map' && (
-                    <>
-                        <MapSyncControl clipId={activeClip.id} className="mb-6" />
-
-                        <div className="border-t border-neutral-700 pt-4">
-                             <h4 className="text-sm font-bold mb-3">Map Styling</h4>
-
-                             <div className="mb-3">
-                                 <label htmlFor="map-zoom" className="text-xs text-gray-500 block mb-1">Zoom Level ({activeClip.properties.mapZoom || 13})</label>
-                                 <input
-                                    id="map-zoom"
-                                    type="range"
-                                    min="1" max="18"
-                                    value={activeClip.properties.mapZoom || 13}
-                                    onChange={(e) => updateClipProperties(activeClip.id, { mapZoom: parseInt(e.target.value) })}
-                                    className="w-full h-2 bg-neutral-900 rounded-lg appearance-none cursor-pointer mb-2"
-                                 />
-                                 <KeyframeList clipId={activeClip.id} property="mapZoom" label="Zoom Animation" step={0.1} />
-                             </div>
-
-                             <div className="mb-3">
-                                 <label htmlFor="map-style" className="text-xs text-gray-500 block mb-1">Map Style</label>
-                                 <select
-                                    id="map-style"
-                                    value={activeClip.properties.mapStyle || 'osm'}
-                                    onChange={(e) => updateClipProperties(activeClip.id, { mapStyle: e.target.value })}
-                                    className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
-                                 >
-                                     <option value="osm">OpenStreetMap</option>
-                                     <option value="mapbox">Mapbox (Demo)</option>
-                                     <option value="satellite">Satellite (Esri)</option>
-                                     <option value="dark">Dark Mode (CARTO)</option>
-                                     <option value="custom">Custom</option>
-                                 </select>
-                             </div>
-
-                             {activeClip.properties.mapStyle === 'custom' && (
-                                <div className="mb-3">
-                                    <label htmlFor="custom-map-style-url" className="text-xs text-gray-500 block mb-1">Custom Tile URL</label>
-                                    <input
-                                        id="custom-map-style-url"
-                                        type="text"
-                                        placeholder="https://.../{z}/{x}/{y}.png"
-                                        value={activeClip.properties.customMapStyleUrl || ''}
-                                        onChange={(e) => updateClipProperties(activeClip.id, { customMapStyleUrl: e.target.value })}
-                                        className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
-                                    />
-                                </div>
-                             )}
-
-                            <div className="flex items-center my-3">
-                                <input
-                                    id="elevation-profile-enabled"
-                                    type="checkbox"
-                                    data-testid="show-elevation-checkbox"
-                                    checked={activeClip.properties.showElevationProfile || false}
-                                    onChange={(e) => updateClipProperties(activeClip.id, { showElevationProfile: e.target.checked })}
-                                    className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 ring-offset-gray-800 focus:ring-2"
-                                />
-                                <label htmlFor="elevation-profile-enabled" className="ml-2 text-sm text-gray-300">Show Elevation Profile</label>
-                            </div>
-
-                             <div className="border-t border-neutral-700 pt-4 mt-4">
-                                <h4 className="text-sm font-bold mb-3">Heatmap</h4>
-                                <div className="flex items-center mb-3">
-                                    <input
-                                        id="heatmap-enabled"
-                                        type="checkbox"
-                                        checked={activeClip.properties.heatmap?.enabled || false}
-                                        onChange={(e) => updateClipProperties(activeClip.id, {
-                                            heatmap: { ...activeClip.properties.heatmap, enabled: e.target.checked }
-                                        })}
-                                        className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 ring-offset-gray-800 focus:ring-2"
-                                    />
-                                    <label htmlFor="heatmap-enabled" className="ml-2 text-sm text-gray-300">Enable Heatmap</label>
-                                </div>
-                                {activeClip.properties.heatmap?.enabled && (
-                                    <div className="mb-3">
-                                        <label htmlFor="heatmap-source" className="text-xs text-gray-500 block mb-1">Data Source</label>
-                                        <select
-                                            id="heatmap-source"
-                                            value={activeClip.properties.heatmap?.dataSource || 'speed'}
-                                            onChange={(e) => updateClipProperties(activeClip.id, {
-                                                heatmap: { ...activeClip.properties.heatmap, dataSource: e.target.value }
-                                            })}
-                                            className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
-                                        >
-                                            <option value="speed">Speed</option>
-                                            <option value="elevation">Elevation</option>
-                                        </select>
-                                    </div>
-                                )}
-                             </div>
-
-                             <div className="border-t border-neutral-700 pt-4 mt-4">
-                                <h4 className="text-sm font-bold mb-3">Primary Track Styling</h4>
-                                <div className="mb-3">
-                                 <label htmlFor="track-color" className="text-xs text-gray-500 block mb-1">Track Color</label>
-                                 <input
-                                    id="track-color"
-                                    type="color"
-                                    value={activeClip.properties.trackStyle?.color || '#007acc'}
-                                    onChange={(e) => updateClipProperties(activeClip.id, {
-                                        trackStyle: { ...activeClip.properties.trackStyle, color: e.target.value }
-                                    })}
-                                    className="w-full h-8 bg-neutral-900 border border-neutral-700 rounded cursor-pointer"
-                                 />
-                                </div>
-                                <div className="mb-3">
-                                 <label htmlFor="track-width" className="text-xs text-gray-500 block mb-1">Track Width</label>
-                                 <input
-                                    id="track-width"
-                                    type="range"
-                                    min="1" max="10"
-                                    value={activeClip.properties.trackStyle?.weight || 4}
-                                    onChange={(e) => updateClipProperties(activeClip.id, {
-                                        trackStyle: { ...activeClip.properties.trackStyle, weight: parseInt(e.target.value) }
-                                    })}
-                                    className="w-full"
-                                 />
-                                </div>
-                                <div className="mb-3">
-                                 <label htmlFor="marker-color" className="text-xs text-gray-500 block mb-1">Marker Color</label>
-                                 <input
-                                    id="marker-color"
-                                    type="color"
-                                    value={activeClip.properties.markerStyle?.color || 'red'}
-                                    onChange={(e) => updateClipProperties(activeClip.id, {
-                                        markerStyle: { ...activeClip.properties.markerStyle, color: e.target.value }
-                                    })}
-                                    className="w-full h-8 bg-neutral-900 border border-neutral-700 rounded cursor-pointer"
-                                 />
-                                </div>
-                            </div>
-
-                            <div className="border-t border-neutral-700 pt-4 mt-4">
-                                <h4 className="text-sm font-bold mb-3">Extra Tracks</h4>
-                                <div className="space-y-2 mb-4">
-                                    {(activeClip.extraTrackAssets || []).map((extraTrack) => {
-                                        const extraAsset = assets.find(a => a.id === extraTrack.assetId);
-                                        return (
-                                            <div key={extraTrack.assetId} className="bg-neutral-900 p-2 rounded border border-neutral-700">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <p className="text-xs truncate" title={extraAsset?.name}>{extraAsset?.name || 'Unknown Asset'}</p>
-                                                    <button
-                                                        onClick={() => removeExtraTrackFromClip(activeClip.id, extraTrack.assetId)}
-                                                        className="text-red-500 hover:text-red-400 text-xs font-bold"
-                                                    >
-                                                        Remove
-                                                    </button>
-                                                </div>
-                                                <div className="flex items-center space-x-2">
-                                                    <label htmlFor={`extra-track-color-${extraTrack.assetId}`} className="text-xs text-gray-500">Color</label>
-                                                    <input
-                                                        id={`extra-track-color-${extraTrack.assetId}`}
-                                                        type="color"
-                                                        value={extraTrack.trackStyle?.color || '#ff0000'}
-                                                        onChange={(e) => updateExtraTrackOnClip(activeClip.id, extraTrack.assetId, {
-                                                            trackStyle: {
-                                                                color: e.target.value,
-                                                                weight: extraTrack.trackStyle?.weight || 4,
-                                                                opacity: extraTrack.trackStyle?.opacity || 1,
-                                                            }
-                                                        })}
-                                                        className="w-6 h-6 bg-neutral-800 border-neutral-700 rounded cursor-pointer"
-                                                    />
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                                <div className="flex space-x-2">
-                                    <select
-                                        ref={addTrackSelectRef}
-                                        id="add-extra-track-select"
-                                        aria-label="Select a GPX asset to add"
-                                        className="flex-1 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
-                                    >
-                                        <option value="">Select a GPX asset...</option>
-                                        {assets
-                                            .filter(a => a.type === 'gpx' && a.id !== activeClip.assetId && !(activeClip.extraTrackAssets || []).some(et => et.assetId === a.id))
-                                            .map(a => <option key={a.id} value={a.id}>{a.name}</option>)
-                                        }
-                                    </select>
-                                    <button
-                                        data-testid="add-extra-track-button"
-                                        onClick={() => {
-                                            if (addTrackSelectRef.current?.value) {
-                                                addExtraTrackToClip(activeClip.id, addTrackSelectRef.current.value);
-                                            }
-                                        }}
-                                        className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-1 px-3 rounded text-sm"
-                                    >
-                                        Add
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </>
+              <InspectorSection id="heatmap" title="Heatmap" defaultOpen={false}>
+                <Switch label="Colour the route by a reading" on={props.heatmap?.enabled || false}
+                  onChange={(on) => updateClipProperties(activeClip.id, { heatmap: { ...props.heatmap, enabled: on } })} />
+                {props.heatmap?.enabled && (
+                  <PropertyRow label="Reading">
+                    <NativeSelect value={props.heatmap?.dataSource || 'speed'}
+                      onChange={(e) => updateClipProperties(activeClip.id, { heatmap: { ...props.heatmap, dataSource: e.target.value } })}>
+                      <option value="speed">Speed</option>
+                      <option value="elevation">Elevation</option>
+                    </NativeSelect>
+                  </PropertyRow>
                 )}
+              </InspectorSection>
 
-                {activeClip.type === 'data' && (
-                    <>
-                        <MapSyncControl clipId={activeClip.id} className="mb-6" />
-                        <div className="border-t border-neutral-700 pt-4">
-                            <h4 className="text-sm font-bold mb-3">Display Fields</h4>
-                            <div className="space-y-2">
-                                {(['showSpeed', 'showDistance', 'showElevation'] as const).map((field: keyof Pick<DataOverlayOptions, 'showSpeed' | 'showDistance' | 'showElevation'>) => (
-                                    <div key={field} className="flex items-center">
-                                        <input
-                                            id={`data-${field}`}
-                                            type="checkbox"
-                                            checked={activeClip.properties.dataOverlay?.[field] ?? true}
-                                            onChange={(e) => updateClipProperties(activeClip.id, {
-                                                dataOverlay: { ...activeClip.properties.dataOverlay, [field]: e.target.checked }
-                                            })}
-                                            className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 ring-offset-gray-800 focus:ring-2"
-                                        />
-                                        <label htmlFor={`data-${field}`} className="ml-2 text-sm text-gray-300">
-                                            Show {field.replace('show', '')}
-                                        </label>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="border-t border-neutral-700 pt-4 mt-4">
-                            <h4 className="text-sm font-bold mb-3">Units</h4>
-                            <div className="space-y-3">
-                                <div>
-                                    <label htmlFor="speed-unit" className="text-xs text-gray-500 block mb-1">Speed Unit</label>
-                                    <select
-                                        id="speed-unit"
-                                        value={activeClip.properties.dataOverlay?.speedUnit || 'kmh'}
-                                        onChange={(e) => updateClipProperties(activeClip.id, {
-                                            dataOverlay: { ...activeClip.properties.dataOverlay, speedUnit: e.target.value }
-                                        })}
-                                        className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
-                                    >
-                                        <option value="kmh">km/h</option>
-                                        <option value="mph">mph</option>
-                                        <option value="m/s">m/s</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label htmlFor="distance-unit" className="text-xs text-gray-500 block mb-1">Distance Unit</label>
-                                    <select
-                                        id="distance-unit"
-                                        value={activeClip.properties.dataOverlay?.distanceUnit || 'km'}
-                                        onChange={(e) => updateClipProperties(activeClip.id, {
-                                            dataOverlay: { ...activeClip.properties.dataOverlay, distanceUnit: e.target.value }
-                                        })}
-                                        className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
-                                    >
-                                        <option value="km">km</option>
-                                        <option value="mi">miles</option>
-                                        <option value="m">meters</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label htmlFor="elevation-unit" className="text-xs text-gray-500 block mb-1">Elevation Unit</label>
-                                    <select
-                                        id="elevation-unit"
-                                        value={activeClip.properties.dataOverlay?.elevationUnit || 'm'}
-                                        onChange={(e) => updateClipProperties(activeClip.id, {
-                                            dataOverlay: { ...activeClip.properties.dataOverlay, elevationUnit: e.target.value }
-                                        })}
-                                        className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
-                                    >
-                                        <option value="m">meters</option>
-                                        <option value="ft">feet</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </>
-                )}
+              <InspectorSection id="route-style" title="Route style">
+                <PropertyRow label="Route colour">
+                  <ColorField aria-label="Route colour" value={props.trackStyle?.color || '#007acc'} against={MAP_GROUND} againstLabel="the map"
+                    onChange={(c) => c && updateClipProperties(activeClip.id, { trackStyle: { ...props.trackStyle, color: c } })} />
+                </PropertyRow>
+                <PropertyRow label="Route width">
+                  <Slider min={1} max={10} unit="px" value={props.trackStyle?.weight || 4}
+                    onChange={(v) => updateClipProperties(activeClip.id, { trackStyle: { ...props.trackStyle, weight: v } })} />
+                </PropertyRow>
+                <PropertyRow label="Marker colour">
+                  <ColorField aria-label="Marker colour" value={props.markerStyle?.color?.startsWith('#') ? props.markerStyle.color : '#ff0000'} against={MAP_GROUND} againstLabel="the map"
+                    onChange={(c) => c && updateClipProperties(activeClip.id, { markerStyle: { ...props.markerStyle, color: c } })} />
+                </PropertyRow>
+              </InspectorSection>
 
-                {activeClip.type === 'data' && (
-                    <div className="border-t border-neutral-700 pt-4 mt-4">
-                        <h4 className="text-sm font-bold mb-3">Text Styling</h4>
-                        <div className="space-y-3">
-                            <div>
-                                <label htmlFor="font-size" className="text-xs text-gray-500 block mb-1">Font Size</label>
-                                <input
-                                    id="font-size"
-                                    type="number"
-                                    value={activeClip.textStyle?.fontSize || 16}
-                                    onChange={(e) => updateClipProperties(activeClip.id, {
-                                        textStyle: { ...activeClip.textStyle, fontSize: parseInt(e.target.value) }
-                                    })}
-                                    className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
-                                />
-                            </div>
-                            <div>
-                                <label htmlFor="text-color" className="text-xs text-gray-500 block mb-1">Text Color</label>
-                                <input
-                                    id="text-color"
-                                    type="color"
-                                    value={activeClip.textStyle?.color || '#ffffff'}
-                                    onChange={(e) => updateClipProperties(activeClip.id, {
-                                        textStyle: { ...activeClip.textStyle, color: e.target.value }
-                                    })}
-                                    className="w-full h-8 bg-neutral-900 border border-neutral-700 rounded cursor-pointer"
-                                />
-                            </div>
-                            <div>
-                                <label htmlFor="background-color" className="text-xs text-gray-500 block mb-1">Background Color</label>
-                                <input
-                                    id="background-color"
-                                    type="color"
-                                    value={activeClip.textStyle?.backgroundColor || '#000000'}
-                                    onChange={(e) => updateClipProperties(activeClip.id, {
-                                        textStyle: { ...activeClip.textStyle, backgroundColor: e.target.value }
-                                    })}
-                                    className="w-full h-8 bg-neutral-900 border border-neutral-700 rounded cursor-pointer"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                )}
+              <InspectorSection id="extra-tracks" title="More routes" defaultOpen={false}>
+                <ul className="space-y-2">
+                  {(activeClip.extraTrackAssets || []).map((extraTrack) => {
+                    const name = assets.find(a => a.id === extraTrack.assetId)?.name ?? 'Missing GPX file';
+                    return (
+                      <li key={extraTrack.assetId} className="flex items-end gap-2">
+                        <Field label={name} className="flex-1 min-w-0">
+                          <ColorField aria-label={`${name} colour`} value={extraTrack.trackStyle?.color || '#ff0000'} against={MAP_GROUND} againstLabel="the map"
+                            onChange={(c) => c && updateExtraTrackOnClip(activeClip.id, extraTrack.assetId, {
+                              trackStyle: { color: c, weight: extraTrack.trackStyle?.weight || 4, opacity: extraTrack.trackStyle?.opacity || 1 },
+                            })} />
+                        </Field>
+                        <IconButton variant="ghost" icon={Trash2} label={`Remove ${name}`}
+                          onPress={() => removeExtraTrackFromClip(activeClip.id, extraTrack.assetId)} />
+                      </li>
+                    );
+                  })}
+                </ul>
+                <Field
+                  label="Add a route"
+                  hint={addableGpx.length === 0 ? 'Load another GPX file to show it here.' : undefined}
+                  action={
+                    <Button data-testid="add-extra-track-button" disabled={!routeToAdd}
+                      onClick={() => { addExtraTrackToClip(activeClip.id, routeToAdd); setExtraTrackToAdd(''); }}>
+                      Add
+                    </Button>
+                  }
+                >
+                  <NativeSelect value={routeToAdd} onChange={(e) => setExtraTrackToAdd(e.target.value)} disabled={addableGpx.length === 0}>
+                    <option value="">Choose a GPX file</option>
+                    {addableGpx.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  </NativeSelect>
+                </Field>
+              </InspectorSection>
+            </>
+          )}
 
-                {activeClip.type !== 'map' && activeClip.type !== 'data' && (
-                     <div className="space-y-6">
-                         <div>
-                            <div className="flex justify-between mb-1">
-                                <label htmlFor="opacity-slider" className="text-xs text-gray-500">Opacity</label>
-                                <span className="text-xs text-gray-400">{Math.round(activeClip.properties.opacity * 100)}%</span>
-                            </div>
-                            <input
-                                id="opacity-slider"
-                                type="range"
-                                min="0" max="1" step="0.01"
-                                value={activeClip.properties.opacity}
-                                onChange={(e) => updateClipProperties(activeClip.id, { opacity: parseFloat(e.target.value) })}
-                                className="w-full mb-2 bg-neutral-900 h-2 rounded-lg appearance-none cursor-pointer"
-                            />
-                            <KeyframeList clipId={activeClip.id} property="opacity" label="Opacity Animation" step={0.01} />
-                         </div>
+          {activeClip.type === 'data' && (
+            <>
+              <InspectorSection id="data-fields" title="Readings shown">
+                {(['showSpeed', 'showDistance', 'showElevation'] as const).map((field: keyof Pick<DataOverlayOptions, 'showSpeed' | 'showDistance' | 'showElevation'>) => (
+                  <Switch key={field} label={field.replace('show', '')} on={props.dataOverlay?.[field] ?? true}
+                    onChange={(on) => updateClipProperties(activeClip.id, { dataOverlay: { ...props.dataOverlay, [field]: on } })} />
+                ))}
+              </InspectorSection>
+              <InspectorSection id="units" title="Units">
+                <PropertyRow label="Speed unit">
+                  <NativeSelect value={props.dataOverlay?.speedUnit || 'kmh'}
+                    onChange={(e) => updateClipProperties(activeClip.id, { dataOverlay: { ...props.dataOverlay, speedUnit: e.target.value } })}>
+                    <option value="kmh">km/h</option>
+                    <option value="mph">mph</option>
+                    <option value="m/s">m/s</option>
+                  </NativeSelect>
+                </PropertyRow>
+                <PropertyRow label="Distance unit">
+                  <NativeSelect value={props.dataOverlay?.distanceUnit || 'km'}
+                    onChange={(e) => updateClipProperties(activeClip.id, { dataOverlay: { ...props.dataOverlay, distanceUnit: e.target.value } })}>
+                    <option value="km">kilometres</option>
+                    <option value="mi">miles</option>
+                    <option value="m">metres</option>
+                  </NativeSelect>
+                </PropertyRow>
+                <PropertyRow label="Elevation unit">
+                  <NativeSelect value={props.dataOverlay?.elevationUnit || 'm'}
+                    onChange={(e) => updateClipProperties(activeClip.id, { dataOverlay: { ...props.dataOverlay, elevationUnit: e.target.value } })}>
+                    <option value="m">metres</option>
+                    <option value="ft">feet</option>
+                  </NativeSelect>
+                </PropertyRow>
+              </InspectorSection>
+              <InspectorSection id="text-style" title="Text style">
+                <PropertyRow label="Font size">
+                  <NumberField min={6} max={200} unit="px" value={activeClip.textStyle?.fontSize || 16}
+                    onChange={(v) => v !== null && updateClipProperties(activeClip.id, { textStyle: { ...activeClip.textStyle, fontSize: v } })} />
+                </PropertyRow>
+                <PropertyRow label="Text colour">
+                  <ColorField aria-label="Text colour" value={activeClip.textStyle?.color || '#ffffff'} against={activeClip.textStyle?.backgroundColor || '#000000'} againstLabel="its background"
+                    onChange={(c) => c && updateClipProperties(activeClip.id, { textStyle: { ...activeClip.textStyle, color: c } })} />
+                </PropertyRow>
+                <PropertyRow label="Background colour">
+                  <ColorField aria-label="Background colour" value={activeClip.textStyle?.backgroundColor || '#000000'}
+                    onChange={(c) => c && updateClipProperties(activeClip.id, { textStyle: { ...activeClip.textStyle, backgroundColor: c } })} />
+                </PropertyRow>
+              </InspectorSection>
+            </>
+          )}
 
-                         <div>
-                            <div className="flex justify-between mb-1">
-                                <label htmlFor="rotation-slider" className="text-xs text-gray-500">Rotation</label>
-                                <span className="text-xs text-gray-400">{Math.round(activeClip.properties.rotation)}°</span>
-                            </div>
-                            <input
-                                id="rotation-slider"
-                                type="range"
-                                min="0" max="360" step="1"
-                                value={activeClip.properties.rotation}
-                                onChange={(e) => updateClipProperties(activeClip.id, { rotation: parseInt(e.target.value) })}
-                                className="w-full mb-2 bg-neutral-900 h-2 rounded-lg appearance-none cursor-pointer"
-                            />
-                            <KeyframeList clipId={activeClip.id} property="rotation" label="Rotation Animation" step={1} />
-                         </div>
-
-                         <div>
-                             <div className="flex justify-between mb-1">
-                                <label htmlFor="pos-x-slider" className="text-xs text-gray-500">Position X (%)</label>
-                                <span className="text-xs text-gray-400">{Math.round(activeClip.properties.x)}%</span>
-                             </div>
-                             <input
-                                id="pos-x-slider"
-                                type="range"
-                                min="0" max="100" step="1"
-                                value={activeClip.properties.x}
-                                onChange={(e) => updateClipProperties(activeClip.id, { x: parseFloat(e.target.value) })}
-                                className="w-full mb-2 bg-neutral-900 h-2 rounded-lg appearance-none cursor-pointer"
-                             />
-                             <KeyframeList clipId={activeClip.id} property="x" label="X Animation" step={1} />
-                         </div>
-
-                         <div>
-                             <div className="flex justify-between mb-1">
-                                <label htmlFor="pos-y-slider" className="text-xs text-gray-500">Position Y (%)</label>
-                                <span className="text-xs text-gray-400">{Math.round(activeClip.properties.y)}%</span>
-                             </div>
-                             <input
-                                id="pos-y-slider"
-                                type="range"
-                                min="0" max="100" step="1"
-                                value={activeClip.properties.y}
-                                onChange={(e) => updateClipProperties(activeClip.id, { y: parseFloat(e.target.value) })}
-                                className="w-full mb-2 bg-neutral-900 h-2 rounded-lg appearance-none cursor-pointer"
-                             />
-                             <KeyframeList clipId={activeClip.id} property="y" label="Y Animation" step={1} />
-                         </div>
-                     </div>
-                )}
-            </div>
-          </div>
-      );
+          {activeClip.type !== 'map' && activeClip.type !== 'data' && (
+            <InspectorSection id="transform" title="Position and look">
+              <PropertyRow label="Opacity" modified={props.opacity !== 1} onReset={() => updateClipProperties(activeClip.id, { opacity: 1 })}>
+                <Slider min={0} max={100} unit="%" value={Math.round(props.opacity * 100)}
+                  onChange={(v) => updateClipProperties(activeClip.id, { opacity: v / 100 })} />
+              </PropertyRow>
+              <KeyframeList clipId={activeClip.id} property="opacity" label="Opacity animation" step={0.01} />
+              <PropertyRow label="Rotation" modified={props.rotation !== 0} onReset={() => updateClipProperties(activeClip.id, { rotation: 0 })}>
+                <Slider min={0} max={360} unit="°" value={Math.round(props.rotation)}
+                  onChange={(v) => updateClipProperties(activeClip.id, { rotation: v })} />
+              </PropertyRow>
+              <KeyframeList clipId={activeClip.id} property="rotation" label="Rotation animation" step={1} />
+              <PropertyRow label="Position X" modified={props.x !== 0} onReset={() => updateClipProperties(activeClip.id, { x: 0 })}>
+                <Slider min={0} max={100} unit="%" value={Math.round(props.x)}
+                  onChange={(v) => updateClipProperties(activeClip.id, { x: v })} />
+              </PropertyRow>
+              <KeyframeList clipId={activeClip.id} property="x" label="X animation" step={1} />
+              <PropertyRow label="Position Y" modified={props.y !== 0} onReset={() => updateClipProperties(activeClip.id, { y: 0 })}>
+                <Slider min={0} max={100} unit="%" value={Math.round(props.y)}
+                  onChange={(v) => updateClipProperties(activeClip.id, { y: v })} />
+              </PropertyRow>
+              <KeyframeList clipId={activeClip.id} property="y" label="Y animation" step={1} />
+            </InspectorSection>
+          )}
+        </Inspector>
+      </div>
+    );
   }
 
+  const file: Property[] = activeAsset ? [
+    { term: 'Created', value: activeAsset.creationTime ? format.dateTime(activeAsset.creationTime) : null },
+    { term: 'Date from', value: activeAsset.creationTimeSource ?? null },
+    { term: 'Size', value: activeAsset.file ? format.bytes(activeAsset.file.size) : null },
+  ] : [];
+
+  const video = activeAsset?.type === 'video' ? [
+    { term: 'Duration', value: activeAsset.duration ? format.runningTime(activeAsset.duration) : null },
+    { term: 'Resolution', value: activeAsset.resolution ? `${activeAsset.resolution.width}×${activeAsset.resolution.height}` : null },
+    { term: 'Container', value: activeAsset.videoMetadata?.format },
+    { term: 'Video codec', value: activeAsset.videoMetadata?.videoCodec },
+    { term: 'Frame rate', value: activeAsset.videoMetadata?.frameRate ?? null, unit: 'fps' },
+    { term: 'Bitrate', value: activeAsset.videoMetadata?.bitrate ? format.decimal(activeAsset.videoMetadata.bitrate / 1_000_000) : null, unit: 'Mbps' },
+    { term: 'Audio codec', value: activeAsset.videoMetadata?.audioCodec },
+    { term: 'Sample rate', value: activeAsset.videoMetadata?.sampleRate ? activeAsset.videoMetadata.sampleRate / 1000 : null, unit: 'kHz' },
+    { term: 'Channels', value: activeAsset.videoMetadata?.channels ?? null },
+  ] satisfies Property[] : [];
+
+  const gpx = activeAsset?.type === 'gpx' && activeAsset.stats ? [
+    { term: 'Distance', value: format.decimal(activeAsset.stats.distance.total / 1000), unit: 'km' },
+    { term: 'Climb', value: format.integer(activeAsset.stats.elevation.gain), unit: 'm' },
+    { term: 'Moving time', value: format.runningTime(activeAsset.stats.time.duration / 1000) },
+  ] satisfies Property[] : [];
+
   return (
-    <div className="h-full flex flex-col">
-      <div className="bg-neutral-800 border-b border-neutral-700 px-4 py-2 font-bold text-sm">
-        Metadata
-      </div>
-      <div className="p-4 overflow-y-auto flex-1">
-        {activeAsset ? (
-          <div className="space-y-4">
-            {activeAsset.thumbnail && (
-              <div className="rounded overflow-hidden border border-neutral-700">
-                <img src={activeAsset.thumbnail} alt="Thumbnail" className="w-full h-auto" />
-              </div>
-            )}
-
-            <div>
-              <div className="text-xs text-neutral-400 mb-1">Name</div>
-              <div className="text-sm break-all">{activeAsset.name}</div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="text-xs text-neutral-400 mb-1">Type</div>
-                <div className="text-sm capitalize">{activeAsset.type}</div>
-              </div>
-              {activeAsset.creationTime && (
-                <div className="mb-4">
-                  <div className="text-xs text-gray-500 mb-1">Created</div>
-                  <div className="text-sm">{activeAsset.creationTime.toLocaleString()}</div>
-                  <div className="text-[10px] text-gray-500">Source: {activeAsset.creationTimeSource}</div>
-                </div>
-              )}
-              {activeAsset.file && (
-                <div>
-                  <div className="text-xs text-neutral-400 mb-1">Size</div>
-                  <div className="text-sm">{(activeAsset.file.size / 1024 / 1024).toFixed(2)} MB</div>
-                </div>
-              )}
-            </div>
-
-            {activeAsset.type === 'video' && (
-               <>
-                 <div className="grid grid-cols-2 gap-4 border-t border-neutral-700 pt-4">
-                   <div>
-                     <div className="text-xs text-neutral-400 mb-1">Duration</div>
-                     <div className="text-sm">{activeAsset.duration ? `${Math.round(activeAsset.duration)}s` : 'Unknown'}</div>
-                   </div>
-                   <div>
-                     <div className="text-xs text-neutral-400 mb-1">Resolution</div>
-                     <div className="text-sm">
-                       {activeAsset.resolution ? `${activeAsset.resolution.width}x${activeAsset.resolution.height}` : 'Unknown'}
-                     </div>
-                   </div>
-                 </div>
-
-                 {activeAsset.videoMetadata && (
-                    <div className="space-y-4 border-t border-neutral-700 pt-4">
-                        <h5 className="font-bold text-sm text-gray-300">Video Details</h5>
-                        <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-sm">
-                            {activeAsset.videoMetadata.format && (
-                                <>
-                                    <div className="text-neutral-400 text-xs">Container</div>
-                                    <div className="truncate" title={activeAsset.videoMetadata.format}>{activeAsset.videoMetadata.format}</div>
-                                </>
-                            )}
-                            {activeAsset.videoMetadata.videoCodec && (
-                                <>
-                                    <div className="text-neutral-400 text-xs">Video Codec</div>
-                                    <div className="truncate" title={activeAsset.videoMetadata.videoCodec}>{activeAsset.videoMetadata.videoCodec}</div>
-                                </>
-                            )}
-                            {activeAsset.videoMetadata.frameRate && (
-                                <>
-                                    <div className="text-neutral-400 text-xs">Frame Rate</div>
-                                    <div>{activeAsset.videoMetadata.frameRate} fps</div>
-                                </>
-                            )}
-                            {activeAsset.videoMetadata.bitrate && (
-                                <>
-                                    <div className="text-neutral-400 text-xs">Bitrate</div>
-                                    <div>{(activeAsset.videoMetadata.bitrate / 1000000).toFixed(2)} Mbps</div>
-                                </>
-                            )}
-                            {(activeAsset.videoMetadata.audioCodec || activeAsset.videoMetadata.sampleRate) && (
-                                <div className="col-span-2 text-xs font-semibold text-gray-500 mt-1">Audio Track</div>
-                            )}
-                            {activeAsset.videoMetadata.audioCodec && (
-                                <>
-                                    <div className="text-neutral-400 text-xs">Audio Codec</div>
-                                    <div className="truncate" title={activeAsset.videoMetadata.audioCodec}>{activeAsset.videoMetadata.audioCodec}</div>
-                                </>
-                            )}
-                            {activeAsset.videoMetadata.sampleRate && (
-                                <>
-                                    <div className="text-neutral-400 text-xs">Sample Rate</div>
-                                    <div>{activeAsset.videoMetadata.sampleRate / 1000} kHz</div>
-                                </>
-                            )}
-                            {activeAsset.videoMetadata.channels && (
-                                <>
-                                    <div className="text-neutral-400 text-xs">Channels</div>
-                                    <div>{activeAsset.videoMetadata.channels}</div>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                 )}
-               </>
-            )}
-
-            {activeAsset.type === 'gpx' && activeAsset.stats && (
-                <div className="space-y-2 border-t border-neutral-700 pt-4">
-                  <h5 className="font-bold text-sm mb-2">GPX Statistics</h5>
-                  <div className="grid grid-cols-2 gap-y-2 text-sm">
-                      <div className="text-neutral-400">Distance</div>
-                      <div>{(activeAsset.stats.distance.total / 1000).toFixed(2)} km</div>
-
-                      <div className="text-neutral-400">Elev. Gain</div>
-                      <div>{activeAsset.stats.elevation.gain.toFixed(0)} m</div>
-
-                      <div className="text-neutral-400">Duration</div>
-                      <div>{new Date(activeAsset.stats.time.duration).toISOString().substr(11, 8)}</div>
-                  </div>
-                </div>
-            )}
-
-            {activeAsset.type === 'gpx' && (
-              <div className="space-y-2 border-t border-neutral-700 pt-4">
-                <h5 className="font-bold text-sm mb-2">GPX Processing</h5>
-                <div className="mb-3">
-                  <label htmlFor="gpx-simplification" className="text-xs text-gray-500 block mb-1">
-                    Simplification Tolerance ({settings.simplificationTolerance})
-                  </label>
-                  <input
-                    id="gpx-simplification"
-                    type="range"
-                    min="0"
-                    max="0.001"
-                    step="0.00001"
-                    value={settings.simplificationTolerance}
-                    onChange={(e) => setSettings({ simplificationTolerance: parseFloat(e.target.value) })}
-                    className="w-full h-2 bg-neutral-900 rounded-lg appearance-none cursor-pointer"
-                  />
-                  <p className="text-xs text-neutral-500 mt-1">
-                    Higher values reduce detail.
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    if (activeAsset) {
-                      reprocessGpxAsset(activeAsset.id, settings.simplificationTolerance);
-                    }
-                  }}
-                  className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded text-sm transition-colors"
-                >
-                  Re-process GPX
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="text-neutral-500 italic text-center mt-10">Select an asset to view details</div>
+    <div className="h-full overflow-y-auto p-3">
+      <Inspector
+        title={activeAsset?.name ?? null}
+        kind={activeAsset ? ASSET_KIND[activeAsset.type] ?? activeAsset.type : undefined}
+        selectionKey={activeAsset?.id}
+        storageKey="strata-vid.inspector"
+        summary={activeAsset?.thumbnail ? (
+          <img src={activeAsset.thumbnail} alt={`First frame of ${activeAsset.name}`} className="w-full rounded-control border border-border" />
+        ) : undefined}
+        empty={<EmptyState title="Nothing selected">Select a file in the library or a clip on the timeline to see its details here.</EmptyState>}
+      >
+        <InspectorSection id="file" title="Details">
+          <PropertyList items={file} />
+        </InspectorSection>
+        {video.length > 0 && (
+          <InspectorSection id="video-details" title="Video">
+            <PropertyList items={video} />
+          </InspectorSection>
         )}
-      </div>
+        {gpx.length > 0 && (
+          <InspectorSection id="gpx-stats" title="Route">
+            <PropertyList items={gpx} />
+          </InspectorSection>
+        )}
+        {activeAsset?.type === 'gpx' && (
+          <InspectorSection id="gpx-processing" title="Route detail">
+            <PropertyRow label="Simplification" hint="Higher values drop more points from the route.">
+              <Slider min={0} max={0.001} step={0.00001} places={5} value={settings.simplificationTolerance}
+                onChange={(v) => setSettings({ simplificationTolerance: v })} />
+            </PropertyRow>
+            <Button onClick={() => reprocessGpxAsset(activeAsset.id, settings.simplificationTolerance)}>
+              Re-process route
+            </Button>
+          </InspectorSection>
+        )}
+      </Inspector>
     </div>
   );
 };

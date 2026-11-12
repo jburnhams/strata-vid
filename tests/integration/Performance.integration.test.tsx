@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, act } from '@testing-library/react';
 import { TimelinePanel } from '../../src/components/TimelinePanel';
 import { useProjectStore } from '../../src/store/useProjectStore';
-import { Track, Clip } from '../../src/types';
+import type { Track, Clip } from '../../src/types';
 
 // Mock ResizeObserver
 global.ResizeObserver = jest.fn().mockImplementation(() => ({

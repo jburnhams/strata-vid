@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, act } from '@testing-library/react';
 import { VideoPlayer } from '../../../../src/components/preview/VideoPlayer';
-import { Clip, Asset } from '../../../../src/types';
+import type { Clip, Asset } from '../../../../src/types';
 import { AudioEngine } from '../../../../src/services/AudioEngine';
 
 // Mock AudioEngine

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Marker as MarkerType } from '../../types';
+import type { Marker as MarkerType } from '../../types';
 
 interface MarkerProps {
   marker: MarkerType;
@@ -25,7 +25,7 @@ export const Marker: React.FC<MarkerProps> = ({ marker, zoomLevel, onClick }) =>
         }}
       >
         {/* Label Tooltip on Hover */}
-        <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity">
+        <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-card text-foreground type-caption px-1 rounded-control opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity">
           {marker.label}
         </div>
       </div>

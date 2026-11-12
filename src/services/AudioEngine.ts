@@ -1,4 +1,4 @@
-import { Track } from '../types';
+import type { Track } from '../types';
 
 /**
  * AudioEngine Service

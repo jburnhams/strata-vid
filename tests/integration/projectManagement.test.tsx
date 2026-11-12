@@ -1,9 +1,10 @@
+import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../../src/App';
 import { AssetLoader } from '../../src/services/AssetLoader';
-import { Asset } from '../../src/types';
+import type { Asset } from '../../src/types';
 
 jest.mock('../../src/services/AssetLoader');
 jest.mock('react-leaflet', () => ({
@@ -46,7 +47,7 @@ describe('Project Management Integration', () => {
     };
     (AssetLoader.loadAsset as jest.Mock).mockResolvedValue(mockAsset);
 
-    const { container } = render(<App />);
+    const { container } = renderWithStrata(<App />);
 
     // 2. Add Asset - Updated selector to match new accessibility structure
     const libraryInput = screen.getByLabelText('Add Asset');
@@ -77,8 +78,8 @@ describe('Project Management Integration', () => {
     jest.spyOn(link, 'click').mockImplementation(() => {});
 
     // Hover File menu to show options
-    await user.hover(screen.getByText('File'));
-    await user.click(screen.getByText('Save Project'));
+    await user.click(screen.getByRole('button', { name: 'File' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Save project' }));
 
     expect(window.URL.createObjectURL).toHaveBeenCalled();
     expect(savedBlob).not.toBeNull();
@@ -93,8 +94,9 @@ describe('Project Management Integration', () => {
     expect(savedJson.assets['asset-1'].fileName).toBe('video.mp4');
 
     // 4. New Project (Clear)
-    await user.hover(screen.getByText('File'));
-    await user.click(screen.getByText('New Project'));
+    await user.click(screen.getByRole('button', { name: 'File' }));
+    await user.click(screen.getByRole('menuitem', { name: 'New project' }));
+    await user.click(await screen.findByRole('button', { name: 'Start new project' }));
 
     // Verify cleared
     await waitFor(() => {

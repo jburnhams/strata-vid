@@ -1,10 +1,10 @@
-import { Asset, AssetType } from '../types';
+import type { Asset, AssetType } from '../types';
 import { BlobSource, Input, ALL_FORMATS } from 'mediabunny';
 import { parseGpxFile, simplifyTrack } from '../utils/gpxParser';
 import { extractAudioMetadata } from '../utils/audioUtils';
 import { ConcurrencyLimiter } from '../utils/concurrency';
 
-import { VideoMetadata } from '../types';
+import type { VideoMetadata } from '../types';
 
 // Helper interface for Mediabunny Input to handle potential type mismatches
 interface IMediabunnyInput {

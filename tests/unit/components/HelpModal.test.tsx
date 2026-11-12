@@ -1,46 +1,38 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import type { Command } from 'strata-react';
 import { HelpModal } from '../../../src/components/HelpModal';
 
+const commands: Command[] = [
+  { id: 'play', label: 'Play', keys: [' '], run: jest.fn() },
+  { id: 'undo', label: 'Undo', keys: ['Mod+Z'], run: jest.fn() },
+  { id: 'no-keys', label: 'Only in menus', run: jest.fn() },
+];
+
 describe('HelpModal', () => {
-  it('renders correctly', () => {
-    const onClose = jest.fn();
-    render(<HelpModal onClose={onClose} />);
+  it('lists every command that has keys, with its shortcut', () => {
+    render(<HelpModal commands={commands} onClose={jest.fn()} />);
 
-    expect(screen.getByText('Keyboard Shortcuts')).toBeInTheDocument();
-    expect(screen.getByText('Play / Pause')).toBeInTheDocument();
-    expect(screen.getByText('Show Help')).toBeInTheDocument();
-    expect(screen.getByText('Undo')).toBeInTheDocument();
-    expect(screen.getByText('Redo')).toBeInTheDocument();
+    const dialog = screen.getByRole('dialog', { name: 'Keyboard shortcuts' });
+    expect(within(dialog).getByText('Play')).toBeInTheDocument();
+    expect(within(dialog).getByText('Undo')).toBeInTheDocument();
+    expect(within(dialog).getByText('Ctrl+Z')).toBeInTheDocument();
+    expect(within(dialog).queryByText('Only in menus')).not.toBeInTheDocument();
   });
 
-  it('calls onClose when close button is clicked', () => {
+  it('calls onClose from its Close button', async () => {
     const onClose = jest.fn();
-    render(<HelpModal onClose={onClose} />);
-
-    // There are two close buttons (header X and bottom button)
-    const closeButtons = screen.getAllByRole('button', { name: /close/i });
-    fireEvent.click(closeButtons[0]);
-    expect(onClose).toHaveBeenCalledTimes(1);
-
-    fireEvent.click(closeButtons[1]);
-    expect(onClose).toHaveBeenCalledTimes(2);
-  });
-
-  it('calls onClose when clicking the backdrop', () => {
-    const onClose = jest.fn();
-    const { container } = render(<HelpModal onClose={onClose} />);
-
-    // The backdrop is the outermost div
-    fireEvent.click(container.firstChild as Element);
+    render(<HelpModal commands={commands} onClose={onClose} />);
+    const closeButtons = screen.getAllByRole('button', { name: 'Close' });
+    await userEvent.click(closeButtons[closeButtons.length - 1]);
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('does not call onClose when clicking the modal content', () => {
+  it('calls onClose on Escape', async () => {
     const onClose = jest.fn();
-    render(<HelpModal onClose={onClose} />);
-
-    fireEvent.click(screen.getByText('Keyboard Shortcuts'));
-    expect(onClose).not.toHaveBeenCalled();
+    render(<HelpModal commands={commands} onClose={onClose} />);
+    await userEvent.keyboard('{Escape}');
+    expect(onClose).toHaveBeenCalled();
   });
 });

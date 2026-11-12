@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { TimelineContainer } from '../../../../src/components/timeline/TimelineContainer';
-import { Track, Clip } from '../../../../src/types';
+import type { Track, Clip } from '../../../../src/types';
 
 // Mock dnd-kit
 jest.mock('@dnd-kit/core', () => ({

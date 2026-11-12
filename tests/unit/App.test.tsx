@@ -1,3 +1,4 @@
+import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -43,20 +44,20 @@ describe('App', () => {
   });
 
   it('renders the application shell with all panels', () => {
-    render(<App />);
+    renderWithStrata(<App />);
 
     expect(screen.getByText('Strata Vid')).toBeInTheDocument();
     expect(screen.getByText('Library')).toBeInTheDocument();
-    expect(screen.getByText(/^Metadata$/)).toBeInTheDocument();
-    // Timeline Panel now has a static header "Timeline" and "10px" for zoom
+    expect(screen.getByText('Nothing selected')).toBeInTheDocument();
     expect(screen.getByText('TIMELINE')).toBeInTheDocument();
-    expect(screen.getByText('10px')).toBeInTheDocument();
+    expect(screen.getByRole('slider', { name: 'Zoom' })).toHaveValue('10');
+    expect(screen.getByRole('button', { name: 'Export video' })).toHaveAttribute('data-variant', 'default');
     expect(screen.getByText('Mock Preview Panel')).toBeInTheDocument();
   });
 
   it('adds an asset when a file is uploaded', async () => {
     const user = userEvent.setup();
-    render(<App />);
+    renderWithStrata(<App />);
 
     // Select the library input (accepts video/gpx), not the project load input
     const input = document.querySelector('input[accept*="video"]') as HTMLInputElement;
@@ -76,7 +77,7 @@ describe('App', () => {
     // Mock AssetLoader to fail
     (AssetLoader.loadAsset as jest.Mock).mockRejectedValue(new Error('Load failed'));
     const user = userEvent.setup();
-    render(<App />);
+    renderWithStrata(<App />);
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
 
     // Select the library input (accepts video/gpx)

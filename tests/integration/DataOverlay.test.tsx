@@ -1,9 +1,10 @@
+import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, fireEvent, act, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import App from '../../src/App';
 import { useProjectStore } from '../../src/store/useProjectStore';
-import { Asset, Clip, GpxPoint } from '../../src/types';
+import type { Asset, Clip, GpxPoint } from '../../src/types';
 
 // Define mock data directly in the test file
 const mockGpxPoints: GpxPoint[] = [
@@ -64,7 +65,7 @@ describe('Data Overlay Integration', () => {
   });
 
   it('renders data overlay with initial properties and updates on change', async () => {
-    render(<App />);
+    renderWithStrata(<App />);
 
     // Wait for the overlay to appear
     const overlay = await screen.findByTestId('data-overlay');
@@ -72,7 +73,7 @@ describe('Data Overlay Integration', () => {
     expect(within(overlay).getByText(/Speed/)).toBeInTheDocument();
 
     // Simulate user changing speed unit in MetadataPanel
-    const speedUnitSelector = screen.getByLabelText('Speed Unit');
+    const speedUnitSelector = screen.getByLabelText('Speed unit');
     await act(async () => {
         fireEvent.change(speedUnitSelector, { target: { value: 'mph' } });
     });
@@ -82,7 +83,7 @@ describe('Data Overlay Integration', () => {
     expect(updatedClip.properties.dataOverlay?.speedUnit).toBe('mph');
 
     // Simulate hiding the speed field
-    const showSpeedCheckbox = screen.getByLabelText('Show Speed');
+    const showSpeedCheckbox = screen.getByRole('switch', { name: 'Speed' });
      await act(async () => {
         fireEvent.click(showSpeedCheckbox);
     });

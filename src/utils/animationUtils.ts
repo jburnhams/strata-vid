@@ -1,4 +1,4 @@
-import { Keyframe } from '../types';
+import type { Keyframe } from '../types';
 
 export function interpolateValue(
   keyframes: Keyframe[] | undefined,

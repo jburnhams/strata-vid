@@ -12,7 +12,7 @@
  *
  * @param filename The full filename (e.g. "video.mp4")
  * @param maxWidthPx The available width in pixels
- * @param avgCharWidth Average character width in pixels (default 7 for text-xs)
+ * @param avgCharWidth Average character width in pixels (default 7 for type-caption)
  * @returns The shortened string
  */
 export const smartShortenFilename = (

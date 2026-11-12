@@ -1,4 +1,4 @@
-import { Asset, Clip, ProjectSettings, Track } from '../types';
+import type { Asset, Clip, ProjectSettings, Track } from '../types';
 import { createExportWorker } from '../utils/workerUtils';
 
 export interface ExportProgress {

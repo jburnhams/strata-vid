@@ -1,5 +1,6 @@
+import { ContextMenu, type MenuEntry } from 'strata-react';
 import React, { useCallback, useState } from 'react';
-import { Clip, Asset, TrackViewMode } from '../../types';
+import type { Clip, Asset, TrackViewMode } from '../../types';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { formatTime } from '../../utils/timeUtils';
@@ -14,6 +15,8 @@ interface ClipItemProps {
   onSelect?: (id: string) => void;
   onResize?: (id: string, newStart: number, newDuration: number, newOffset: number) => void;
   onContextMenu?: (e: React.MouseEvent, id: string) => void;
+  /** When given, the clip opens strata-react's `ContextMenu` with these items. */
+  menuItems?: readonly MenuEntry[];
   viewMode?: TrackViewMode;
 }
 
@@ -25,6 +28,7 @@ export const ClipItem: React.FC<ClipItemProps> = ({
   onSelect,
   onResize,
   onContextMenu,
+  menuItems,
   viewMode = 'frames'
 }) => {
   const [resizeState, setResizeState] = useState<{ direction: 'left' | 'right' } | null>(null);
@@ -41,17 +45,17 @@ export const ClipItem: React.FC<ClipItemProps> = ({
   const getClipColorClasses = (type: Clip['type']) => {
     switch (type) {
       case 'video':
-        return 'border-blue-500 bg-blue-600/80';
+        return 'border-media-video bg-media-video/25';
       case 'audio':
-        return 'border-emerald-500 bg-emerald-600/80';
+        return 'border-media-audio bg-media-audio/25';
       case 'map':
-        return 'border-orange-500 bg-orange-600/80';
+        return 'border-media-map bg-media-map/25';
       case 'image':
       case 'text':
       case 'html':
-        return 'border-purple-500 bg-purple-600/80';
+        return 'border-media-image bg-media-image/25';
       default:
-        return 'border-gray-500 bg-gray-600/80';
+        return 'border-input bg-muted';
     }
   };
 
@@ -112,15 +116,15 @@ export const ClipItem: React.FC<ClipItemProps> = ({
     ? smartShortenFilename(asset.name, pixelWidth)
     : smartShortenFilename(clip.id, pixelWidth); // Fallback to clip id using same logic if needed, or just full id
 
-  return (
+  const body = (
     <div
       ref={setNodeRef}
       style={style}
       data-testid={`clip-item-${clip.id}`}
       className={`
-        rounded border ${getClipColorClasses(clip.type)} text-white text-xs
-        flex items-center overflow-hidden cursor-move select-none group transition-shadow duration-100
-        ${isSelected ? 'ring-2 ring-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.3)] z-10' : ''}
+        rounded-control border ${getClipColorClasses(clip.type)} text-foreground type-caption
+        flex items-center overflow-hidden cursor-move select-none group transition-state
+        ${isSelected ? 'ring-2 ring-foreground z-10' : ''}
         ${isDragging ? 'opacity-50' : ''}
         hover:brightness-110 relative
       `}
@@ -129,9 +133,10 @@ export const ClipItem: React.FC<ClipItemProps> = ({
         onSelect?.(clip.id);
       }}
       onContextMenu={(e) => {
-        e.preventDefault();
         e.stopPropagation();
         onSelect?.(clip.id); // Also select on right click
+        if (menuItems) return; // the ContextMenu around this element opens and prevents the browser's
+        e.preventDefault();
         onContextMenu?.(e, clip.id);
       }}
       {...attributes}
@@ -163,7 +168,7 @@ export const ClipItem: React.FC<ClipItemProps> = ({
       )}
 
       <span
-        className="px-2 truncate z-10 font-medium drop-shadow-md"
+        className="px-2 truncate z-10 font-medium"
         title={displayName} // Tooltip with full name
         data-testid="clip-label"
       >
@@ -173,7 +178,7 @@ export const ClipItem: React.FC<ClipItemProps> = ({
       {/* Resize Tooltip */}
       {resizeState && (
         <div
-            className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded shadow border border-gray-600 z-50 whitespace-nowrap"
+            className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-card text-foreground type-caption px-2 py-1 rounded-control shadow-overlay border border-input z-50 whitespace-nowrap"
             data-testid="resize-tooltip"
         >
             {resizeState.direction === 'left' ? (
@@ -186,13 +191,15 @@ export const ClipItem: React.FC<ClipItemProps> = ({
 
       {/* Resize Handles */}
       <div
-        className="absolute left-0 w-2 h-full cursor-w-resize hover:bg-white/20 z-20"
+        className="absolute left-0 w-2 h-full cursor-w-resize hover:bg-on-footage/20 z-20"
         onPointerDown={(e) => handleResizeStart(e, 'left')}
       />
       <div
-        className="absolute right-0 w-2 h-full cursor-e-resize hover:bg-white/20 z-20"
+        className="absolute right-0 w-2 h-full cursor-e-resize hover:bg-on-footage/20 z-20"
         onPointerDown={(e) => handleResizeStart(e, 'right')}
       />
     </div>
   );
+
+  return menuItems ? <ContextMenu label={`Clip ${displayName}`} items={menuItems}>{body}</ContextMenu> : body;
 };

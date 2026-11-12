@@ -1,4 +1,4 @@
-import { FeatureCollection, Geometry, GeoJsonProperties } from 'geojson';
+import type { FeatureCollection, Geometry, GeoJsonProperties } from 'geojson';
 
 export type AssetType = 'video' | 'gpx' | 'image' | 'audio';
 

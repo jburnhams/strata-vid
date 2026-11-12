@@ -1,9 +1,9 @@
-import { Asset, Clip, ProjectSettings, Track, OverlayProperties, TextStyle, TrackStyle, MarkerStyle } from '../types';
+import type { Asset, Clip, ProjectSettings, Track, OverlayProperties, TextStyle, TrackStyle, MarkerStyle } from '../types';
 import { getGpxPositionAtTime, lat2tile, lon2tile, getTileUrl, TILE_SIZE } from '../utils/mapUtils';
 import { interpolateValue } from '../utils/animationUtils';
 import { calculateObjectFit } from '../utils/layoutUtils';
 import { Input, BlobSource, ALL_FORMATS, CanvasSink } from 'mediabunny';
-import { Feature, LineString } from 'geojson';
+import type { Feature, LineString } from 'geojson';
 
 class PushableGenerator<T> implements AsyncIterable<T> {
   private queue: T[] = [];

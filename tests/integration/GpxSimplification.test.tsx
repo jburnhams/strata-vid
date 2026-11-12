@@ -1,4 +1,5 @@
 
+import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, fireEvent, act, screen, waitFor, within } from '@testing-library/react';
 import App from '../../src/App';
@@ -30,7 +31,7 @@ describe('GPX Simplification Integration', () => {
     });
 
     it('allows user to load a GPX, change tolerance, and re-process it', async () => {
-        const { getByLabelText, getByText, findByText } = render(<App />);
+        const { getByLabelText, getByText, findByText, getByRole } = renderWithStrata(<App />);
 
         // 1. Load a GPX file
         const gpxContent = `
@@ -66,13 +67,13 @@ describe('GPX Simplification Integration', () => {
         expect(originalPointsCount).toBe(2);
 
         // 2. Change the simplification tolerance in MetadataPanel
-        const toleranceSlider = getByLabelText(/Simplification Tolerance/);
+        const toleranceSlider = getByRole('slider', { name: 'Simplification' });
         act(() => {
             fireEvent.change(toleranceSlider, { target: { value: '0' } }); // No simplification
         });
 
         // 3. Click the re-process button
-        const reprocessButton = getByText(/Re-process GPX/i);
+        const reprocessButton = getByRole('button', { name: 'Re-process route' });
         await act(async () => {
             fireEvent.click(reprocessButton);
         });

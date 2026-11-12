@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { LibraryPanel } from '../../../../src/components/LibraryPanel';
-import { Asset } from '../../../../src/types';
+import type { Asset } from '../../../../src/types';
 
 describe('LibraryPanel - Relink and Remove', () => {
   const mockOnAssetAdd = jest.fn();

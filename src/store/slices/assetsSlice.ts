@@ -1,5 +1,5 @@
-import { StateCreator } from 'zustand';
-import { AssetsSlice, StoreState } from '../types';
+import type { StateCreator } from 'zustand';
+import type { AssetsSlice, StoreState } from '../types';
 import { AssetLoader } from '../../services/AssetLoader';
 
 export const createAssetsSlice: StateCreator<

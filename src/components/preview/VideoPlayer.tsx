@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Clip, Asset, OverlayProperties } from '../../types';
+import type { Clip, Asset, OverlayProperties } from '../../types';
 import { interpolateValue } from '../../utils/animationUtils';
 import { AudioEngine } from '../../services/AudioEngine';
 

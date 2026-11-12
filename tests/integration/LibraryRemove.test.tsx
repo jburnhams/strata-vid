@@ -1,8 +1,9 @@
+import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import App from '../../src/App';
 import { useProjectStore } from '../../src/store/useProjectStore';
-import { Asset, Clip, Track } from '../../src/types';
+import type { Asset, Clip, Track } from '../../src/types';
 
 // Mock dependencies
 jest.mock('../../src/services/AssetLoader');
@@ -89,7 +90,7 @@ describe('Library Asset Removal Integration', () => {
 
   test('removing an unused asset should happen immediately without prompt', () => {
     setupStoreWithUnusedAsset();
-    render(<App />);
+    renderWithStrata(<App />);
 
     const removeBtn = screen.getByTestId('remove-asset-asset-unused');
     fireEvent.click(removeBtn);
@@ -99,19 +100,19 @@ describe('Library Asset Removal Integration', () => {
     expect(state.assets['asset-unused']).toBeUndefined();
 
     // Verify no modal
-    expect(screen.queryByTestId('confirm-modal')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
   test('removing a used asset should trigger confirmation modal', () => {
     setupStoreWithAssetAndClip();
-    render(<App />);
+    renderWithStrata(<App />);
 
     const removeBtn = screen.getByTestId('remove-asset-asset-1');
     fireEvent.click(removeBtn);
 
     // Modal should appear
-    expect(screen.getByTestId('confirm-modal')).toBeInTheDocument();
-    expect(screen.getByText(/This asset is currently used in your timeline/)).toBeInTheDocument();
+    expect(screen.getByRole('alertdialog', { name: 'Remove video.mp4?' })).toBeInTheDocument();
+    expect(screen.getByText(/It is used on the timeline/)).toBeInTheDocument();
 
     // Asset should still be there
     const state = useProjectStore.getState();
@@ -120,7 +121,7 @@ describe('Library Asset Removal Integration', () => {
 
   test('canceling the modal should preserve the asset and clip', () => {
     setupStoreWithAssetAndClip();
-    render(<App />);
+    renderWithStrata(<App />);
 
     // Click remove
     fireEvent.click(screen.getByTestId('remove-asset-asset-1'));
@@ -129,7 +130,7 @@ describe('Library Asset Removal Integration', () => {
     fireEvent.click(screen.getByText('Cancel'));
 
     // Modal gone
-    expect(screen.queryByTestId('confirm-modal')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
 
     // Asset and clip still exist
     const state = useProjectStore.getState();
@@ -139,16 +140,16 @@ describe('Library Asset Removal Integration', () => {
 
   test('confirming the modal should remove asset and all associated clips', () => {
     setupStoreWithAssetAndClip();
-    render(<App />);
+    renderWithStrata(<App />);
 
     // Click remove
     fireEvent.click(screen.getByTestId('remove-asset-asset-1'));
 
     // Click confirm
-    fireEvent.click(screen.getByTestId('confirm-modal-confirm-btn'));
+    fireEvent.click(screen.getByRole('button', { name: 'Remove file and clips' }));
 
     // Modal gone
-    expect(screen.queryByTestId('confirm-modal')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
 
     // Verify store state
     const state = useProjectStore.getState();

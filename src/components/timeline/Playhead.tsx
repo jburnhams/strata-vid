@@ -59,13 +59,13 @@ export const Playhead: React.FC<PlayheadProps> = ({ zoomLevel }) => {
       // Also handle onPointerCancel or lost capture?
     >
         {/* Head (Triangle) */}
-        <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-red-500 drop-shadow-md" />
+        <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-primary" />
 
         {/* Line */}
-        <div className="w-[1px] h-full bg-red-500 group-hover:bg-red-400 group-hover:w-[2px] transition-all shadow-[0_0_4px_rgba(0,0,0,0.5)]" />
+        <div className="w-[1px] h-full bg-primary group-hover:w-0.5" />
 
         {/* Tooltip on Hover/Drag */}
-        <div className={`absolute top-[-25px] bg-neutral-800 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100 ${isDragging ? 'opacity-100' : ''} transition-opacity whitespace-nowrap border border-neutral-600`}>
+        <div className={`absolute top-[-25px] bg-card text-foreground type-caption px-1 rounded-control opacity-0 group-hover:opacity-100 ${isDragging ? 'opacity-100' : ''} transition-opacity whitespace-nowrap border border-input`}>
             {currentTime.toFixed(2)}s
         </div>
     </div>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import ElevationProfile from '../../../../src/components/preview/ElevationProfile';
-import { GpxPoint, Asset } from '../../../../src/types';
+import type { GpxPoint, Asset } from '../../../../src/types';
 import '@testing-library/jest-dom';
 
 // Mocks for SVG geometry

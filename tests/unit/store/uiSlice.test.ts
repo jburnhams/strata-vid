@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { createUiSlice } from '../../../src/store/slices/uiSlice';
-import { StoreState } from '../../../src/store/types';
+import type { StoreState } from '../../../src/store/types';
 
 describe('uiSlice', () => {
   let store: any;

@@ -1,4 +1,4 @@
-import { Asset, Clip, Track, ProjectSettings, DeserializedState, Transition, Marker, Keyframe, ExtraTrack, TrackViewMode } from '../types';
+import type { Asset, Clip, Track, ProjectSettings, DeserializedState, Transition, Marker, Keyframe, ExtraTrack, TrackViewMode } from '../types';
 
 export interface ProjectSlice {
   id: string;

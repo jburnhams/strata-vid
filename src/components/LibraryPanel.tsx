@@ -1,6 +1,6 @@
 import React from 'react';
-import { Asset } from '../types';
-import { Tooltip } from './Tooltip';
+import type { Asset } from '../types';
+import { IconButton, buttonVariants } from 'strata-react';
 import { Trash2, AlertTriangle, FileVideo, Map, PlusCircle } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
@@ -52,9 +52,9 @@ const LibraryAssetItem: React.FC<{
       {...attributes}
       {...listeners}
       onClick={() => onSelect(asset.id)}
-      className={`p-2 cursor-grab rounded flex gap-3 items-center transition-colors group relative ${
-        asset.id === selectedAssetId ? 'bg-neutral-700' : 'hover:bg-neutral-800/50'
-      } border-l-4 ${asset.type === 'video' ? 'border-blue-500' : asset.type === 'audio' ? 'border-purple-500' : 'border-orange-500'}`}
+      className={`p-2 cursor-grab rounded-control flex gap-3 items-center transition-state group relative ${
+        asset.id === selectedAssetId ? 'bg-muted' : 'hover:bg-card/50'
+      } border-l-4 ${asset.type === 'video' ? 'border-media-video' : asset.type === 'audio' ? 'border-media-audio' : 'border-media-map'}`}
       role="button"
       aria-selected={asset.id === selectedAssetId}
       tabIndex={0}
@@ -66,7 +66,7 @@ const LibraryAssetItem: React.FC<{
       data-testid={`asset-item-${asset.id}`}
     >
       {asset.thumbnail ? (
-        <div className="w-16 h-10 bg-black rounded overflow-hidden flex-shrink-0 relative">
+        <div className="w-16 h-10 bg-footage rounded-control overflow-hidden flex-shrink-0 relative">
             <img
               src={asset.thumbnail}
               alt={`Thumbnail for ${asset.name}`}
@@ -74,21 +74,21 @@ const LibraryAssetItem: React.FC<{
             />
         </div>
       ) : (
-        <div className="w-16 h-10 bg-neutral-900 rounded flex items-center justify-center flex-shrink-0 text-neutral-600">
+        <div className="w-16 h-10 bg-background rounded-control flex items-center justify-center flex-shrink-0 text-muted-foreground">
             {asset.type === 'video' ? <FileVideo size={20} /> : <Map size={20} />}
         </div>
       )}
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-            <div className="font-medium text-sm text-neutral-200 truncate" title={asset.name}>
+            <div className="font-medium type-body-sm text-foreground truncate" title={asset.name}>
             {asset.name}
             </div>
             {isMissing && (
-                <Tooltip content="File missing. Click to relink." position="top">
                      <label
-                        className="text-yellow-500 hover:text-yellow-400 cursor-pointer p-1 rounded hover:bg-neutral-600/50"
+                        className="text-warning cursor-pointer p-1 rounded-control hover:bg-muted"
                         onClick={(e) => e.stopPropagation()}
+                        aria-label={`File missing. Relink ${asset.name}`}
                      >
                         <AlertTriangle size={14} />
                         <input
@@ -99,44 +99,31 @@ const LibraryAssetItem: React.FC<{
                             data-testid={`relink-input-${asset.id}`}
                         />
                      </label>
-                </Tooltip>
             )}
         </div>
-        <div className="text-xs text-neutral-400 mt-0.5">
-          <span className={`inline-block w-2 h-2 rounded-full mr-1 ${asset.type === 'video' ? 'bg-blue-500' : asset.type === 'audio' ? 'bg-purple-500' : 'bg-orange-500'}`}></span>
+        <div className="type-caption text-muted-foreground mt-0.5">
+          <span className={`inline-block w-2 h-2 rounded-pill mr-1 ${asset.type === 'video' ? 'bg-media-video' : asset.type === 'audio' ? 'bg-media-audio' : 'bg-media-map'}`}></span>
           {asset.type === 'video' ? 'Video' : asset.type === 'audio' ? 'Audio' : 'GPX'}
           {asset.duration ? ` • ${Math.round(asset.duration)}s` : ''}
         </div>
       </div>
 
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute right-2 bg-neutral-800/90 rounded p-1 shadow-sm">
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute right-2 bg-card/90 rounded-control p-1 shadow-overlay">
         {onAddToTimeline && (
-             <Tooltip content="Add to Shortest Track" position="left">
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onAddToTimeline(asset.id);
-                    }}
-                    className="p-1.5 text-green-500 hover:text-green-400 hover:bg-neutral-700 rounded transition-all"
-                    aria-label={`Add ${asset.name} to timeline`}
-                >
-                    <PlusCircle size={14} />
-                </button>
-             </Tooltip>
+            <IconButton
+                variant="ghost"
+                icon={PlusCircle}
+                label={`Add ${asset.name} to timeline`}
+                onPress={() => onAddToTimeline(asset.id)}
+            />
         )}
-        <Tooltip content="Remove Asset" position="left">
-            <button
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onRemove(asset.id);
-                }}
-                className="p-1.5 text-neutral-500 hover:text-red-400 hover:bg-neutral-700 rounded transition-all"
-                aria-label={`Remove ${asset.name}`}
-                data-testid={`remove-asset-${asset.id}`}
-            >
-                <Trash2 size={14} />
-            </button>
-        </Tooltip>
+        <IconButton
+            variant="ghost"
+            icon={Trash2}
+            label={`Remove ${asset.name}`}
+            data-testid={`remove-asset-${asset.id}`}
+            onPress={() => onRemove(asset.id)}
+        />
       </div>
     </li>
   );
@@ -161,10 +148,10 @@ export const LibraryPanel: React.FC<LibraryPanelProps> = ({
 
   return (
     <div className="flex flex-col h-full" data-testid="library-panel">
-      <div className="flex justify-between items-center p-4 border-b border-neutral-700 bg-neutral-800">
-        <span className="font-bold text-sm text-neutral-300">Library</span>
-        <Tooltip content="Add video or GPX files" position="bottom">
-            <label className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm font-medium cursor-pointer transition-colors flex items-center gap-1" aria-label="Add Asset">
+      <div className="flex justify-between items-center p-4 border-b border-border bg-card">
+        <span className="font-bold type-body-sm text-foreground">Library</span>
+        {/* A native file input until strata-react's FileButton (issue #75) is released. */}
+            <label className={buttonVariants({ size: 'sm' }) + ' cursor-pointer'} aria-label="Add Asset">
             + Add
             <input
                 data-testid="add-asset-input"
@@ -175,11 +162,10 @@ export const LibraryPanel: React.FC<LibraryPanelProps> = ({
                 onChange={handleFileChange}
             />
             </label>
-        </Tooltip>
       </div>
       <div className="flex-1 overflow-y-auto p-2">
         {assets.length === 0 && (
-            <div className="text-center mt-10 text-neutral-500 italic text-sm">
+            <div className="text-center mt-10 text-muted-foreground italic type-body-sm">
                 No assets loaded.<br/>Click "+ Add" to start.
             </div>
         )}

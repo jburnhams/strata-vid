@@ -1,5 +1,5 @@
-import { Asset, Clip } from '../../src/types';
-import { FeatureCollection, Geometry, GeoJsonProperties } from 'geojson';
+import type { Asset, Clip } from '../../src/types';
+import type { FeatureCollection, Geometry, GeoJsonProperties } from 'geojson';
 
 export const mockGeoJson: FeatureCollection<Geometry, GeoJsonProperties> = {
   type: 'FeatureCollection',

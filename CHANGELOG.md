@@ -10,6 +10,19 @@ a factual error. Work before 2026-11-12 is in the git history only.
 
 ## 2026-11-12
 
+**Update all dependencies** (branch `claude/project-thread-6a5jli`, PR #146).
+Jonathan asked for every dependency to be updated. Only two were behind their ranges' latest: strata-react
+and Playwright. The rest of the lockfile was refreshed to the newest versions the ranges allow.
+- `package.json`, `package-lock.json`: strata-react 1.0.11 to 1.0.20; Playwright 1.63.0 to 1.65.0, still
+  pinned exactly, as strata-visual needs. `npm update` refreshed transitive versions. No dependency was
+  added or removed.
+- `tests/visual/baselines/`: re-recorded after looking at each diff. strata-react's dialog scrim now darkens
+  the page in the dark scheme instead of washing it pale (`export-settings`, `exported`, `remove-used-file`),
+  and a slider's reset button sits on the slider's row (`inspector-edits`); the rest moved within tolerance.
+  Playwright 1.65 wants Chromium 158, which this cloud container cannot download, so the baselines were
+  recorded in Chromium 153 (`.strata-visual.json` says so); CI's visual job runs 158.
+- Unit (431 passed, 1 skipped), integration (82) and the build pass on the new versions.
+
 **Fix the app bugs the visual tests found** (branch `claude/project-thread-6a5jli`, PR #146, issues #141 to #145).
 Jonathan asked for the app bugs listed in `docs/PORT.md` to be looked into, now that the strata-react
 ones are handled elsewhere. Each was traced to its cause and fixed, with a test that would have caught it;

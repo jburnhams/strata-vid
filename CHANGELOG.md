@@ -10,7 +10,7 @@ a factual error. Work before 2026-11-12 is in the git history only.
 
 ## 2026-11-12
 
-**Docs slimmed to what is true now** (branch `claude/project-thread-snbsl3`). Jonathan asked for a
+**Docs slimmed to what is true now** (branch `claude/project-thread-snbsl3`, PR #139). Jonathan asked for a
 review of the project's docs and chose to slim and rewrite them: the README still called the app early
 development and listed export, audio and save/load as planned; the roadmap contradicted its own section
 files and its links were broken.

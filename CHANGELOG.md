@@ -56,7 +56,9 @@ two framework gaps found on the way are left to strata-react.
   clip exported to the end; the download is checked); the map states match the route to the footage first;
   `clip-moved` expects the music on its own track. The route's map is now an inset on the stage in most
   states, so `tests/visual/flows.ts` waits for its tiles to load and finish Leaflet's fade before a shot (CI
-  caught `clip-selected` mid-fade). All 32 baselines rewritten and looked at; two reruns matched all 32.
+  caught `clip-selected` mid-fade, then mid-zoom: the dark shot skips the scheme switch, so it is taken
+  sooner), with no zoom under way and the map still for a quarter of a second; `exported` puts focus on the
+  footer's Close so the close icon's tooltip cannot open in the shot. All 32 baselines rewritten and looked at; two reruns matched all 32.
 - Review fixes (Codex on PR #146): `ExportManager.cancel` during the sound mix now stops the export before
   the worker starts (it used to be lost, as there was no worker yet); `WorkerCompositor.renderFrame` stacks
   clips by `zIndex` after track order, as the preview does, so a route inset whose track was made before the

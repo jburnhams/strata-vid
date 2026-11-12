@@ -219,7 +219,11 @@ const states: Record<string, RouteState> = {
       expect(download.suggestedFilename().endsWith('.mp4'), `the export should save an MP4, not ${download.suggestedFilename()}`);
       const size = (await readFile((await download.path())!)).length;
       expect(size > 500_000, `an 8 s 1080p export should be more than 500 kB, it is ${size} bytes`);
-      await page.getByRole('dialog', { name: 'Exporting video' }).getByText('Exported', { exact: true }).waitFor();
+      const done = page.getByRole('dialog', { name: 'Exporting video' });
+      await done.getByText('Exported', { exact: true }).waitFor();
+      // When the job ends, focus can land on the dialog's close icon, whose tooltip then opens after a
+      // delay that sometimes falls inside the shot: put focus on the footer's Close, which has none.
+      await done.locator('button', { hasText: 'Close' }).focus();
       await restPointer(page);
     },
   },

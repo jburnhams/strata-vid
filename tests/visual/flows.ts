@@ -58,16 +58,32 @@ export async function restPointer(page: Page) {
 
 /**
  * The route's map is an inset on the stage over the footage whenever the playhead is on it. Waits
- * until it has tiles, each loaded and done with Leaflet's fade-in, which runs on real time and would
- * otherwise land mid-fade in a shot.
+ * until it has settled: Leaflet's zoom to the route's bounds has ended (a dark shot, which skips the
+ * scheme switch, was taken mid-zoom on CI), only one zoom level's tiles are left, and each tile has
+ * loaded and finished its fade-in. All of these run on real time.
  */
 export async function waitForMapTiles(page: Page) {
-  await page.waitForFunction(() =>
-    [...document.querySelectorAll('[data-testid="preview"] .leaflet-container')].every((map) => {
-      const tiles = [...map.querySelectorAll<HTMLImageElement>('img.leaflet-tile')];
-      return tiles.length > 0 && tiles.every((tile) => tile.complete && tile.classList.contains('leaflet-tile-loaded') && getComputedStyle(tile).opacity === '1');
-    }),
-  );
+  const settled = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll('[data-testid="preview"] .leaflet-container')].map((map) => {
+        const levels = [...map.querySelectorAll('.leaflet-tile-container')].filter((level) => level.children.length > 0);
+        const tiles = [...map.querySelectorAll<HTMLImageElement>('img.leaflet-tile')];
+        const ready = !map.classList.contains('leaflet-zoom-anim') && levels.length === 1 && tiles.length > 0
+          && tiles.every((tile) => tile.complete && tile.classList.contains('leaflet-tile-loaded') && getComputedStyle(tile).opacity === '1');
+        return ready ? (map.querySelector<HTMLElement>('.leaflet-map-pane')?.style.transform ?? '') : null;
+      }),
+    );
+  // Settled, and still the same a quarter of a second later (no pan or zoom under way).
+  for (let tries = 0; tries < 100; tries++) {
+    const first = await settled();
+    if (!first.includes(null)) {
+      await page.waitForTimeout(250);
+      if (JSON.stringify(await settled()) === JSON.stringify(first)) return;
+    } else {
+      await page.waitForTimeout(100);
+    }
+  }
+  throw new Error('the route map on the stage did not settle');
 }
 
 /** A library row by file name. */

@@ -1,281 +1,129 @@
-# Strata Vid - Technical Architecture
+# Strata Vid architecture
 
-## Project Goal
+How the editor is built, as of the move onto strata-react (2026-11). What it does is in the
+[README](../README.md); where the UI port stands is in [PORT.md](PORT.md).
 
-Build a browser-only video editor capable of:
-- Stitching multiple video clips into a single timeline
-- Overlaying dynamic components (text, HTML, maps with GPX data)
-- Real-time preview with synchronized playback
-- Exporting final rendered video as MP4
+## Principles
 
-All processing happens **client-side** - no server required.
+- **Browser only.** Files are read as `File` objects and blob URLs; decoding, compositing and
+  encoding happen on the device (WebCodecs through mediabunny). There is no server.
+- **One store is the project.** A Zustand store (with Immer) holds the edit decision list: settings,
+  assets, tracks, clips, playback and UI state. Every change goes through a store action, which is
+  what makes undo, auto-save and export see the same project.
+- **Two renderers, one model.** Preview is DOM (real `<video>` elements and positioned overlays) so it
+  plays in real time; export is canvas, frame by frame, in a worker. Both read the same clips and
+  properties, so a property means the same thing in both; they are separate code, so they can drift.
+- **UI from strata-react.** Controls, overlays, menus, commands, toasts, theme roles and density
+  come from strata-react; the app keeps only what the framework does not offer yet (see
+  [PORT.md](PORT.md)).
 
-## Technology Stack
+## Stack
 
-| Category | Technology | Purpose |
-|----------|-----------|---------|
-| Framework | React 19 | UI components and rendering |
-| Build Tool | Vite | Fast development and optimized builds |
-| Language | TypeScript | Type safety and developer experience |
-| Styling | Tailwind CSS v4 | Utility-first styling |
-| State | Zustand + Immer | Lightweight, performant state management |
-| Media | mediabunny | Browser-native video I/O and encoding (WebCodecs) |
-| Maps | Leaflet + react-leaflet | Interactive map rendering |
-| GPX | @we-gold/gpxjs | GPX file parsing |
-| Timeline UI | @dnd-kit | Drag-and-drop interactions |
-| Icons | lucide-react | UI icons |
-| Testing | Jest + Playwright | Unit and integration tests |
+| Concern | Choice | Notes |
+|---|---|---|
+| UI | React 19, TypeScript 7 | `npm run build` runs `tsc` then Vite 8 |
+| Components and styles | strata-react, Tailwind v4 | Theme roles only; `src/theme.generated.css` and `src/theme.css` are the app's palette and status roles. React Router and TanStack Query are present as strata-react's required peers; there is one screen and no remote data yet |
+| State | Zustand 5 + Immer | Slices in `src/store/slices/`, undo in `src/store/middleware/historyMiddleware.ts` |
+| Media | mediabunny | Metadata, thumbnails and decoding on load; encoding on export |
+| Maps | Leaflet + react-leaflet | Preview map; export draws OSM tiles itself onto the canvas |
+| GPX | `@we-gold/gpxjs` | Parsed to points, stats and GeoJSON in `AssetLoader`; simplified by `settings.simplificationTolerance` |
+| Drag and drop | `@dnd-kit` | Library to timeline and clip moves; due to be replaced by strata-react's drag and drop |
+| Icons | lucide-react | |
+| Tests | Jest 30 + Testing Library, jsdom | Babel transform (no ts-jest); `@napi-rs/canvas` for canvas code; see [AGENTS.md](../AGENTS.md) |
 
-## Core Concepts
+## Data model
 
-### 1. Browser-First Architecture
-- All video processing happens in the browser using WebCodecs API (via mediabunny)
-- No server dependencies for video rendering
-- Assets loaded as Blob URLs
-- Export generates file client-side for download
-
-### 2. Dual-Engine System
-
-#### Playback Engine (DOM-based)
-- **Purpose**: Real-time preview with responsive UI
-- **Implementation**: HTML5 `<video>` elements + CSS-positioned overlays
-- **Performance**: Leverages browser's hardware-accelerated video decoding
-- **Limitation**: What you see may not be pixel-perfect with final export
-
-#### Export Engine (Canvas-based)
-- **Purpose**: Frame-by-frame rendering for final output
-- **Implementation**: OffscreenCanvas + WebCodecs via mediabunny
-- **Accuracy**: Pixel-perfect, matches export exactly
-- **Limitation**: Cannot run in real-time, slower than playback speed
-
-### 3. Single Source of Truth
-The Zustand store represents the complete project state (Edit Decision List):
-- **Project Settings**: Resolution, FPS, duration
-- **Assets**: Source files (videos, GPX, images)
-- **Tracks**: Timeline layers (video, audio, overlay)
-- **Clips**: References to assets positioned on tracks
-- **Playback State**: Current time, play/pause, rate
-
-All mutations go through store actions to maintain consistency.
-
-## Data Model
-
-### Entity Relationships
+The types are in `src/types.ts`; the store's full shape is in `src/store/types.ts`.
 
 ```
-Project
-├── settings (resolution, fps, duration)
-├── assets: Record<id, Asset>
-│   └── Asset (video, gpx, image, audio)
-├── tracks: Record<id, Track>
-│   └── Track
-│       └── clips: string[] (clip IDs)
-├── clips: Record<id, Clip>
-│   └── Clip (references assetId and trackId)
-└── playback (currentTime, isPlaying, playbackRate)
+settings      width, height, fps, duration, previewQuality, snapToGrid, allowOverlaps,
+              simplificationTolerance
+assets        Record<id, Asset>     video | gpx | image | audio; blob URL, File, duration,
+                                    resolution, videoMetadata, creationTime, thumbnail, waveform;
+                                    GPX: gpxPoints, stats, geoJson
+tracks        Record<id, Track>     video | audio | overlay; label, isMuted, isLocked, volume,
+                                    clips (ordered ids), viewMode (frames | waveform | both)
+trackOrder    string[]
+clips         Record<id, Clip>      assetId, trackId, start, duration, offset (trim into the source),
+                                    type (video | audio | image | map | text | html | data),
+                                    properties, textStyle, content, syncOffset, extraTrackAssets,
+                                    transitionIn, playbackRate, keyframes, volume
+playback      currentTime, isPlaying, playbackRate
+selection     selectedAssetId, selectedClipId
+ui            loading, zoomLevel
 ```
 
-### Key Types
+`Clip.properties` (`OverlayProperties`) places a layer as percentages of the frame (x, y, width,
+height), with rotation, opacity, zIndex and a CSS filter, plus map options (style, zoom, track and
+marker style, heatmap, elevation profile) and data-overlay options (which readings, which units).
+`keyframes` animates any numeric property by name, interpolated in `src/utils/animationUtils.ts`.
 
-```typescript
-interface Asset {
-  id: string;
-  name: string;
-  type: 'video' | 'gpx' | 'image' | 'audio';
-  src: string; // Blob URL
-  duration?: number; // For video/audio
-  resolution?: { width: number; height: number };
-  gpxPoints?: GpxPoint[]; // For GPX assets
-  stats?: GpxStats; // GPX statistics
-}
+## GPX synchronisation
 
-interface Track {
-  id: string;
-  type: 'video' | 'audio' | 'overlay';
-  label: string;
-  isMuted: boolean;
-  isLocked: boolean;
-  clips: string[]; // Ordered array of clip IDs
-}
+A map or data clip turns timeline time into a GPX timestamp:
 
-interface Clip {
-  id: string;
-  assetId: string; // Which asset to use
-  trackId: string; // Which track it belongs to
-  start: number; // Timeline position (seconds)
-  duration: number; // How long to play (seconds)
-  offset: number; // Trim start in source (seconds)
-  type: 'video' | 'image' | 'map' | 'text' | 'html';
-  properties: OverlayProperties; // Position, scale, opacity, etc.
-  content?: string; // For text/html clips
-  syncOffset?: number; // For map clips: GPX time offset
-}
-
-interface OverlayProperties {
-  x: number; // % of canvas width
-  y: number; // % of canvas height
-  width: number; // % of canvas width
-  height: number; // % of canvas height
-  rotation: number; // degrees
-  opacity: number; // 0-1
-  zIndex: number; // Stacking order
-}
+```
+gpxTime (epoch ms) = (clip.syncOffset ?? first GPX point's time) + (t − clip.start) × 1000
 ```
 
-## GPX Synchronization Logic
+So `syncOffset` is the **absolute** GPX time at the clip's start, in epoch milliseconds (the comment on
+`Clip.syncOffset` in `types.ts` calls it an offset; the code uses it as a time). Auto-sync
+(`MapSyncControl`) sets it from a reference video's creation time plus that clip's trim offset; the
+manual field takes the number directly. `getGpxPositionAtTime` (`src/utils/mapUtils.ts`) binary-searches
+the points and interpolates between the two around that time. Extra tracks on one map clip each carry
+their own `syncOffset`.
 
-### Time Mapping
-```
-Video Time (t) -> GPX Time
-gpxTime = (t - clip.start) + clip.syncOffset
-```
+## Rendering
 
-### Sync Methods
+**Preview** (`src/components/PreviewPanel.tsx`, `src/components/preview/`). `usePlaybackLoop` advances
+`currentTime` on `requestAnimationFrame`. The clips under the playhead are drawn bottom to top by
+`OverlayRenderer`: `VideoPlayer` keeps a `<video>` seeked to `t − start + offset`, images and text are
+positioned elements, map clips are `MapPanel` (Leaflet) with `HeatmapOverlay` and `ElevationProfile`,
+data clips are `DataOverlay`. `AudioPlayer` and `AudioEngine` route each media element through a clip
+gain, a track gain and a master gain (Web Audio), so mute and volume are heard in preview.
 
-1. **Automatic**: Match video creation time to GPX timestamps
-   ```
-   offset = video.creationDate - gpx.startTime
-   ```
+**Export** (`src/services/ExportManager.ts` → `src/workers/exportWorker.ts`). The manager starts a
+worker and relays progress and cancel. In the worker, `WorkerCompositor` draws each frame on an
+`OffscreenCanvas`: video frames decoded with mediabunny's `CanvasSink`, images, text, transitions,
+keyframed properties, and maps drawn from OSM tiles with the track and marker. `AudioCompositor` mixes
+the audio clips into one buffer. mediabunny's `Output` encodes MP4 or WebM into a buffer, which comes
+back as a Blob to download.
 
-2. **Manual**: User selects corresponding points
-   ```
-   offset = gpxPointTime - videoTime
-   ```
+`src/services/Compositor.ts` is an older main-thread compositor. Only its unit tests use it; the app
+exports through the worker.
 
-### Coordinate Lookup
-- GPX points stored as `{ time, lat, lon, ele }[]`
-- Binary search to find surrounding points
-- Linear interpolation for smooth movement
-- Map center updates every frame during playback
+## Saving
 
-## Rendering Pipeline
+- **Undo/redo**: `historyMiddleware` takes a snapshot when assets, tracks, clips, track order or
+  settings change (so playback does not fill the history) and keeps 50 steps.
+- **File**: `projectSerializer` writes a versioned JSON (`.svp`) without the files themselves; assets
+  are listed by name and metadata, so an opened project shows each file as missing until it is
+  relinked from the library.
+- **Auto-save**: `useAutoSave` writes the same JSON to `localStorage` (`strata_vid_autosave`) every
+  60 seconds and restores it on load when the editor is empty.
 
-### Playback (Real-time)
-```
-requestAnimationFrame loop
-  ↓
-Update store.currentTime
-  ↓
-Calculate active clips (start ≤ t < start+duration)
-  ↓
-For each active clip:
-  - Video: Render <video> element, seek to (t - clip.start + clip.offset)
-  - Overlay: Render <div> with transform based on properties
-  - Map: Update center based on GPX position at t
-```
-
-### Export (Frame-by-frame)
-```
-For each frame (0 to duration * fps):
-  t = frame / fps
-  ↓
-  Calculate active clips at time t
-  ↓
-  Clear OffscreenCanvas
-  ↓
-  For each active clip (bottom to top):
-    - Video: Seek video element, drawImage(video) to canvas
-    - Image: drawImage() to canvas
-    - Text: fillText() or render HTML to canvas
-    - Map: Fetch tiles, draw polyline, draw marker
-  ↓
-  Encode frame using mediabunny (WebCodecs)
-  ↓
-Finalize output, generate MP4 Blob
-```
-
-## Module Organization
+## Code layout
 
 ```
 src/
-├── components/           # React components
-│   ├── LibraryPanel.tsx
-│   ├── PreviewPanel.tsx
-│   ├── MetadataPanel.tsx
-│   ├── TimelinePanel.tsx
-│   ├── ExportModal.tsx
-│   ├── preview/          # Preview engine components
-│   │   ├── VideoPlayer.tsx
-│   │   └── OverlayRenderer.tsx
-│   └── timeline/         # Timeline UI components
-│       ├── TimelineContainer.tsx
-│       ├── TrackLane.tsx
-│       ├── TrackHeader.tsx
-│       ├── ClipItem.tsx
-│       └── Ruler.tsx
-├── store/                # Zustand state management
-│   ├── useProjectStore.ts
-│   ├── types.ts
-│   └── slices/
-│       ├── projectSlice.ts
-│       ├── assetsSlice.ts
-│       ├── timelineSlice.ts
-│       └── playbackSlice.ts
-├── services/             # Business logic
-│   ├── AssetLoader.ts    # Load and parse assets
-│   ├── Compositor.ts     # Render frames to canvas
-│   └── ExportManager.ts  # Export orchestration
-├── hooks/                # Custom React hooks
-│   └── usePlaybackLoop.ts
-├── utils/                # Pure functions
-│   ├── gpxParser.ts
-│   └── mapUtils.ts
-├── types.ts              # Shared type definitions
-└── App.tsx               # Root component
+  App.tsx, main.tsx       the one screen; providers (ThemeProvider, StrataQueryProvider, router, toasts)
+  theme.css, theme.generated.css, index.css
+  components/             panels (Library, Preview, Metadata, Timeline, Map), menus (Project, Edit),
+                          dialogs (Export, Help), MapSyncControl, KeyframeList, TransportControls
+    preview/              VideoPlayer, AudioPlayer, OverlayRenderer, MapPanel parts, DataOverlay,
+                          HeatmapOverlay, ElevationProfile, SafeAreaGuides
+    timeline/             TimelineContainer, TrackHeader, TrackLane, ClipItem, Ruler, Playhead,
+                          Marker, WaveformOverlay, ZoomControls
+  hooks/                  usePlaybackLoop, useKeyboardShortcuts (the command list), useAutoSave, useDebounce
+  services/               AssetLoader, AudioEngine, AudioCompositor, ExportManager, WorkerCompositor, Compositor
+  store/                  useProjectStore, slices/, middleware/historyMiddleware
+  utils/                  gpxParser, mapUtils, timelineUtils, timeUtils, animationUtils, audioUtils,
+                          projectSerializer, layoutUtils, textUtils, errorHandler, concurrency, workerUtils
+  workers/exportWorker.ts
+tests/unit/ tests/integration/ tests/utils/ tests/fixtures/
 ```
 
-## Testing Strategy
+## Performance
 
-### Unit Tests (`tests/unit/`)
-- Store slices and actions
-- Pure utility functions (GPX parsing, time calculations)
-- Individual component logic
-- Mock mediabunny and leaflet
-
-### Integration Tests (`tests/integration/`)
-- Full asset loading flow
-- Timeline interactions (drag, resize)
-- Playback synchronization
-- Export pipeline (with small test videos)
-
-### Coverage Requirements
-- Unit tests must achieve >80% coverage
-- Calculated from unit suite only
-- GitHub Actions enforces this
-
-## Performance Considerations
-
-### Playback
-- Only render active clips at current time
-- Use `requestAnimationFrame` for smooth updates
-- Debounce expensive operations (GPX lookups)
-- Lazy-load map tiles
-
-### Export
-- Use OffscreenCanvas for off-main-thread rendering
-- Batch frame encoding where possible
-- Show progress feedback (cancel button)
-- Clear caches after export
-
-### Memory
-- Release Blob URLs when assets removed
-- Limit tile cache size for maps
-- Clean up video elements after export
-
-## Browser Compatibility
-
-**Required APIs**:
-- WebCodecs (Chrome 94+, Edge 94+)
-- OffscreenCanvas (Chrome 69+, Firefox 105+)
-- File System Access API (optional, for save/load)
-
-**Target**: Modern Chrome/Edge/Brave. Firefox support possible but untested.
-
-## Future Considerations
-
-- **Audio Mixing**: Currently only video tracks fully supported
-- **Transitions**: Crossfades, wipes between clips
-- **Effects**: Filters, color grading, speed ramping
-- **Multi-layer Overlays**: Text, graphics, multiple maps
-- **Collaborative Editing**: WebRTC for real-time collaboration
-- **Cloud Assets**: Load from URLs, not just local files
+Only active clips are rendered; GPX tracks are simplified on load; assets load lazily (thumbnails after
+the asset appears); asset loading is limited by `src/utils/concurrency.ts`; export runs in a worker. Blob URLs are revoked when an asset is removed.

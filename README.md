@@ -1,194 +1,89 @@
 # Strata Vid
 
-**Browser-based video editor for stitching run videos with GPX data**
+A video editor that runs in the browser and stitches run footage to a GPX track: clips on a
+timeline, a map and data overlays that follow the runner's position, and export to MP4. Nothing is
+uploaded; files are read and encoded on the device.
 
-Strata Vid is a client-side video editing application that combines multiple video clips with GPS track data to create synchronized, exportable videos. Everything runs in your browser—no server required.
+## Status
 
-## Status: Early Development 🚧
+The editor works end to end: load videos, GPX, images and audio; arrange them on tracks; preview
+with synchronised map, elevation and speed overlays; save and reload a project; export an MP4 with
+audio. What it does is listed below; how it does it is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-This project is in active development. Core infrastructure is in place, but many features are not yet functional.
+The current work is **moving the UI onto [strata-react](https://github.com/jburnhams/strata-react)**,
+Jonathan's React + Tailwind framework. Fixing the app's own problems waits until that is done. Where the
+port stands and what it is waiting on: [docs/PORT.md](docs/PORT.md). What changed and why:
+[CHANGELOG.md](CHANGELOG.md).
 
-**What works**:
-- ✅ Type system and state management (Zustand)
-- ✅ Asset loading (videos, GPX files)
-- ✅ Component scaffolding (UI layout)
-- ✅ Build system (Vite + React 19 + TypeScript)
+## What it does
 
-**What's in progress**:
-- 🟨 Video playback and preview
-- 🟨 Timeline editing (drag, resize clips)
-- 🟨 GPX/map synchronization
+- **Library**: pick or drop video, GPX, image and audio files. Each one gets a thumbnail (first frame
+  for video), metadata (codec, frame rate, creation time) and, for audio, a waveform. Removing an
+  asset in use asks first.
+- **Timeline**: tracks for video, audio and overlays; drag clips in from the library, move and trim
+  them, snap to edges and the playhead, zoom, mute and lock tracks, markers, crossfade transitions,
+  split, playback rate, and keyframes for a clip's properties.
+- **Preview**: the clips under the playhead composed live: video, images, text, a Leaflet map of the
+  GPX track with a moving marker (several tracks, a speed or elevation heatmap, an elevation profile),
+  and a data overlay (speed, distance, elevation in chosen units). Safe-area guides and a preview
+  quality setting.
+- **GPX sync**: a map clip's offset is set from the video's creation time or by hand.
+- **Audio**: per-clip and per-track volume through Web Audio, mixed into the export.
+- **Project**: undo and redo (50 steps), save to and open from a `.svp` file, auto-save to
+  `localStorage` every 60 seconds.
+- **Export**: MP4 or WebM, rendered frame by frame in a Web Worker with WebCodecs (via mediabunny),
+  with progress and cancel.
+- **Commands**: every action has a shortcut and appears in the command menu and the Edit menu; the
+  shortcuts dialog (the keyboard button) lists them.
 
-**What's planned**:
-- ❌ Export to MP4 (scaffolded but untested)
-- ❌ Advanced editing (transitions, effects)
-- ❌ Audio support
-- ❌ Project save/load
+Known gaps carried over from the old task lists: HTML clips have a type but are not rendered; no ripple
+editing, track reordering or multi-select on the timeline; no layout for narrow screens; nothing
+shared or cloud-stored (out of scope). Export was verified by its tests, not by a recorded run in a
+browser.
 
-## Quick Start
+## Running it
 
-### Prerequisites
-- Node.js 26 or higher (strata-react needs it; `.nvmrc` names it)
-- Modern browser with WebCodecs support (Chrome 94+, Edge 94+)
-
-### Installation
+Needs Node 26 (`.nvmrc`; strata-react requires it) and a Chromium browser (Chrome, Edge, Brave):
+export uses WebCodecs and `OffscreenCanvas`. The old docs said Firefox previews but cannot export and Safari does not work; neither has been retested since.
 
 ```bash
-# Clone the repository
-git clone https://github.com/jburnhams/strata-vid.git
-cd strata-vid
-
-# Install dependencies
 npm install
-
-# Start development server
-npm run dev
+npm run dev            # http://localhost:5173
 ```
 
-Visit `http://localhost:5173` to see the app.
+| Command | What it does |
+|---|---|
+| `npm run dev` | Vite dev server |
+| `npm run build` | type-check, then a production build in `dist/` |
+| `npm run preview` | serve the production build |
+| `npm test` / `npm run test:unit` | unit tests (Jest, jsdom, mocks) |
+| `npm run test:coverage` | unit tests with coverage; coverage comes from this suite only |
+| `npm run test:integration` | integration tests (Jest, jsdom, real store and components, fixtures in `tests/fixtures/`) |
+| `npm run type-check` | `tsc --noEmit` |
 
-For detailed setup instructions, see [Quick Start Guide](docs/QUICKSTART.md).
+`?strict=false` on the URL turns React's StrictMode off, for checking double-run effects. In
+development the store is on `window.useProjectStore`.
 
-## Documentation
+## Stack
 
-| Document | Description |
-|----------|-------------|
-| **[Quick Start](docs/QUICKSTART.md)** | Get up and running in minutes |
-| **[Architecture](docs/ARCHITECTURE.md)** | Technical design and data model |
-| **[Implementation](docs/IMPLEMENTATION.md)** | Task roadmap organized by section |
+React 19, TypeScript 7, Vite 8 and Tailwind v4, with **strata-react** for components, theme roles,
+commands, overlays and toasts (plus its required peers React Router and TanStack Query). Zustand with
+Immer holds the project. mediabunny does decoding and encoding, Leaflet and react-leaflet draw maps,
+`@we-gold/gpxjs` parses GPX, `@dnd-kit` handles timeline drag and drop until strata-react's
+replacement is adopted, lucide-react supplies icons. Details and reasons: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-## Technology Stack
+The theme is the app's own: `src/theme.generated.css` (strata-react's palette script, seeded from
+Ordnance Survey contour orange) and `src/theme.css` (status roles and faces, each with its reason).
 
-- **React 19** - UI framework
-- **TypeScript** - Type safety
-- **Vite** - Build tool
-- **Tailwind CSS v4** - Styling
-- **Zustand** - State management
-- **mediabunny** - Video encoding (WebCodecs)
-- **Leaflet** - Map rendering
-- **@dnd-kit** - Drag-and-drop interactions
+## For contributors and agents
 
-## Development
-
-### Available Scripts
-
-```bash
-npm run dev              # Start dev server
-npm run build            # Build for production
-npm run preview          # Preview production build
-npm run test             # Run unit tests
-npm run test:integration # Run integration tests
-npm run test:coverage    # Test coverage report
-npm run type-check       # TypeScript type checking
-```
-
-### Project Structure
-
-```
-src/
-├── components/     # React components
-│   ├── preview/    # Preview engine
-│   └── timeline/   # Timeline UI
-├── store/          # Zustand state (slices)
-├── services/       # Business logic (AssetLoader, Compositor, ExportManager)
-├── hooks/          # Custom React hooks
-├── utils/          # Pure functions
-└── types.ts        # TypeScript types
-
-tests/
-├── unit/           # Fast, isolated tests (with mocks)
-└── integration/    # E2E tests (Playwright)
-
-docs/               # Documentation
-```
-
-## Testing
-
-This project follows a strict testing structure:
-
-- **Unit tests** (`tests/unit/`) - Fast, isolated, use mocks. Run with `npm run test:unit`
-- **Integration tests** (`tests/integration/`) - Slower, end-to-end. Run with `npm run test:integration`
-- **Coverage** - Calculated from unit tests only. Target: >80%
-
-See [AGENTS.md](AGENTS.md) for guidelines.
-
-## Contributing
-
-This is currently a personal project, but contributions are welcome once core features are stable.
-
-### Development Workflow
-
-1. **Pick a task** from [Implementation Roadmap](docs/IMPLEMENTATION.md)
-   - Start with **Section A: Playback Foundation** for MVP
-   - Tasks organized by section with clear dependencies
-
-2. **Create a branch**
-   ```bash
-   git checkout -b feature/section-a-task-1
-   ```
-
-3. **Implement and test**
-   - Write unit tests as you go
-   - Run `npm run test:watch` in a separate terminal
-
-4. **Commit and push**
-   ```bash
-   git add .
-   git commit -m "feat: implement playback controls (Section A, Task 2)"
-   git push -u origin feature/section-a-task-1
-   ```
-
-5. **Create PR** (when ready)
-
-## Roadmap
-
-See [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) for the complete task breakdown.
-
-**MVP Focus** (Sections A-E):
-1. **Section A**: Playback Foundation - Get video playing ⭐⭐⭐
-2. **Section B**: Timeline Editing - Drag, resize, arrange clips ⭐⭐⭐
-3. **Section C**: Preview Rendering - Overlays and composition ⭐⭐
-4. **Section D**: Map & GPX Integration - Synchronized map overlay ⭐⭐
-5. **Section E**: Export Pipeline - Render final MP4 ⭐⭐⭐
-
-**Enhancement** (Sections F-G):
-6. **Section F**: Project Management - Save/load, undo/redo
-7. **Section G**: User Experience - Polish, tooltips, error handling
-
-**Advanced** (Sections H-L):
-8. **Section H**: Advanced Timeline - Transitions, effects, markers
-9. **Section I**: Audio System - Mixing, volume, waveforms
-10. **Section J**: Performance - Optimization for large projects
-11. **Section K**: Advanced Map - Elevation, heatmaps, data overlays
-12. **Section L**: Collaboration - Cloud storage, real-time editing
-
-## Browser Support
-
-| Browser | Support | Notes |
-|---------|---------|-------|
-| Chrome 94+ | ✅ Full | Recommended |
-| Edge 94+ | ✅ Full | Chromium-based |
-| Brave | ✅ Full | Chromium-based |
-| Firefox | ⚠️ Partial | Preview works, export (WebCodecs) not supported |
-| Safari | ❌ None | WebCodecs not available |
-
-**Required APIs**: WebCodecs, OffscreenCanvas, File API
+- Test layout and CI rules: [AGENTS.md](AGENTS.md). Unit tests in `tests/unit/`, integration in
+  `tests/integration/`, shared setup in `tests/utils/`.
+- New UI uses strata-react's components and roles; where strata-react has no part yet, see
+  [docs/PORT.md](docs/PORT.md) before building one here.
+- Every change adds an entry to [CHANGELOG.md](CHANGELOG.md) in the same PR.
+- Dependencies (adding, removing, replacing, pinning a major) are Jonathan's decision; ask first.
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
-
-## Author
-
-[jburnhams](https://github.com/jburnhams)
-
-## Acknowledgments
-
-- **mediabunny** - Excellent WebCodecs wrapper
-- **Leaflet** - Open-source mapping
-- **React Team** - React 19 improvements
-- **Zustand** - Lightweight state management
-
----
-
-**Note**: This project is in active development. Expect breaking changes, incomplete features, and rough edges.
+MIT; see [LICENSE](LICENSE).

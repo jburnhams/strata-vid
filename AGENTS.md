@@ -10,3 +10,10 @@
   - `npm run test:integration` runs only the integration suite.
 - Code coverage must be calculated from the unit suite only.
 - GitHub Actions enforce this separation: the standard workflow runs unit tests with coverage, while a dedicated workflow runs the integration suite on Node.js 26.
+
+## Other rules
+
+- Every change adds an entry to `CHANGELOG.md` in the same PR (format at the top of that file).
+- Adding, removing, replacing or major-pinning a dependency is Jonathan's decision: ask first.
+- The UI is moving onto strata-react. Read `docs/PORT.md` before building a UI part here; a missing
+  part is a strata-react issue, and app bugs wait until the port is done.

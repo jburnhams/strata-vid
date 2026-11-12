@@ -3,6 +3,7 @@ import { getGpxPositionAtTime, lat2tile, lon2tile, getTileUrl, TILE_SIZE } from 
 import { interpolateValue } from '../utils/animationUtils';
 import { calculateObjectFit } from '../utils/layoutUtils';
 import { Input, BlobSource, ALL_FORMATS, CanvasSink } from 'mediabunny';
+import { footageOf, routeSeconds } from '../utils/routeClock';
 import type { Feature, LineString } from 'geojson';
 
 // How the export reads video frames. mediabunny's `canvasesAtTimestamps` answers a timestamp with
@@ -134,6 +135,8 @@ export class WorkerCompositor {
 
     // Stacked as the preview stacks them: track order, then each clip's zIndex on top (a stable
     // sort), so a route inset on a track made before the footage's still draws over it.
+    // The route clips' clock follows the footage's speed (routeClock.ts), as in the preview
+    const footage = footageOf(project.tracks.map((t) => t.id), Object.fromEntries(project.tracks.map((t) => [t.id, t])), project.clips);
     const activeClips = project.tracks
       .filter((track) => !track.isMuted)
       .flatMap((track) => track.clips
@@ -152,7 +155,7 @@ export class WorkerCompositor {
             transitionProgress = Math.max(0, Math.min(1, transitionTime / clip.transitionIn.duration));
           }
         }
-        await this.drawClip(ctx, clip, asset, time, transitionProgress, project.assets);
+        await this.drawClip(ctx, clip, asset, time, transitionProgress, project.assets, footage);
       }
     }
   }
@@ -163,7 +166,8 @@ export class WorkerCompositor {
     asset: Asset | undefined,
     globalTime: number,
     transitionProgress: number = 1,
-    allAssets?: Record<string, Asset>
+    allAssets?: Record<string, Asset>,
+    footage: readonly Clip[] = [],
   ) {
     const clipRate = clip.playbackRate || 1;
     const localTime = (globalTime - clip.start) * clipRate + clip.offset;
@@ -228,7 +232,7 @@ export class WorkerCompositor {
         } else if (clip.type === 'text') {
             this.drawText(ctx, clip, w, h);
         } else if (clip.type === 'map' && asset && asset.type === 'gpx') {
-            await this.drawMap(ctx, clip, asset, localTime, w, h, allAssets, mapZoom);
+            await this.drawMap(ctx, clip, asset, routeSeconds(clip, globalTime, footage), w, h, allAssets, mapZoom);
         }
     } catch (e) {
         console.error(`Error drawing clip ${clip.id}`, e);

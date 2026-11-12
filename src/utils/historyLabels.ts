@@ -19,14 +19,16 @@ const changed = <T,>(before: Record<string, T>, after: Record<string, T>) =>
 
 const PROPERTY_NAMES: Record<string, string> = {
   x: 'position', y: 'position', width: 'size', height: 'size', rotation: 'rotation', opacity: 'opacity',
-  zIndex: 'layer order', filter: 'filter', mapStyle: 'map style', mapZoom: 'map zoom', trackStyle: 'route style',
+  zIndex: 'layer order', filter: 'colour', mapStyle: 'map style', mapZoom: 'map zoom', trackStyle: 'route style',
   markerStyle: 'marker style', heatmap: 'heatmap', showElevationProfile: 'elevation profile',
 };
 
 const plural = (n: number, one: string) => (n === 1 ? one : `${one}s`);
 
 function nameClipChange(id: string, before: Clip, after: Clip): ChangeName {
-  // A trim from the start moves the start too, so trims are told apart first.
+  // A speed change also changes the length, and a trim from the start moves the start too, so speed
+  // is told apart first, then trims.
+  if (before.playbackRate !== after.playbackRate) return { label: 'change speed', key: `clip:${id}:rate` };
   if (before.duration !== after.duration || before.offset !== after.offset) return { label: 'trim clip' };
   if (before.start !== after.start || before.trackId !== after.trackId) return { label: 'move clip' };
   if (before.properties !== after.properties) {
@@ -39,7 +41,6 @@ function nameClipChange(id: string, before: Clip, after: Clip): ChangeName {
   }
   if (before.keyframes !== after.keyframes) return { label: 'change keyframes', key: `clip:${id}:keyframes` };
   if (before.volume !== after.volume) return { label: 'change clip volume', key: `clip:${id}:volume` };
-  if (before.playbackRate !== after.playbackRate) return { label: 'change speed', key: `clip:${id}:rate` };
   if (before.transitionIn !== after.transitionIn) return { label: after.transitionIn ? 'add crossfade' : 'remove crossfade' };
   if (before.syncOffset !== after.syncOffset) return { label: 'change route sync', key: `clip:${id}:sync` };
   if (before.extraTrackAssets !== after.extraTrackAssets) return { label: 'change routes on map', key: `clip:${id}:extra` };

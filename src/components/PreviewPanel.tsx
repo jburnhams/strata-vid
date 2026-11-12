@@ -1,5 +1,5 @@
 import { MediaStage, StageGuides, Toggle, ToggleGroup, Toolbar, ToolbarSeparator } from 'strata-react';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useProjectStore } from '../store/useProjectStore';
 import { VideoPlayer } from './preview/VideoPlayer';
 import { AudioPlayer } from './preview/AudioPlayer';
@@ -8,6 +8,7 @@ import { TransportControls } from './TransportControls';
 import { usePlaybackLoop } from '../hooks/usePlaybackLoop';
 import type { Clip, ProjectSettings } from '../types';
 import { AudioEngine } from '../services/AudioEngine';
+import { footageOf, routeSeconds, timeAtRouteSeconds } from '../utils/routeClock';
 
 export const PreviewPanel: React.FC = () => {
   const currentTime = useProjectStore((state) => state.currentTime);
@@ -21,6 +22,8 @@ export const PreviewPanel: React.FC = () => {
   const tracks = useProjectStore((state) => state.tracks);
   const trackOrder = useProjectStore((state) => state.trackOrder);
   const assets = useProjectStore((state) => state.assets);
+  // The footage under the route clips sets the route's clock (routeClock.ts)
+  const footage = useMemo(() => footageOf(trackOrder, tracks, clips), [trackOrder, tracks, clips]);
 
   const [showSafeAreas, setShowSafeAreas] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
@@ -129,13 +132,14 @@ export const PreviewPanel: React.FC = () => {
                                 clip={clip}
                                 asset={asset}
                                 currentTime={currentTime}
+                                routeTime={routeSeconds(clip, currentTime, footage)}
                                 allAssets={assets}
                                 onToggleElevationProfile={() => {
                                     const updateClip = useProjectStore.getState().updateClip;
                                     updateClip(clip.id, { properties: { ...clip.properties, showElevationProfile: !clip.properties.showElevationProfile } });
                                 }}
                                 onSeek={(time) => {
-                                    useProjectStore.getState().setPlaybackState({ currentTime: clip.start + time });
+                                    useProjectStore.getState().setPlaybackState({ currentTime: timeAtRouteSeconds(clip, time, footage) });
                                 }}
                             />
                         );

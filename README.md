@@ -25,7 +25,8 @@ port stands and what it is waiting on: [docs/PORT.md](docs/PORT.md). What change
   them onto a lane or with "Add to timeline"; move, trim and change lane with the pointer or the keyboard, snapping on or off;
   a move that would overlap another clip or touch a locked track is refused with its reason; zoom,
   mute and lock, per-track volume and view in a settings popover, markers, crossfade transitions,
-  split, duplicate, ripple delete, and keyframes for a clip's properties.
+  split, duplicate, ripple delete, keyframes for a clip's properties, a clip's speed, and its
+  brightness, contrast and saturation.
 - **Preview**: the clips under the playhead composed live: video, images, text, a Leaflet map of the
   GPX track with a moving marker (several tracks, a speed or elevation heatmap, an elevation profile),
   and a data overlay (speed, distance, elevation in chosen units). Transport, seek bar, volume and
@@ -40,8 +41,8 @@ port stands and what it is waiting on: [docs/PORT.md](docs/PORT.md). What change
   shortcuts dialog (the keyboard button) lists them.
 
 Every planned feature, done or not, is in [docs/FEATURES.md](docs/FEATURES.md) under its old roadmap
-ID, marked **Planned** or **Dropped** where Jonathan decided (2026-11-12). Planned: a speed control and brightness, contrast and saturation sliders
-(both already render), reordering tracks, and checking an export by hand in Chrome. Dropped: HTML clips,
+ID, marked **Planned** or **Dropped** where Jonathan decided (2026-11-12). Planned: reordering tracks and checking
+an export by hand in Chrome; a speed control and brightness, contrast and saturation followed on 2026-11-12. Dropped: HTML clips,
 ripple move, multi-select, a phone layout, audio effects, and sharing or cloud storage.
 
 ## Running it

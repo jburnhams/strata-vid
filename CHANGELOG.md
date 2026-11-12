@@ -10,6 +10,32 @@ a factual error. Work before 2026-11-12 is in the git history only.
 
 ## 2026-11-12
 
+**Clip speed and colour controls** (branch `claude/project-thread-3drc3w`).
+Two of the features Jonathan kept (H5, H7): both already rendered and had no control. Speed needed the map to
+follow it, which found that the preview and export counted a route clip's time differently.
+- `src/utils/routeClock.ts`: **new**. A route clip's clock runs at the speed of the top video clip under it
+  (1× where there is none) and starts at the clip's own trim, with the inverse for seeking. **Corrects** the
+  preview, which counted `t - clip.start` and so restarted a split route clip, while the export counted its
+  trim; both now use this.
+- `src/components/preview/OverlayRenderer.tsx`, `src/components/PreviewPanel.tsx`,
+  `src/services/WorkerCompositor.ts`: map, data overlay, elevation profile and the exported map use the route
+  clock; a pick on the profile seeks through its inverse.
+- `src/components/ClipSpeedRow.tsx`: **new**. "Speed" for a video clip, 0.25× to 8×; a slower speed that would
+  run into the next clip is refused with that clip named, unless overlaps are allowed.
+- `src/components/preview/VideoPlayer.tsx`: a clip at another speed no longer keeps its pitch in preview, so
+  it sounds as the export mixes it (a Web Audio source at that rate).
+- `src/utils/colourFilter.ts`, `src/components/ClipColourRows.tsx`: **new**. Brightness, contrast and
+  saturation (0 to 200%) for video and image clips, read from and written to the clip's CSS `filter`, keeping
+  any other filter functions an older project had.
+- `src/components/MetadataPanel.tsx`: new Colour and Timing sections. `src/utils/historyLabels.ts`: "change
+  speed" is told apart before "trim clip" (speed also changes the length); a filter change is "change colour".
+- Tests: **new** `tests/unit/utils/routeClock.test.ts`, `tests/unit/utils/colourFilter.test.ts`,
+  `tests/unit/components/ClipSpeedRow.test.tsx`, `tests/unit/components/ClipColourRows.test.tsx`.
+- `tests/visual/baselines/`: `clip-selected` and `inspector-edits` (light and dark) re-recorded: the
+  inspector shows the Colour section.
+- `docs/FEATURES.md` (H5, H7), `docs/PORT.md`, `README.md`: updated. Not done: watching a 2× clip's map in a
+  browser by eye.
+
 **Drag library files onto the timeline; taller lanes and fixed kind colours** (branch `claude/project-thread-3drc3w`).
 The last strata-react swap available now (#121). The drag source is the browser's own drag on the library
 row, read by React Aria's drop target in strata's Timeline: React Aria's `useDrag` (as strata-react's own

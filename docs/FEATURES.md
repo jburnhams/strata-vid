@@ -95,9 +95,9 @@ features as rows (new IDs continue the letter, or start N).
 |---|---|---|---|
 | H1–H3 | Split, duplicate, ripple delete | Done | Clip context menu |
 | H4 | Crossfade transitions | Done | Preview and export |
-| H5 | Speed (per-clip playback rate) | Partial, planned | Store action `updateClipPlaybackRate` and rendering exist; no control calls it. The old file said done. Needs a control, and the map, profile and sound checked at 2× |
+| H5 | Speed (per-clip playback rate) | Done | 2026-11-12: "Speed" in a video clip's Timing section (0.25× to 8×; a slower speed that would run into the next clip is refused). The route on a map, its readings and the elevation profile follow the footage's speed (`routeClock.ts`). Sound at another speed changes pitch in preview as it does in export. Checked by unit tests, not yet by eye in a browser |
 | H6 | Markers | Done | |
-| H7 | Video filters | Partial, planned | `properties.filter` is applied in preview and export; no control sets it. The old file said done. Planned as brightness, contrast and saturation sliders, not a filter library |
+| H7 | Video filters | Done | 2026-11-12: brightness, contrast and saturation sliders in a video or image clip's Colour section, written as the clip's CSS `filter` that preview and export apply |
 | H8 | Keyframe animation | Done | `KeyframeList`; the old file marked it partial |
 
 ## I/M. Audio

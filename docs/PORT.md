@@ -81,8 +81,8 @@ were fixed with `kindColours` (#121).
 ## After the port
 
 Jonathan decided on 2026-11-12 which open features to build and which to drop; FEATURES.md marks them
-**Planned** or **Dropped**. Planned: clip speed (H5), brightness, contrast and saturation (H7), reordering
-tracks (B6b), and checking an export by hand in Chrome.
+**Planned** or **Dropped**. Planned: clip speed (H5) and brightness, contrast and saturation (H7), both done
+on 2026-11-12; reordering tracks (B6b), and checking an export by hand in Chrome.
 
 ## Testing notes
 

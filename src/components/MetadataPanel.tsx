@@ -34,6 +34,8 @@ import { Trash2 } from 'lucide-react';
 import type { Asset, DataOverlayOptions, ProjectSettings } from '../types';
 import { useProjectStore } from '../store/useProjectStore';
 import { MapSyncControl } from './MapSyncControl';
+import { ClipSpeedRow } from './ClipSpeedRow';
+import { ClipColourRows } from './ClipColourRows';
 import { KeyframeList } from './KeyframeList';
 
 interface MetadataPanelProps {
@@ -100,6 +102,18 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                 <NumberField min={0} max={500} unit="%" value={Math.round((activeClip.volume ?? 1.0) * 100)}
                   onChange={(v) => v !== null && updateClip(activeClip.id, { volume: v / 100 })} />
               </PropertyRow>
+            </InspectorSection>
+          )}
+
+          {(activeClip.type === 'video' || activeClip.type === 'image') && (
+            <InspectorSection id="colour" title="Colour">
+              <ClipColourRows clip={activeClip} />
+            </InspectorSection>
+          )}
+
+          {activeClip.type === 'video' && (
+            <InspectorSection id="timing" title="Timing">
+              <ClipSpeedRow clip={activeClip} />
             </InspectorSection>
           )}
 

@@ -132,26 +132,27 @@ export class WorkerCompositor {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, width, height);
 
-    for (const track of project.tracks) {
-      if (track.isMuted) continue;
-
-      const activeClips = track.clips
+    // Stacked as the preview stacks them: track order, then each clip's zIndex on top (a stable
+    // sort), so a route inset on a track made before the footage's still draws over it.
+    const activeClips = project.tracks
+      .filter((track) => !track.isMuted)
+      .flatMap((track) => track.clips
         .map((id) => project.clips[id])
         .filter((clip) => clip && time >= clip.start && time < clip.start + clip.duration)
-        .sort((a, b) => a.start - b.start);
+        .sort((a, b) => a.start - b.start))
+      .sort((a, b) => (a.properties?.zIndex ?? 0) - (b.properties?.zIndex ?? 0));
 
-      for (const clip of activeClips) {
-        const asset = project.assets[clip.assetId];
-        if (clip.type === 'text' || asset) {
-          let transitionProgress = 1;
-          if (clip.transitionIn) {
-            const transitionTime = time - clip.start;
-            if (transitionTime < clip.transitionIn.duration) {
-              transitionProgress = Math.max(0, Math.min(1, transitionTime / clip.transitionIn.duration));
-            }
+    for (const clip of activeClips) {
+      const asset = project.assets[clip.assetId];
+      if (clip.type === 'text' || asset) {
+        let transitionProgress = 1;
+        if (clip.transitionIn) {
+          const transitionTime = time - clip.start;
+          if (transitionTime < clip.transitionIn.duration) {
+            transitionProgress = Math.max(0, Math.min(1, transitionTime / clip.transitionIn.duration));
           }
-          await this.drawClip(ctx, clip, asset, time, transitionProgress, project.assets);
         }
+        await this.drawClip(ctx, clip, asset, time, transitionProgress, project.assets);
       }
     }
   }

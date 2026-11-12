@@ -357,4 +357,21 @@ describe('WorkerCompositor', () => {
       expect(mockCtx.drawImage).not.toHaveBeenCalled();
     });
   });
+
+  it("draws a clip with a higher zIndex on top, whatever its track's place", async () => {
+    const drawn: string[] = [];
+    mockCtx.fillText.mockImplementation((text: string) => drawn.push(text));
+    const text = (id: string, trackId: string, zIndex: number): Clip => ({
+      id, trackId, type: 'text', assetId: '', start: 0, duration: 5, offset: 0, content: id, volume: 1,
+      properties: { x: 0, y: 0, width: 100, height: 100, opacity: 1, rotation: 0, zIndex },
+    } as Clip);
+    // The inset's track was made first, so it comes first in the order.
+    const project = createProject(
+      { inset: text('inset', 'route', 1), footage: text('footage', 'video', 0) },
+      {},
+      [{ id: 'route', type: 'overlay', clips: ['inset'], isMuted: false }, { id: 'video', type: 'video', clips: ['footage'], isMuted: false }] as Track[],
+    );
+    await compositor.renderFrame(mockCtx, 1, project as any);
+    expect(drawn).toEqual(['footage', 'inset']);
+  });
 });

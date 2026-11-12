@@ -108,6 +108,21 @@ describe('ExportManager', () => {
     expect(message.payload.audioNote).toBe('Saved without sound: the sound could not be mixed (decode failed).');
   });
 
+  it('stops before starting the worker when cancelled while the sound is mixed', async () => {
+    let finishMix: (value: unknown) => void = () => {};
+    (AudioCompositor as jest.Mock).mockImplementation(() => ({ render: jest.fn(() => new Promise((r) => { finishMix = r; })) }));
+    const onProgress = jest.fn();
+    const running = exportManager.exportProject(audibleProject, mockExportSettings, onProgress);
+
+    await new Promise((r) => setTimeout(r, 0));
+    exportManager.cancel();
+    finishMix({ numberOfChannels: 1, sampleRate: 44100, getChannelData: () => new Float32Array(10) });
+
+    await expect(running).resolves.toBeNull();
+    expect(createExportWorker).not.toHaveBeenCalled();
+    expect(onProgress).toHaveBeenLastCalledWith(expect.objectContaining({ status: 'cancelled' }));
+  });
+
   it('should handle cancellation', async () => {
     mockWorker.postMessage.mockImplementation((msg: any) => {
          if (msg.type === 'start') {

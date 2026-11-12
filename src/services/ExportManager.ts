@@ -27,10 +27,13 @@ export type ProgressCallback = (progress: ExportProgress) => void;
 
 export class ExportManager {
   private worker: Worker | null = null;
+  /** Set by `cancel` before the worker exists (while the sound is mixed), and checked before it starts. */
+  private cancelled = false;
 
   constructor() {}
 
   public cancel() {
+    this.cancelled = true;
     if (this.worker) {
         this.worker.postMessage({ type: 'cancel' });
     }
@@ -58,8 +61,13 @@ export class ExportManager {
 
     // The sound is mixed here: OfflineAudioContext exists only on the main thread, and mixing it in
     // the worker failed in every browser, so every export was silent (issue #141).
+    this.cancelled = false;
     onProgress({ currentFrame: 0, totalFrames: 0, percentage: 0, status: 'initializing' });
     const { audioData, audioNote } = await this.mixAudio(project);
+    if (this.cancelled) {
+        onProgress({ currentFrame: 0, totalFrames: 0, percentage: 0, status: 'cancelled' });
+        return null;
+    }
 
     return new Promise((resolve, reject) => {
         try {

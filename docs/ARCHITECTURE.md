@@ -113,7 +113,7 @@ exports through the worker.
 
 ```
 src/
-  App.tsx, main.tsx       the one screen; providers (ThemeProvider, StrataQueryProvider, router, toasts)
+  App.tsx, main.tsx       the one screen, a strata-react Workspace of four panes; providers (ThemeProvider, StrataQueryProvider, router, toasts)
   theme.css, theme.generated.css, index.css
   components/             panels (Library, Preview, Metadata, Timeline, Map), menus (Project, Edit),
                           dialogs (Export, Help), MapSyncControl, KeyframeList, TransportControls

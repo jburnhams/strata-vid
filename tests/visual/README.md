@@ -18,7 +18,7 @@ installs (`npx playwright install chromium`), the same one CI uses.
 
 ## What is covered
 
-Each state is taken light and dark at 1440×900 (the editor's grid is desktop-only), 32 shots in about 50 s.
+Each state is taken light and dark at 1440×900 (the editor is for a desktop; its panes stack below 720px but no state is taken there), 32 shots in about 50 s.
 
 | State | What a person did | Checked beyond the picture |
 |---|---|---|

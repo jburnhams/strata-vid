@@ -130,8 +130,8 @@ export const LibraryPanel: React.FC<LibraryPanelProps> = ({
 
   return (
     <div className="flex flex-col h-full" data-testid="library-panel">
-      <div className="flex justify-between items-center p-4 border-b border-border bg-card">
-        <h2 className="font-bold type-body-sm text-foreground">Library</h2>
+      {/* The pane's header names it "Library" (App's Workspace); this row holds the way in. */}
+      <div className="flex justify-end items-center p-2 border-b border-border">
         <FileButton size="sm" icon={Plus} accept={ACCEPT} multiple onFiles={intake.add}>Add files</FileButton>
       </div>
       {intake.outcomes.length > 0 && (

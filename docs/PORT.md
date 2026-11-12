@@ -32,11 +32,16 @@ is refused with a reason instead of landing at the nearest free spot, track volu
 moved into a per-track settings popover, and the time readout shows milliseconds (#122). `recharts`
 was removed from `package.json` on 2026-11-12 (Jonathan's yes).
 
+## Swapped on 2026-11-12
+
+- [#68](https://github.com/jburnhams/strata-react/issues/68) Workspace layout: the editor's four panels are
+  `Pane`s in a `Workspace` (library, preview, inspector, timeline); each resizes, the side panes and the
+  timeline fold, sizes are remembered, and a View menu shows or hides them.
+
 ## Closed in strata-react, to swap here
 
 | Issue | What it is for |
 |---|---|
-| [#68](https://github.com/jburnhams/strata-react/issues/68) Workspace layout | Docked, resizable, collapsible panes for the editor's four panels |
 | [#80](https://github.com/jburnhams/strata-react/issues/80) Map | Themed map with routes, a moving position and overlays (replaces the Leaflet panel in preview) |
 | [#81](https://github.com/jburnhams/strata-react/issues/81) Document history and save state | Undo/redo and "Saved" (replaces `historyMiddleware` wiring and auto-save notices) |
 | [#116](https://github.com/jburnhams/strata-react/issues/116) Fixes from the port | Controlled dialog warning, inspector overflow, colour picker names, Jest setup docs |

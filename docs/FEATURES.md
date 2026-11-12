@@ -86,7 +86,7 @@ features as rows (new IDs continue the letter, or start N).
 | G4 | Asset thumbnails | Done | |
 | G5 | Editable properties panel | Done | strata-react `Inspector` |
 | G6 | Dark and light mode | Done | Was open in the old file; done by #137 (`ThemeProvider`, `ColorSchemeChoice`) |
-| G7 | Layout for narrow screens | Dropped (phone); planned (panes) | Editing and WebCodecs export on a phone is not a goal. Collapsible panes come with strata-react's `Workspace` (#68) in the port |
+| G7 | Layout for narrow screens | Dropped (phone); panes done | Editing and WebCodecs export on a phone is not a goal. Since 2026-11-12 the panels are strata-react `Workspace` panes (#68): they resize, fold, and stack below 720px |
 | G8 | Accessibility | Done | Mostly through strata-react's controls since #137 |
 
 ## H. Advanced timeline

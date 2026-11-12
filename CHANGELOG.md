@@ -10,7 +10,23 @@ a factual error. Work before 2026-11-12 is in the git history only.
 
 ## 2026-11-12
 
-**Decide which open features to build and which to drop** (branch `claude/project-thread-3drc3w`).
+**Editor panels as strata-react workspace panes** (branch `claude/project-thread-3drc3w`).
+The first port swap after Jonathan's feature decisions (PR #147, merged). strata-react #68 is closed, so the
+fixed CSS grid gave way to its `Workspace`.
+- `src/App.tsx`: the header stays; below it a `Workspace` ("Editor") of a row (Library, Preview growing,
+  Inspector) over the Timeline. Library, Inspector and Timeline are `collapsible`; sizes and folds are kept
+  by `useWorkspaceState('strata-vid.workspace')`. A new View menu shows or hides each pane and resets the
+  layout. The header's height is `h-12` (48px) instead of an arbitrary 50px.
+- `src/components/LibraryPanel.tsx`: its own "Library" heading is gone, as the pane's header names it;
+  "Add files" keeps its row.
+- `tests/integration/accessibility.test.tsx`: the mocked panels no longer pretend to be regions; the test
+  checks that each pane is a named region and that a pane folds from its header and comes back from the
+  View menu.
+- `tests/visual/baselines/`: all 32 re-recorded after looking at the diffs: every shot gains the pane
+  headers, so the stage, library and timeline move down a little and the timeline is 240px high (was 200).
+- `docs/PORT.md`, `docs/FEATURES.md` (G7), `docs/ARCHITECTURE.md`, `tests/visual/README.md`: updated.
+
+**Decide which open features to build and which to drop** (branch `claude/project-thread-3drc3w`, PR #147).
 Jonathan asked to go through the docs and settle the remaining features. He agreed to the proposal: finish
 the port now that every strata-react issue it waited on is closed, then build four kept features, and drop
 the rest.

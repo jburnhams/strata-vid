@@ -24,7 +24,7 @@ port stands and what it is waiting on: [docs/PORT.md](docs/PORT.md). What change
 - **Timeline** (strata-react's `Timeline`): tracks for video, audio and overlays; files go on by dragging
   them onto a lane or with "Add to timeline"; move, trim and change lane with the pointer or the keyboard, snapping on or off;
   a move that would overlap another clip or touch a locked track is refused with its reason; zoom,
-  mute and lock, per-track volume and view in a settings popover, markers, crossfade transitions,
+  mute and lock, per-track volume, view and order in a settings popover, markers, crossfade transitions,
   split, duplicate, ripple delete, keyframes for a clip's properties, a clip's speed, and its
   brightness, contrast and saturation.
 - **Preview**: the clips under the playhead composed live: video, images, text, a Leaflet map of the
@@ -41,8 +41,8 @@ port stands and what it is waiting on: [docs/PORT.md](docs/PORT.md). What change
   shortcuts dialog (the keyboard button) lists them.
 
 Every planned feature, done or not, is in [docs/FEATURES.md](docs/FEATURES.md) under its old roadmap
-ID, marked **Planned** or **Dropped** where Jonathan decided (2026-11-12). Planned: reordering tracks and checking
-an export by hand in Chrome; a speed control and brightness, contrast and saturation followed on 2026-11-12. Dropped: HTML clips,
+ID, marked **Planned** or **Dropped** where Jonathan decided (2026-11-12). Planned: checking an export by hand in
+Chrome; a speed control, brightness, contrast and saturation, and reordering tracks followed on 2026-11-12. Dropped: HTML clips,
 ripple move, multi-select, a phone layout, audio effects, and sharing or cloud storage.
 
 ## Running it

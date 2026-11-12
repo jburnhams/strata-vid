@@ -25,6 +25,8 @@ export interface TimelineSlice {
   selectedClipId: string | null;
   addTrack: (track: Track) => void;
   removeTrack: (id: string) => void;
+  /** Moves a track up (-1) or down (+1) the list; tracks lower in the list draw over higher ones. */
+  moveTrack: (id: string, by: -1 | 1) => void;
   updateTrack: (id: string, track: Partial<Track>) => void;
   addMarker: (marker: Marker) => void;
   removeMarker: (id: string) => void;

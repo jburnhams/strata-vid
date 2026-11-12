@@ -30,7 +30,7 @@ features as rows (new IDs continue the letter, or start N).
 | B5 | Collision rules | Done | A move that would overlap is refused with a reason; "Allow overlaps" lifts it |
 | B5b | Ripple move (a move pushes neighbours along) | Dropped | "Add to timeline" places footage end to end, and ripple delete (H3) plus snapping cover the rest |
 | B6 | Multiple tracks; add and delete; move clips between them | Done | |
-| B6b | Reorder tracks | Planned | Track order decides what draws on top (a route inset over footage) |
+| B6b | Reorder tracks | Done | 2026-11-12: "Move up" and "Move down" in a track's settings; lower tracks draw over higher ones. Buttons, as strata-react's Timeline has no lane drag |
 | B7 | Select a clip; context menu; Delete key | Done | |
 | B7b | Multi-select (Shift/Ctrl-click) | Dropped | A run edit has a handful of clips; the store keeps one `selectedClipId` |
 | B8 | Zoom, scroll, zoom to fit | Done | `TimelineZoomControls` |

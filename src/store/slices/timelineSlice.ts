@@ -36,6 +36,14 @@ export const createTimelineSlice: StateCreator<
       // We should check if selectedClipId is among the removed clips.
       // But for now, we leave it or rely on the fact that the clip is gone from 'clips'
     }),
+  moveTrack: (id, by) =>
+    set((state) => {
+      const from = state.trackOrder.indexOf(id);
+      const to = from + by;
+      if (from < 0 || to < 0 || to >= state.trackOrder.length) return;
+      state.trackOrder.splice(from, 1);
+      state.trackOrder.splice(to, 0, id);
+    }),
   updateTrack: (id, trackUpdate) =>
     set((state) => {
       const track = state.tracks[id];

@@ -225,6 +225,9 @@ export const TimelinePanel: React.FC = () => {
         onToggleLock={(id) => store().updateTrack(id, { isLocked: !store().tracks[id]?.isLocked })}
         onUpdateVolume={(id, volume) => store().updateTrack(id, { volume })}
         onSetViewMode={(id, mode) => store().setTrackViewMode(id, mode)}
+        onMove={(id, by) => store().moveTrack(id, by)}
+        isFirst={trackOrder[0] === track.id}
+        isLast={trackOrder[trackOrder.length - 1] === track.id}
       />
     ),
   }));

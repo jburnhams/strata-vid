@@ -10,6 +10,17 @@ a factual error. Work before 2026-11-12 is in the git history only.
 
 ## 2026-11-12
 
+**Reorder tracks** (branch `claude/project-thread-3drc3w`).
+The last feature Jonathan kept (B6b). Track order is also the drawing order, so this is how a route inset goes
+over or under footage. strata-react's Timeline has no lane drag, so it is two buttons, which work by keyboard.
+- `src/store/slices/timelineSlice.ts`, `src/store/types.ts`: `moveTrack(id, -1 | 1)`; one undo step,
+  "reorder tracks".
+- `src/components/timeline/TrackHeader.tsx`, `src/components/TimelinePanel.tsx`: "Move up" and "Move down"
+  in the track's settings popover, disabled at either end, with "Lower tracks draw over higher ones."
+- Tests: **new** `tests/unit/store/moveTrack.test.ts`; `tests/unit/components/timeline/TrackHeader.test.tsx`.
+- No baseline changed (no visual state opens a track's settings). `docs/FEATURES.md`, `docs/PORT.md`,
+  `README.md`: updated.
+
 **Clip speed and colour controls** (branch `claude/project-thread-3drc3w`).
 Two of the features Jonathan kept (H5, H7): both already rendered and had no control. Speed needed the map to
 follow it, which found that the preview and export counted a route clip's time differently.

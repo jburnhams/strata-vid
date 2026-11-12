@@ -148,8 +148,8 @@ export interface Clip {
   offset: number; // Source media start time (trimming)
   properties: OverlayProperties;
   textStyle?: TextStyle;
-  type: 'video' | 'audio' | 'image' | 'map' | 'text' | 'html' | 'data';
-  content?: string; // For text/html
+  type: 'video' | 'audio' | 'image' | 'map' | 'text' | 'data';
+  content?: string; // For text
   syncOffset?: number; // For map/gpx clips: offset in ms between video time 0 and GPX time
   extraTrackAssets?: ExtraTrack[]; // For map clips: additional GPX tracks to display
   transitionIn?: Transition;

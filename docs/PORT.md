@@ -10,7 +10,9 @@ it; only then fix this app's own problems. So while the port runs:
 - When a strata-react release closes an issue below, the matching code here is swapped for it in a
   strata-vid PR, and this page and the [CHANGELOG](../CHANGELOG.md) are updated.
 
-Status as of 2026-11-12. strata-vid depends on `strata-react ^1.0.11`; the latest on npm is 1.0.12.
+Status as of 2026-11-12. strata-vid depends on `strata-react ^1.0.20`, the latest on npm. Every
+strata-react issue below is closed, so the rest of the port is swaps in this app (branch
+`claude/project-thread-3drc3w`).
 
 ## Done (in use)
 
@@ -27,10 +29,10 @@ and stage (`Transport`, `TimeReadout`, `SeekBar`, `VolumeControl`, `RateChoice`,
 strata-react's Timeline takes no drops from outside yet, so files go on with "Add to timeline"
 (Jonathan's call; strata-react #121). With it, a clip move that would overlap or touch a locked track
 is refused with a reason instead of landing at the nearest free spot, track volume and "Clips show"
-moved into a per-track settings popover, and the time readout shows milliseconds (#122). `recharts` is
-no longer imported; removing it from `package.json` is Jonathan's call.
+moved into a per-track settings popover, and the time readout shows milliseconds (#122). `recharts`
+was removed from `package.json` on 2026-11-12 (Jonathan's yes).
 
-## Waiting on strata-react
+## Closed in strata-react, to swap here
 
 | Issue | What it is for |
 |---|---|
@@ -60,8 +62,9 @@ Left for strata-react: the profile still labels the route's end "now", which Lin
 
 ## After the port
 
-The app's own work starts once the table above is empty: the open rows in
-[FEATURES.md](FEATURES.md), the bugs above, and anything the port turned up.
+Jonathan decided on 2026-11-12 which open features to build and which to drop; FEATURES.md marks them
+**Planned** or **Dropped**. Planned: clip speed (H5), brightness, contrast and saturation (H7), reordering
+tracks (B6b), and checking an export by hand in Chrome.
 
 ## Testing notes
 

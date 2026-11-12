@@ -40,10 +40,10 @@ port stands and what it is waiting on: [docs/PORT.md](docs/PORT.md). What change
   shortcuts dialog (the keyboard button) lists them.
 
 Every planned feature, done or not, is in [docs/FEATURES.md](docs/FEATURES.md) under its old roadmap
-ID. The main gaps: library files cannot be dragged onto the timeline (waiting on strata-react #121);
-clip speed and video filters render but have no control; HTML clips are not rendered; no ripple move,
-track reordering or multi-select; no layout for narrow screens; no sharing or cloud storage. Export is
-covered by tests but has not been checked by hand in a browser.
+ID, marked **Planned** or **Dropped** where Jonathan decided (2026-11-12). Planned: dragging library files
+onto the timeline (back with the port), a speed control and brightness, contrast and saturation sliders
+(both already render), reordering tracks, and checking an export by hand in Chrome. Dropped: HTML clips,
+ripple move, multi-select, a phone layout, audio effects, and sharing or cloud storage.
 
 ## Running it
 

@@ -63,7 +63,6 @@
     "jsdom": "^31.0.0",
     "playwright": "1.65.0",
     "postcss": "^8.5.32",
-    "recharts": "^3.10.1",
     "tailwindcss": "^4.3.5",
     "typescript": "^7.0.2",
     "vite": "^8.3.8",

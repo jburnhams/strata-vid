@@ -45,7 +45,7 @@ interface MetadataPanelProps {
 
 const KIND: Record<string, string> = {
   video: 'Video clip', audio: 'Audio clip', image: 'Image clip', map: 'Map clip', data: 'Data overlay',
-  text: 'Text clip', html: 'HTML clip',
+  text: 'Text clip',
 };
 const ASSET_KIND: Record<string, string> = { video: 'Video file', audio: 'Audio file', gpx: 'GPX track', image: 'Image file' };
 

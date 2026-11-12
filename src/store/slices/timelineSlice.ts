@@ -126,12 +126,15 @@ export const createTimelineSlice: StateCreator<
         state.settings.duration = end;
       }
     }),
-  resizeClip: (id, newDuration, newOffset) =>
+  resizeClip: (id, newDuration, newOffset, newStart) =>
     set((state) => {
       const clip = state.clips[id];
       if (!clip) return;
 
       clip.duration = newDuration;
+      if (newStart !== undefined) {
+        clip.start = newStart;
+      }
       if (newOffset !== undefined) {
         clip.offset = newOffset;
       }

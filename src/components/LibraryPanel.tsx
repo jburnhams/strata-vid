@@ -1,5 +1,7 @@
 import React from 'react';
 import type { Asset } from '../types';
+import { useProjectStore } from '../store/useProjectStore';
+import { ASSET_DRAG_TYPE } from '../utils/timelinePlacement';
 import { FileButton, FileDropZone, FileOutcomes, IconButton, MissingFile, Button, useFileIntake } from 'strata-react';
 import { Trash2, FileAudio, FileImage, FileVideo, Map, Plus, PlusCircle } from 'lucide-react';
 
@@ -70,6 +72,16 @@ const LibraryAssetItem: React.FC<{
           className="flex-1 min-w-0 p-2 flex gap-3 items-center text-left cursor-pointer rounded-control"
           aria-current={selected ? 'true' : undefined}
           onClick={() => onSelect(asset.id)}
+          // Dragged onto a timeline lane, the file lands where it is dropped (TimelinePanel). The
+          // keyboard's way is the row's "Add … to timeline".
+          draggable={Boolean(onAddToTimeline)}
+          onDragStart={(e) => {
+            e.dataTransfer.setData(ASSET_DRAG_TYPE, asset.id);
+            e.dataTransfer.setData('text/plain', asset.name);
+            e.dataTransfer.effectAllowed = 'copy';
+            useProjectStore.getState().setDraggedAsset(asset.id);
+          }}
+          onDragEnd={() => useProjectStore.getState().setDraggedAsset(null)}
         >
           {asset.thumbnail ? (
             <div className="w-16 h-10 bg-footage rounded-control overflow-hidden flex-shrink-0 relative">

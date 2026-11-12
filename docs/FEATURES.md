@@ -35,7 +35,7 @@ features as rows (new IDs continue the letter, or start N).
 | B7b | Multi-select (Shift/Ctrl-click) | Dropped | A run edit has a handful of clips; the store keeps one `selectedClipId` |
 | B8 | Zoom, scroll, zoom to fit | Done | `TimelineZoomControls` |
 | B8b | Zoom anchored to the pointer | Dropped here | Zoom belongs to strata-react's `Timeline`; raise it there if wanted |
-| — | Drag a file from the library onto a lane | Planned | Removed with `@dnd-kit` in #138; strata-react #121 (closed) adds drops from outside, so it comes back with the port |
+| — | Drag a file from the library onto a lane | Done | Back on 2026-11-12 through strata-react #121's drops from outside; refused with a reason over a locked track or the wrong kind of track. Pointer only; the keyboard uses "Add to timeline" |
 
 ## C. Preview rendering
 
@@ -110,7 +110,7 @@ Section I was replaced by M; I's open items (waveforms, volume, export) were don
 | M2, I6 | Waveforms, including from a video's audio | Done | |
 | M3–M5 | Web Audio graph: clip, track and master gain | Done | `AudioEngine` |
 | M6 | Volume controls | Done | Track volume in the track settings popover since #138 |
-| M7 | Waveforms on the timeline | Done | Shown as a strip until strata-react #121 (lane height) |
+| M7 | Waveforms on the timeline | Done | Lanes two rows high since 2026-11-12 (strata-react #121) |
 | M8 | Audio in export | Done | Mixed on the main thread by `AudioCompositor` and encoded in the worker (issue #141). A browser that cannot encode the chosen codec gets another the container takes, and the finished export says so |
 | M9 | Equaliser, compressor, reverb | Dropped | Out of scope for a run video |
 

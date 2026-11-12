@@ -21,8 +21,8 @@ port stands and what it is waiting on: [docs/PORT.md](docs/PORT.md). What change
   failed with its reason and Try again) shows beside it. Each one gets a thumbnail (first frame for
   video), metadata (codec, frame rate, creation time) and, for audio, a waveform. A missing file is
   relinked in place. Removing an asset in use asks first.
-- **Timeline** (strata-react's `Timeline`): tracks for video, audio and overlays; files go on with
-  "Add to timeline"; move, trim and change lane with the pointer or the keyboard, snapping on or off;
+- **Timeline** (strata-react's `Timeline`): tracks for video, audio and overlays; files go on by dragging
+  them onto a lane or with "Add to timeline"; move, trim and change lane with the pointer or the keyboard, snapping on or off;
   a move that would overlap another clip or touch a locked track is refused with its reason; zoom,
   mute and lock, per-track volume and view in a settings popover, markers, crossfade transitions,
   split, duplicate, ripple delete, and keyframes for a clip's properties.
@@ -40,8 +40,7 @@ port stands and what it is waiting on: [docs/PORT.md](docs/PORT.md). What change
   shortcuts dialog (the keyboard button) lists them.
 
 Every planned feature, done or not, is in [docs/FEATURES.md](docs/FEATURES.md) under its old roadmap
-ID, marked **Planned** or **Dropped** where Jonathan decided (2026-11-12). Planned: dragging library files
-onto the timeline (back with the port), a speed control and brightness, contrast and saturation sliders
+ID, marked **Planned** or **Dropped** where Jonathan decided (2026-11-12). Planned: a speed control and brightness, contrast and saturation sliders
 (both already render), reordering tracks, and checking an export by hand in Chrome. Dropped: HTML clips,
 ripple move, multi-select, a phone layout, audio effects, and sharing or cloud storage.
 

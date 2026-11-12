@@ -34,7 +34,8 @@ export interface TimelineSlice {
   updateClip: (id: string, clip: Partial<Clip>) => void;
   selectClip: (id: string | null) => void;
   moveClip: (id: string, newStart: number, newTrackId?: string) => void;
-  resizeClip: (id: string, newDuration: number, newOffset?: number) => void;
+  /** Trims a clip; a trim from the start also moves it (`newStart`), in one step. */
+  resizeClip: (id: string, newDuration: number, newOffset?: number, newStart?: number) => void;
   duplicateClip: (id: string) => void;
   splitClip: (id: string, time: number) => void;
   rippleDeleteClip: (id: string) => void;
@@ -76,6 +77,9 @@ export interface UiSlice {
   addToast: (message: string, type?: Toast['type'], duration?: number) => void;
   removeToast: (id: string) => void;
   setZoomLevel: (zoomLevel: number) => void;
+  /** The library file being dragged now, so the timeline can size and judge the drop before it lands. */
+  draggedAssetId: string | null;
+  setDraggedAsset: (id: string | null) => void;
 }
 
 export type StoreState = ProjectSlice & AssetsSlice & TimelineSlice & PlaybackSlice & UiSlice;

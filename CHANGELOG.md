@@ -10,6 +10,29 @@ a factual error. Work before 2026-11-12 is in the git history only.
 
 ## 2026-11-12
 
+**Drag library files onto the timeline; taller lanes and fixed kind colours** (branch `claude/project-thread-3drc3w`).
+The last strata-react swap available now (#121). The drag source is the browser's own drag on the library
+row, read by React Aria's drop target in strata's Timeline: React Aria's `useDrag` (as strata-react's own
+story uses) would need `react-aria` as a direct dependency, which is Jonathan's call, so the keyboard keeps
+"Add to timeline".
+- `src/components/LibraryPanel.tsx`: a file's row is draggable, carrying its id as
+  `application/x-strata-vid-asset`; the store remembers which file is being dragged.
+- `src/components/TimelinePanel.tsx`: `dropTypes`, `onDrop` (the clip lands at the snapped time, and is
+  selected), `validateDrop` (locked track, sound on a picture track or the reverse, an overlap), `dropLength`
+  from the file; `laneRows={2}`; `kindColours` from the library's media colours. A trim from the start is now
+  one store change (`resizeClip` takes the new start), so it is one undo step.
+- `src/utils/timelinePlacement.ts`: `ASSET_DRAG_TYPE`, `refuseOnTrack`, `lengthOf` and `clipAt` (**new**
+  exports); "Add to timeline" is unchanged.
+- `src/store/types.ts`, `src/store/slices/uiSlice.ts`, `src/store/slices/timelineSlice.ts`: `draggedAssetId`
+  and `setDraggedAsset`; `resizeClip`'s optional `newStart`.
+- `src/App.tsx`: the timeline pane starts 330px high (was 240) so three two-row lanes fit.
+- Tests: **new** `tests/integration/timelineDrop.test.tsx` (a drop lands where it should; footage over an
+  audio lane is refused with the reason); `tests/unit/utils/timelinePlacement.test.ts` covers the new helpers.
+- `tests/visual/baselines/`: all 32 re-recorded after looking at them: taller lanes with room for thumbnails
+  and the waveform, stripes in the library's colours (blue footage, orange route, pink sound) in both
+  schemes, and a shorter stage. A second run matched all 32.
+- `docs/PORT.md`, `docs/FEATURES.md`, `README.md`: updated.
+
 **Undo, redo and auto-save on strata-react's history and save state** (branch `claude/project-thread-3drc3w`).
 The next port swap (strata-react #81). The map swap (#80) was tried first and stopped: `RouteMap` cannot
 hold the clip's zoom on the runner or show one marker per track, so that is strata-react #161 and the

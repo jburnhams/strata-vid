@@ -1,4 +1,4 @@
-import { placeOnTimeline } from '../../../src/utils/timelinePlacement';
+import { clipAt, placeOnTimeline, refuseOnTrack } from '../../../src/utils/timelinePlacement';
 import type { Asset, Clip, Track } from '../../../src/types';
 
 const ids = () => { let n = 0; return () => `id${++n}`; };
@@ -63,5 +63,21 @@ describe('placeOnTimeline', () => {
     const { newTrack, clip: placed } = placeOnTimeline(asset('video'), state, ids());
     expect(newTrack).toEqual(expect.objectContaining({ type: 'video', label: 'Track 2' }));
     expect(placed.trackId).toBe(newTrack!.id);
+  });
+});
+
+describe('dropping a file on a track', () => {
+  it('takes sound only on audio tracks, and nothing on a locked one', () => {
+    expect(refuseOnTrack(asset('audio', { name: 'bed.mp3' }), track('t1', 'video', [], { label: 'Track 1' }))).toBe('bed.mp3 is sound; put it on an audio track.');
+    expect(refuseOnTrack(asset('video'), track('a', 'audio', [], { label: 'Audio' }))).toBe('Audio is for sound.');
+    expect(refuseOnTrack(asset('gpx'), track('o', 'overlay'))).toBeNull();
+    expect(refuseOnTrack(asset('video'), track('t1', 'video', [], { label: 'Track 1', isLocked: true }))).toBe('Track 1 is locked.');
+  });
+
+  it('makes the clip where it landed: a route as the inset, footage full frame', () => {
+    const route = clipAt(asset('gpx', { duration: 0, stats: { time: { duration: 90_000 } } as Asset['stats'] }), 'o', 12, 'c9');
+    expect(route).toMatchObject({ trackId: 'o', start: 12, duration: 90, type: 'map' });
+    expect(route.properties).toMatchObject({ x: 58, width: 38 });
+    expect(clipAt(asset('video'), 't1', 4, 'c8')).toMatchObject({ start: 4, duration: 8, type: 'video', properties: { width: 100 } });
   });
 });

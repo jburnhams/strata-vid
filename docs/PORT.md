@@ -40,6 +40,9 @@ was removed from `package.json` on 2026-11-12 (Jonathan's yes).
 - [#81](https://github.com/jburnhams/strata-react/issues/81) Document history and save state: `useHistory`
   holds named undo steps fed by the store, and `useAutoSave` with `SaveStatus` replaces the 60-second
   timer (see ARCHITECTURE.md, Saving).
+- [#121](https://github.com/jburnhams/strata-react/issues/121) Timeline for editors: library files drag onto
+  a lane (a native drag from the row; the keyboard keeps "Add to timeline"), refused with a reason over a
+  lane that cannot take them; lanes are two rows high; each kind's stripe is the library's media colour.
 
 ## Waiting on strata-react again
 
@@ -56,7 +59,6 @@ was removed from `package.json` on 2026-11-12 (Jonathan's yes).
 |---|---|
 | [#116](https://github.com/jburnhams/strata-react/issues/116) Fixes from the port | Controlled dialog warning, inspector overflow, colour picker names, Jest setup docs |
 | [#117](https://github.com/jburnhams/strata-react/issues/117) Density | One density setting reaching overlays; small sizes across controls |
-| [#121](https://github.com/jburnhams/strata-react/issues/121) Timeline for editors | Drops from outside, lane height, kind colours, header width |
 | [#122](https://github.com/jburnhams/strata-react/issues/122) Media and files in narrow panes | MissingFile layout, LineChart x label, frame timecode |
 
 ## App bugs noted
@@ -73,7 +75,8 @@ as issues #141 to #145. All fixed on 2026-11-12 (branch `claude/project-thread-6
 - #145: the empty stage's "0.00s"; the waveform invisible in light.
 
 Left for strata-react: the profile still labels the route's end "now", which LineChart always does
-(passed on as a framework gap), and clip kind colours that swap between schemes (#121).
+(passed on as a framework gap; strata-react #138, closed). Clip kind colours that swapped between schemes
+were fixed with `kindColours` (#121).
 
 ## After the port
 

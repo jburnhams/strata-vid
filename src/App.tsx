@@ -198,7 +198,7 @@ function App() {
                   </div>
                 </Pane>
               </Split>
-              <Pane id="timeline" name="Timeline" size={240} min={160} collapsible>
+              <Pane id="timeline" name="Timeline" size={330} min={160} collapsible>
                 <div className="flex h-full flex-col" data-testid="timeline">
                   <TimelinePanel />
                 </div>

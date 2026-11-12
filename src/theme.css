@@ -1,0 +1,54 @@
+/* strata-vid's product layer: what strata-react names but does not choose.
+
+   Palette seed (theme.generated.css): #c2571a, the burnt orange of contour lines on an
+   Ordnance Survey map. Strata Vid is about runs: footage stitched to a GPX track and its
+   elevation, so the accent is the colour a runner already reads as "height and route" on paper.
+   The ground stays a quiet neutral so the footage, not the chrome, carries the colour.
+
+   Dark by default (ThemeProvider defaultPreference="dark" in main.tsx): an editor judges
+   footage against a dark surround, as grading suites do. Light still works; every role below
+   has both. */
+
+:root {
+  /* Status: pale tint + dark ink of one hue, ink >= 6:1 on its tint and on the ground. These are
+     the values strata-react's kiln-room fixture solved; the hues are generic status hues, so they
+     carry over until this theme solves its own. */
+  --success-subtle: oklch(95.4% 0.035 150.6);
+  --success: oklch(45.9% 0.109 150.1);
+  --warning-subtle: oklch(95.5% 0.025 52.2);
+  --warning: oklch(47.6% 0.11 50.6);
+  --danger-subtle: oklch(95.5% 0.022 27.8);
+  --danger: oklch(48% 0.111 27);
+  --info-subtle: oklch(95.5% 0.023 246);
+  --info: oklch(46.5% 0.11 244.6);
+}
+
+.dark {
+  --success-subtle: oklch(25.9% 0.045 150.3);
+  --success: oklch(70.5% 0.09 150.1);
+  --warning-subtle: oklch(25.9% 0.045 50.1);
+  --warning: oklch(71.3% 0.09 50.9);
+  --danger-subtle: oklch(26% 0.045 27);
+  --danger: oklch(71.7% 0.089 27.3);
+  --info-subtle: oklch(26% 0.045 244.4);
+  --info: oklch(70.8% 0.09 245.3);
+}
+
+/* Subject colours: facts of video, not of the theme.
+   - footage: the surround of the picture is black in both schemes. Footage is judged against
+     black (letterboxing, a monitor's off state); a tinted or light surround shifts how it reads.
+   - on-footage / scrim: guides and labels drawn over the picture sit on unknown pixels, so they
+     are white over a black scrim whatever the page's scheme.
+   - media-*: one colour per kind of media, the same in the library and on the timeline. They
+     are the generated categorical chart colours (solved for colour-blind separation and >= 3:1 on
+     the ground), so the four kinds stay apart for everyone. Clips draw them as a border over a
+     25% tint with the page's own ink, which reads in both schemes. */
+@theme inline {
+  --color-footage: oklch(0% 0 0);
+  --color-on-footage: oklch(100% 0 0);
+  --color-scrim: oklch(0% 0 0);
+  --color-media-video: var(--chart-2);
+  --color-media-audio: var(--chart-4);
+  --color-media-map: var(--chart-1);
+  --color-media-image: var(--chart-5);
+}

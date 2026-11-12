@@ -9,10 +9,10 @@ export const LoadingOverlay: React.FC = () => {
   if (!isLoading) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center backdrop-blur-sm">
-      <div className="bg-neutral-800 p-6 rounded-lg shadow-xl flex flex-col items-center gap-4 border border-neutral-700">
-        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-        <span className="text-neutral-200 font-medium">{loadingMessage || 'Loading...'}</span>
+    <div className="fixed inset-0 z-[60] bg-scrim/50 flex items-center justify-center backdrop-blur-sm">
+      <div className="bg-card p-6 rounded-surface shadow-overlay flex flex-col items-center gap-4 border border-border">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        <span className="text-foreground font-medium">{loadingMessage || 'Loading...'}</span>
       </div>
     </div>
   );

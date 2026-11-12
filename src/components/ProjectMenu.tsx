@@ -65,11 +65,11 @@ export const ProjectMenu: React.FC = () => {
 
   return (
     <div className="relative group z-50">
-      <button className="px-3 py-1 text-sm hover:bg-neutral-700 rounded">File</button>
-      <div className="absolute left-0 top-full mt-1 w-48 bg-neutral-800 border border-neutral-700 rounded shadow-lg hidden group-hover:block">
-        <button onClick={handleNewProject} className="w-full text-left px-4 py-2 text-sm hover:bg-neutral-700">New Project</button>
-        <button onClick={handleSaveProject} className="w-full text-left px-4 py-2 text-sm hover:bg-neutral-700">Save Project</button>
-        <button onClick={() => fileInputRef.current?.click()} className="w-full text-left px-4 py-2 text-sm hover:bg-neutral-700">Load Project</button>
+      <button className="px-3 py-1 type-body-sm hover:bg-muted rounded-control">File</button>
+      <div className="absolute left-0 top-full mt-1 w-48 bg-card border border-border rounded-control shadow-overlay hidden group-hover:block">
+        <button onClick={handleNewProject} className="w-full text-left px-4 py-2 type-body-sm hover:bg-muted">New Project</button>
+        <button onClick={handleSaveProject} className="w-full text-left px-4 py-2 type-body-sm hover:bg-muted">Save Project</button>
+        <button onClick={() => fileInputRef.current?.click()} className="w-full text-left px-4 py-2 type-body-sm hover:bg-muted">Load Project</button>
       </div>
       <input
         type="file"

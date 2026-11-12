@@ -429,7 +429,7 @@ function App() {
       onDragEnd={handleDragEnd}
       collisionDetection={pointerWithin}
     >
-        <div className="grid h-screen w-screen bg-neutral-900 text-neutral-200 font-sans overflow-hidden"
+        <div className="grid h-screen w-screen bg-background text-foreground font-sans overflow-hidden"
              style={{
                  gridTemplateAreas: '"header header header" "library preview metadata" "timeline timeline timeline"',
                  gridTemplateColumns: '300px 1fr 300px',
@@ -437,8 +437,8 @@ function App() {
              }}>
 
           {/* Header */}
-          <div className="[grid-area:header] border-b border-neutral-700 bg-neutral-800 flex items-center px-4 gap-4">
-            <span className="font-bold text-lg">Strata Vid</span>
+          <div className="[grid-area:header] border-b border-border bg-card flex items-center px-4 gap-4">
+            <span className="font-bold type-heading">Strata Vid</span>
             <ProjectMenu />
             <EditMenu />
 
@@ -446,7 +446,7 @@ function App() {
               <Tooltip content="Keyboard Shortcuts (?)">
                 <button
                   onClick={toggleHelp}
-                  className="text-neutral-400 hover:text-white p-1 rounded hover:bg-neutral-700"
+                  className="text-muted-foreground hover:text-foreground p-1 rounded-control hover:bg-muted"
                   aria-label="Help"
                 >
                   <HelpCircle size={20} />
@@ -455,7 +455,7 @@ function App() {
 
               <Tooltip content="View Settings">
                 <button
-                  className="px-3 py-1 text-sm hover:bg-neutral-700 rounded"
+                  className="px-3 py-1 type-body-sm hover:bg-muted rounded-control"
                   aria-label="View Settings"
                 >
                   View
@@ -464,7 +464,7 @@ function App() {
 
               <Tooltip content="Export Video">
                 <button
-                  className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-500 rounded font-medium"
+                  className="px-3 py-1 type-body-sm bg-primary hover:bg-primary-10 rounded-control font-medium"
                   onClick={() => setShowExport(true)}
                   aria-label="Export Project"
                 >
@@ -473,11 +473,11 @@ function App() {
               </Tooltip>
             </div>
 
-            <div className="text-xs text-neutral-500 border-l border-neutral-700 pl-4">v0.1.0</div>
+            <div className="type-caption text-muted-foreground border-l border-border pl-4">v0.1.0</div>
           </div>
 
           {/* Library */}
-          <div className="[grid-area:library] border-r border-neutral-700 bg-neutral-800 flex flex-col overflow-hidden" data-testid="library">
+          <div className="[grid-area:library] border-r border-border bg-card flex flex-col overflow-hidden" data-testid="library">
             <LibraryPanel
                 assets={assets}
                 selectedAssetId={selectedAssetId}
@@ -490,17 +490,17 @@ function App() {
           </div>
 
           {/* Preview */}
-          <div className="[grid-area:preview] bg-black flex items-center justify-center relative overflow-hidden" data-testid="preview">
+          <div className="[grid-area:preview] bg-footage flex items-center justify-center relative overflow-hidden" data-testid="preview">
             <PreviewPanel />
           </div>
 
           {/* Metadata */}
-          <div className="[grid-area:metadata] border-l border-neutral-700 bg-neutral-800 flex flex-col overflow-hidden" data-testid="metadata">
+          <div className="[grid-area:metadata] border-l border-border bg-card flex flex-col overflow-hidden" data-testid="metadata">
             <MetadataPanel assets={assets} selectedAssetId={selectedAssetId} settings={settings} setSettings={setSettings} />
           </div>
 
           {/* Timeline */}
-          <div className="[grid-area:timeline] border-t border-neutral-700 bg-neutral-800 flex flex-col overflow-hidden" data-testid="timeline">
+          <div className="[grid-area:timeline] border-t border-border bg-card flex flex-col overflow-hidden" data-testid="timeline">
             <TimelinePanel
                 ref={timelineScrollRef}
                 snapLine={snapLine}
@@ -533,7 +533,7 @@ function App() {
                 />
                </div>
             ) : activeDragType === 'Asset' && activeDragId ? (
-               <div className="bg-blue-600/50 border border-blue-400 rounded p-1 text-xs text-white whitespace-nowrap overflow-hidden"
+               <div className="bg-primary/50 border border-primary rounded-control p-1 type-caption text-foreground whitespace-nowrap overflow-hidden"
                     style={{ width: (assetsRecord[activeDragId]?.duration || 10) * zoomLevel }}>
                    {assetsRecord[activeDragId]?.name}
                </div>

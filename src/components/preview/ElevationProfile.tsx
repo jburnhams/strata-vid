@@ -91,14 +91,14 @@ const ElevationProfile: React.FC<ElevationProfileProps> = ({ gpxAssets, mainAsse
   }, [points]);
 
   return (
-    <div className="bg-gray-800 text-white p-2">
+    <div className="bg-card text-foreground p-2">
       <div className="flex justify-between items-center mb-2">
-        <h4 className="text-sm font-bold">Elevation Profile</h4>
+        <h4 className="type-body-sm font-bold">Elevation Profile</h4>
         {extraTracks.length > 0 && (
           <select
             value={selectedTrackId}
             onChange={e => setSelectedTrackId(e.target.value)}
-            className="bg-gray-700 text-white text-xs rounded p-1"
+            className="bg-muted text-foreground type-caption rounded-control p-1"
           >
             <option value={mainAssetId}>Main Track</option>
             {extraTracks.map(track => (
@@ -124,11 +124,11 @@ const ElevationProfile: React.FC<ElevationProfileProps> = ({ gpxAssets, mainAsse
         )}
       </svg>
       {tooltip && (
-        <div className="text-xs absolute" style={{ left: tooltip.x, top: tooltip.y - 30 }}>
+        <div className="type-caption absolute" style={{ left: tooltip.x, top: tooltip.y - 30 }}>
             Dist: {tooltip.dist.toFixed(0)}m, Ele: {tooltip.ele.toFixed(0)}m
         </div>
       )}
-      <div className="flex justify-between text-xs text-gray-400 mt-1">
+      <div className="flex justify-between type-caption text-muted-foreground mt-1">
         <span>{minEle.toFixed(0)}m</span>
         <span>{((points[points.length - 1]?.dist ?? 0) / 2).toFixed(0)}m</span>
         <span>{maxEle.toFixed(0)}m</span>

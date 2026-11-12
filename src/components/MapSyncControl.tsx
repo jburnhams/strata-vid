@@ -67,14 +67,14 @@ export const MapSyncControl: React.FC<MapSyncControlProps> = ({ clipId, classNam
   };
 
   return (
-    <div className={`flex flex-col gap-4 p-4 bg-neutral-800 rounded border border-neutral-700 text-sm ${className}`}>
-      <div className="flex flex-col gap-1 border-b border-neutral-700 pb-2">
-        <h3 className="font-bold text-gray-200">Synchronization</h3>
-        <div className="text-xs text-gray-400">
+    <div className={`flex flex-col gap-4 p-4 bg-card rounded-control border border-border type-body-sm ${className}`}>
+      <div className="flex flex-col gap-1 border-b border-border pb-2">
+        <h3 className="font-bold text-foreground">Synchronization</h3>
+        <div className="type-caption text-muted-foreground">
           GPX Start: {formatTime(asset.stats?.time?.start)}
         </div>
         {referenceAsset && (
-            <div className="text-xs text-gray-400 mt-1">
+            <div className="type-caption text-muted-foreground mt-1">
             Ref Video: {referenceAsset.name}<br/>
             Created: {formatTime(referenceAsset.creationTime)}
             </div>
@@ -86,10 +86,10 @@ export const MapSyncControl: React.FC<MapSyncControlProps> = ({ clipId, classNam
          <button
             onClick={handleAutoSync}
             disabled={!referenceAsset?.creationTime}
-            className={`px-3 py-2 rounded text-center transition-colors ${
+            className={`px-3 py-2 rounded-control text-center transition-state ${
                 referenceAsset?.creationTime
-                ? 'bg-blue-600 text-white hover:bg-blue-500'
-                : 'bg-neutral-700 text-gray-500 cursor-not-allowed'
+                ? 'bg-primary text-primary-foreground hover:bg-primary-10'
+                : 'bg-muted text-muted-foreground cursor-not-allowed'
             }`}
             title={referenceAsset ? "Syncs to " + referenceAsset.name + " creation time" : "No video found to sync with"}
          >
@@ -99,23 +99,23 @@ export const MapSyncControl: React.FC<MapSyncControlProps> = ({ clipId, classNam
 
       {/* Manual Sync - Offset */}
       <div className="flex flex-col gap-1">
-        <label className="text-xs text-gray-500 uppercase font-semibold">Sync Offset (ms)</label>
+        <label className="type-caption text-muted-foreground uppercase font-semibold">Sync Offset (ms)</label>
         <div className="flex gap-2">
           <input
             type="number"
             value={manualOffset}
             onChange={handleOffsetChange}
-            className="flex-1 px-2 py-1 bg-neutral-900 border border-neutral-700 rounded text-gray-200 focus:border-blue-500 outline-none"
+            className="flex-1 px-2 py-1 bg-background border border-border rounded-control text-foreground focus:border-primary outline-none"
             placeholder="Epoch ms at Video 0s"
           />
           <button
             onClick={applyOffset}
-            className="px-3 py-1 bg-neutral-700 text-white rounded hover:bg-neutral-600"
+            className="px-3 py-1 bg-muted text-foreground rounded-control hover:bg-neutral-5"
           >
             Set
           </button>
         </div>
-        <p className="text-[10px] text-gray-500">
+        <p className="type-caption text-muted-foreground">
            Value represents the absolute GPX timestamp (epoch ms) that corresponds to Video Time 00:00.
         </p>
       </div>

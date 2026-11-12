@@ -37,8 +37,8 @@ export const TrackLane: React.FC<TrackLaneProps> = ({
       ref={setNodeRef}
       data-testid="track-lane"
       className={`
-        relative h-16 border-b border-gray-700 transition-colors
-        ${isOver ? 'bg-gray-800/50' : 'bg-gray-900'}
+        relative h-16 border-b border-border transition-state
+        ${isOver ? 'bg-card/50' : 'bg-background'}
       `}
       style={{
         // Ensure container is wide enough for all clips

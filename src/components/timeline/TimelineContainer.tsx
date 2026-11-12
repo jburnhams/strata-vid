@@ -190,32 +190,32 @@ export const TimelineContainer = forwardRef<HTMLDivElement, TimelineContainerPro
   };
 
   return (
-      <div className="flex flex-col h-full bg-gray-950 text-gray-300 select-none">
+      <div className="flex flex-col h-full bg-background text-foreground select-none">
         {/* Top Bar / Toolbar */}
-        <div className="h-10 bg-gray-900 border-b border-gray-700 flex items-center px-4 justify-between sticky top-0 z-30">
+        <div className="h-10 bg-background border-b border-border flex items-center px-4 justify-between sticky top-0 z-30">
            <div className="flex items-center gap-4">
-               <div className="text-xs text-gray-500 font-medium uppercase tracking-wider">TIMELINE</div>
+               <div className="type-caption text-muted-foreground font-medium uppercase tracking-wider">TIMELINE</div>
                <button
-                   className="px-2 py-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-[10px] text-gray-300 transition-colors"
+                   className="px-2 py-1 bg-card hover:bg-muted border border-border rounded-control type-caption text-foreground transition-state"
                    onClick={onAddMarker}
                    title="Add Marker at Playhead"
                >
                    + Marker
                </button>
-               <div className="flex items-center gap-3 border-l border-gray-700 pl-4">
-                  <label className="flex items-center gap-1 text-xs text-gray-400 hover:text-white cursor-pointer select-none">
+               <div className="flex items-center gap-3 border-l border-border pl-4">
+                  <label className="flex items-center gap-1 type-caption text-muted-foreground hover:text-foreground cursor-pointer select-none">
                     <input
                         type="checkbox"
-                        className="rounded bg-gray-700 border-gray-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-gray-900"
+                        className="rounded-control bg-muted border-input text-primary focus:ring-ring focus:ring-offset-background"
                         checked={snapToGrid}
                         onChange={(e) => setSettings({ snapToGrid: e.target.checked })}
                     />
                     Snap
                   </label>
-                   <label className="flex items-center gap-1 text-xs text-gray-400 hover:text-white cursor-pointer select-none">
+                   <label className="flex items-center gap-1 type-caption text-muted-foreground hover:text-foreground cursor-pointer select-none">
                     <input
                         type="checkbox"
-                        className="rounded bg-gray-700 border-gray-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-gray-900"
+                        className="rounded-control bg-muted border-input text-primary focus:ring-ring focus:ring-offset-background"
                         checked={allowOverlaps}
                         onChange={(e) => setSettings({ allowOverlaps: e.target.checked })}
                     />
@@ -235,7 +235,7 @@ export const TimelineContainer = forwardRef<HTMLDivElement, TimelineContainerPro
 
         <div className="flex flex-1 overflow-hidden">
           {/* Track Headers (Fixed Left) */}
-          <div className="flex flex-col bg-gray-900 z-20 border-r border-gray-700 shadow-lg overflow-y-auto no-scrollbar pt-[30px]">
+          <div className="flex flex-col bg-background z-20 border-r border-border shadow-overlay overflow-y-auto no-scrollbar pt-[30px]">
             {trackOrder.map(trackId => {
                 const track = tracks[trackId];
                 if (!track) return null;
@@ -253,7 +253,7 @@ export const TimelineContainer = forwardRef<HTMLDivElement, TimelineContainerPro
             })}
             {/* Add Track Button */}
             <button
-              className="h-16 flex items-center justify-center border-b border-gray-800 text-xs text-gray-500 hover:text-white hover:bg-gray-800 w-full transition-colors"
+              className="h-16 flex items-center justify-center border-b border-border type-caption text-muted-foreground hover:text-foreground hover:bg-card w-full transition-state"
               onClick={onAddTrack}
             >
               + Add Track
@@ -291,7 +291,7 @@ export const TimelineContainer = forwardRef<HTMLDivElement, TimelineContainerPro
                 {/* External Snap Line (from props) */}
                 {externalSnapLine !== null && externalSnapLine !== undefined && (
                   <div
-                    className="absolute top-0 bottom-0 w-px bg-yellow-400 z-50 pointer-events-none shadow-[0_0_4px_rgba(250,204,21,0.8)]"
+                    className="absolute top-0 bottom-0 w-px bg-foreground z-50 pointer-events-none"
                     style={{ left: `${externalSnapLine * zoomLevel}px` }}
                     data-testid="snap-line"
                   />
@@ -328,7 +328,7 @@ export const TimelineContainer = forwardRef<HTMLDivElement, TimelineContainerPro
                     );
                 })}
                  {/* Add Track Lane Placeholder */}
-                <div className="h-16 border-b border-gray-800 bg-gray-900/20" />
+                <div className="h-16 border-b border-border bg-background/20" />
              </div>
           </div>
         </div>

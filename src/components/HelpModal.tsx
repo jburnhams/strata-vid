@@ -20,20 +20,20 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
   ];
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 bg-scrim/70 flex items-center justify-center z-50 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="bg-neutral-800 rounded-xl w-[500px] text-white shadow-2xl border border-neutral-700 flex flex-col overflow-hidden max-h-[80vh]"
+        className="bg-card rounded-overlay w-[500px] text-foreground shadow-overlay border border-border flex flex-col overflow-hidden max-h-[80vh]"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-neutral-700 flex justify-between items-center bg-neutral-800">
-          <h2 className="text-lg font-bold flex items-center gap-2">
-            <HelpCircle size={20} className="text-blue-500" />
+        <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-card">
+          <h2 className="type-heading font-bold flex items-center gap-2">
+            <HelpCircle size={20} className="text-primary" />
             Keyboard Shortcuts
           </h2>
           <button
             onClick={onClose}
-            className="text-neutral-400 hover:text-white"
+            className="text-muted-foreground hover:text-foreground"
             aria-label="Close Help"
           >
             <X size={20} />
@@ -44,13 +44,13 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
         <div className="p-6 overflow-y-auto">
           <div className="space-y-4">
             {shortcuts.map((shortcut, index) => (
-              <div key={index} className="flex items-center justify-between border-b border-neutral-700/50 pb-2 last:border-0 last:pb-0">
-                <span className="text-neutral-300 text-sm">{shortcut.description}</span>
+              <div key={index} className="flex items-center justify-between border-b border-border/50 pb-2 last:border-0 last:pb-0">
+                <span className="text-foreground type-body-sm">{shortcut.description}</span>
                 <div className="flex gap-1">
                   {shortcut.keys.map((key, i) => (
                     <kbd
                       key={i}
-                      className="px-2 py-1 bg-neutral-700 rounded text-xs font-mono text-neutral-200 border border-neutral-600 shadow-sm min-w-[24px] text-center"
+                      className="px-2 py-1 bg-muted rounded-control type-caption font-mono text-foreground border border-input shadow-overlay min-w-[24px] text-center"
                     >
                       {key}
                     </kbd>
@@ -60,16 +60,16 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
             ))}
           </div>
 
-          <div className="mt-8 p-4 bg-neutral-700/30 rounded border border-neutral-700 text-xs text-neutral-400 flex gap-3">
+          <div className="mt-8 p-4 bg-muted/30 rounded-control border border-border type-caption text-muted-foreground flex gap-3">
              <Keyboard size={16} />
              <p>Use these shortcuts to navigate the timeline and edit your project efficiently.</p>
           </div>
         </div>
 
-        <div className="p-4 border-t border-neutral-700 flex justify-end">
+        <div className="p-4 border-t border-border flex justify-end">
             <button
                 onClick={onClose}
-                className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 rounded text-white font-medium text-sm"
+                className="px-4 py-2 bg-muted hover:bg-neutral-5 rounded-control text-foreground font-medium type-body-sm"
             >
                 Close
             </button>

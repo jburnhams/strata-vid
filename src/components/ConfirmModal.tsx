@@ -19,21 +19,21 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   onCancel,
 }) => {
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm" onClick={onCancel} data-testid="confirm-modal-overlay">
+    <div className="fixed inset-0 bg-scrim/70 flex items-center justify-center z-50 backdrop-blur-sm" onClick={onCancel} data-testid="confirm-modal-overlay">
       <div
-        className="bg-neutral-800 rounded-xl w-[400px] text-white shadow-2xl border border-neutral-700 flex flex-col overflow-hidden"
+        className="bg-card rounded-overlay w-[400px] text-foreground shadow-overlay border border-border flex flex-col overflow-hidden"
         onClick={e => e.stopPropagation()}
         data-testid="confirm-modal"
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-neutral-700 flex justify-between items-center bg-neutral-800">
-          <h2 className="text-lg font-bold flex items-center gap-2 text-yellow-500">
+        <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-card">
+          <h2 className="type-heading font-bold flex items-center gap-2 text-warning">
             <AlertTriangle size={20} />
             {title}
           </h2>
           <button
             onClick={onCancel}
-            className="text-neutral-400 hover:text-white"
+            className="text-muted-foreground hover:text-foreground"
             aria-label="Close"
           >
             <X size={20} />
@@ -42,22 +42,22 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
         {/* Content */}
         <div className="p-6">
-          <p className="text-neutral-300 text-sm">
+          <p className="text-foreground type-body-sm">
             {message}
           </p>
         </div>
 
         {/* Actions */}
-        <div className="p-4 border-t border-neutral-700 flex justify-end gap-2">
+        <div className="p-4 border-t border-border flex justify-end gap-2">
             <button
                 onClick={onCancel}
-                className="px-4 py-2 hover:bg-neutral-700 rounded text-neutral-300 font-medium text-sm transition-colors"
+                className="px-4 py-2 hover:bg-muted rounded-control text-foreground font-medium type-body-sm transition-state"
             >
                 {cancelLabel}
             </button>
             <button
                 onClick={onConfirm}
-                className="px-4 py-2 bg-red-600 hover:bg-red-500 rounded text-white font-medium text-sm transition-colors"
+                className="px-4 py-2 bg-destructive hover:bg-destructive rounded-control text-foreground font-medium type-body-sm transition-state"
                 data-testid="confirm-modal-confirm-btn"
             >
                 {confirmLabel}

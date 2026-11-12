@@ -34,20 +34,20 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
   if (activeClip) {
       return (
           <div className="metadata h-full flex flex-col" data-testid="metadata-panel-clip">
-            <div className="p-2 bg-neutral-800 border-b border-neutral-700 font-bold text-sm">
+            <div className="p-2 bg-card border-b border-border font-bold type-body-sm">
                 Clip Properties
             </div>
             <div className="p-4 flex-1 overflow-y-auto">
                 <div className="mb-4">
-                    <div className="text-xs text-gray-500 mb-1">Type</div>
-                    <div className="text-sm capitalize">{activeClip.type}</div>
+                    <div className="type-caption text-muted-foreground mb-1">Type</div>
+                    <div className="type-body-sm capitalize">{activeClip.type}</div>
                 </div>
 
                 {(activeClip.type === 'video' || activeClip.type === 'audio') && (
-                     <div className="border-t border-neutral-700 pt-4 mb-4">
-                        <h4 className="text-sm font-bold mb-3">Audio</h4>
+                     <div className="border-t border-border pt-4 mb-4">
+                        <h4 className="type-body-sm font-bold mb-3">Audio</h4>
                         <div className="mb-3">
-                            <label htmlFor="clip-volume" className="text-xs text-gray-500 block mb-1">
+                            <label htmlFor="clip-volume" className="type-caption text-muted-foreground block mb-1">
                                 Volume (%)
                             </label>
                             <div className="flex items-center gap-2">
@@ -57,10 +57,10 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                                     min="0" max="500"
                                     value={Math.round((activeClip.volume ?? 1.0) * 100)}
                                     onChange={(e) => updateClip(activeClip.id, { volume: parseFloat(e.target.value) / 100 })}
-                                    className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
+                                    className="w-full bg-background border border-border rounded-control px-2 py-1 type-body-sm text-foreground"
                                 />
                             </div>
-                            <p className="text-[10px] text-gray-500 mt-1">
+                            <p className="type-caption text-muted-foreground mt-1">
                                 Values &gt; 100% will boost volume.
                             </p>
                         </div>
@@ -71,29 +71,29 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                     <>
                         <MapSyncControl clipId={activeClip.id} className="mb-6" />
 
-                        <div className="border-t border-neutral-700 pt-4">
-                             <h4 className="text-sm font-bold mb-3">Map Styling</h4>
+                        <div className="border-t border-border pt-4">
+                             <h4 className="type-body-sm font-bold mb-3">Map Styling</h4>
 
                              <div className="mb-3">
-                                 <label htmlFor="map-zoom" className="text-xs text-gray-500 block mb-1">Zoom Level ({activeClip.properties.mapZoom || 13})</label>
+                                 <label htmlFor="map-zoom" className="type-caption text-muted-foreground block mb-1">Zoom Level ({activeClip.properties.mapZoom || 13})</label>
                                  <input
                                     id="map-zoom"
                                     type="range"
                                     min="1" max="18"
                                     value={activeClip.properties.mapZoom || 13}
                                     onChange={(e) => updateClipProperties(activeClip.id, { mapZoom: parseInt(e.target.value) })}
-                                    className="w-full h-2 bg-neutral-900 rounded-lg appearance-none cursor-pointer mb-2"
+                                    className="w-full h-2 bg-background rounded-surface appearance-none cursor-pointer mb-2"
                                  />
                                  <KeyframeList clipId={activeClip.id} property="mapZoom" label="Zoom Animation" step={0.1} />
                              </div>
 
                              <div className="mb-3">
-                                 <label htmlFor="map-style" className="text-xs text-gray-500 block mb-1">Map Style</label>
+                                 <label htmlFor="map-style" className="type-caption text-muted-foreground block mb-1">Map Style</label>
                                  <select
                                     id="map-style"
                                     value={activeClip.properties.mapStyle || 'osm'}
                                     onChange={(e) => updateClipProperties(activeClip.id, { mapStyle: e.target.value })}
-                                    className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
+                                    className="w-full bg-background border border-border rounded-control px-2 py-1 type-body-sm text-foreground"
                                  >
                                      <option value="osm">OpenStreetMap</option>
                                      <option value="mapbox">Mapbox (Demo)</option>
@@ -105,14 +105,14 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
 
                              {activeClip.properties.mapStyle === 'custom' && (
                                 <div className="mb-3">
-                                    <label htmlFor="custom-map-style-url" className="text-xs text-gray-500 block mb-1">Custom Tile URL</label>
+                                    <label htmlFor="custom-map-style-url" className="type-caption text-muted-foreground block mb-1">Custom Tile URL</label>
                                     <input
                                         id="custom-map-style-url"
                                         type="text"
                                         placeholder="https://.../{z}/{x}/{y}.png"
                                         value={activeClip.properties.customMapStyleUrl || ''}
                                         onChange={(e) => updateClipProperties(activeClip.id, { customMapStyleUrl: e.target.value })}
-                                        className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
+                                        className="w-full bg-background border border-border rounded-control px-2 py-1 type-body-sm text-foreground"
                                     />
                                 </div>
                              )}
@@ -124,13 +124,13 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                                     data-testid="show-elevation-checkbox"
                                     checked={activeClip.properties.showElevationProfile || false}
                                     onChange={(e) => updateClipProperties(activeClip.id, { showElevationProfile: e.target.checked })}
-                                    className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 ring-offset-gray-800 focus:ring-2"
+                                    className="w-4 h-4 text-primary bg-muted border-input rounded-control focus:ring-ring ring-offset-card focus:ring-2"
                                 />
-                                <label htmlFor="elevation-profile-enabled" className="ml-2 text-sm text-gray-300">Show Elevation Profile</label>
+                                <label htmlFor="elevation-profile-enabled" className="ml-2 type-body-sm text-foreground">Show Elevation Profile</label>
                             </div>
 
-                             <div className="border-t border-neutral-700 pt-4 mt-4">
-                                <h4 className="text-sm font-bold mb-3">Heatmap</h4>
+                             <div className="border-t border-border pt-4 mt-4">
+                                <h4 className="type-body-sm font-bold mb-3">Heatmap</h4>
                                 <div className="flex items-center mb-3">
                                     <input
                                         id="heatmap-enabled"
@@ -139,20 +139,20 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                                         onChange={(e) => updateClipProperties(activeClip.id, {
                                             heatmap: { ...activeClip.properties.heatmap, enabled: e.target.checked }
                                         })}
-                                        className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 ring-offset-gray-800 focus:ring-2"
+                                        className="w-4 h-4 text-primary bg-muted border-input rounded-control focus:ring-ring ring-offset-card focus:ring-2"
                                     />
-                                    <label htmlFor="heatmap-enabled" className="ml-2 text-sm text-gray-300">Enable Heatmap</label>
+                                    <label htmlFor="heatmap-enabled" className="ml-2 type-body-sm text-foreground">Enable Heatmap</label>
                                 </div>
                                 {activeClip.properties.heatmap?.enabled && (
                                     <div className="mb-3">
-                                        <label htmlFor="heatmap-source" className="text-xs text-gray-500 block mb-1">Data Source</label>
+                                        <label htmlFor="heatmap-source" className="type-caption text-muted-foreground block mb-1">Data Source</label>
                                         <select
                                             id="heatmap-source"
                                             value={activeClip.properties.heatmap?.dataSource || 'speed'}
                                             onChange={(e) => updateClipProperties(activeClip.id, {
                                                 heatmap: { ...activeClip.properties.heatmap, dataSource: e.target.value }
                                             })}
-                                            className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
+                                            className="w-full bg-background border border-border rounded-control px-2 py-1 type-body-sm text-foreground"
                                         >
                                             <option value="speed">Speed</option>
                                             <option value="elevation">Elevation</option>
@@ -161,10 +161,10 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                                 )}
                              </div>
 
-                             <div className="border-t border-neutral-700 pt-4 mt-4">
-                                <h4 className="text-sm font-bold mb-3">Primary Track Styling</h4>
+                             <div className="border-t border-border pt-4 mt-4">
+                                <h4 className="type-body-sm font-bold mb-3">Primary Track Styling</h4>
                                 <div className="mb-3">
-                                 <label htmlFor="track-color" className="text-xs text-gray-500 block mb-1">Track Color</label>
+                                 <label htmlFor="track-color" className="type-caption text-muted-foreground block mb-1">Track Color</label>
                                  <input
                                     id="track-color"
                                     type="color"
@@ -172,11 +172,11 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                                     onChange={(e) => updateClipProperties(activeClip.id, {
                                         trackStyle: { ...activeClip.properties.trackStyle, color: e.target.value }
                                     })}
-                                    className="w-full h-8 bg-neutral-900 border border-neutral-700 rounded cursor-pointer"
+                                    className="w-full h-8 bg-background border border-border rounded-control cursor-pointer"
                                  />
                                 </div>
                                 <div className="mb-3">
-                                 <label htmlFor="track-width" className="text-xs text-gray-500 block mb-1">Track Width</label>
+                                 <label htmlFor="track-width" className="type-caption text-muted-foreground block mb-1">Track Width</label>
                                  <input
                                     id="track-width"
                                     type="range"
@@ -189,7 +189,7 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                                  />
                                 </div>
                                 <div className="mb-3">
-                                 <label htmlFor="marker-color" className="text-xs text-gray-500 block mb-1">Marker Color</label>
+                                 <label htmlFor="marker-color" className="type-caption text-muted-foreground block mb-1">Marker Color</label>
                                  <input
                                     id="marker-color"
                                     type="color"
@@ -197,29 +197,29 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                                     onChange={(e) => updateClipProperties(activeClip.id, {
                                         markerStyle: { ...activeClip.properties.markerStyle, color: e.target.value }
                                     })}
-                                    className="w-full h-8 bg-neutral-900 border border-neutral-700 rounded cursor-pointer"
+                                    className="w-full h-8 bg-background border border-border rounded-control cursor-pointer"
                                  />
                                 </div>
                             </div>
 
-                            <div className="border-t border-neutral-700 pt-4 mt-4">
-                                <h4 className="text-sm font-bold mb-3">Extra Tracks</h4>
+                            <div className="border-t border-border pt-4 mt-4">
+                                <h4 className="type-body-sm font-bold mb-3">Extra Tracks</h4>
                                 <div className="space-y-2 mb-4">
                                     {(activeClip.extraTrackAssets || []).map((extraTrack) => {
                                         const extraAsset = assets.find(a => a.id === extraTrack.assetId);
                                         return (
-                                            <div key={extraTrack.assetId} className="bg-neutral-900 p-2 rounded border border-neutral-700">
+                                            <div key={extraTrack.assetId} className="bg-background p-2 rounded-control border border-border">
                                                 <div className="flex justify-between items-center mb-2">
-                                                    <p className="text-xs truncate" title={extraAsset?.name}>{extraAsset?.name || 'Unknown Asset'}</p>
+                                                    <p className="type-caption truncate" title={extraAsset?.name}>{extraAsset?.name || 'Unknown Asset'}</p>
                                                     <button
                                                         onClick={() => removeExtraTrackFromClip(activeClip.id, extraTrack.assetId)}
-                                                        className="text-red-500 hover:text-red-400 text-xs font-bold"
+                                                        className="text-danger hover:text-danger type-caption font-bold"
                                                     >
                                                         Remove
                                                     </button>
                                                 </div>
                                                 <div className="flex items-center space-x-2">
-                                                    <label htmlFor={`extra-track-color-${extraTrack.assetId}`} className="text-xs text-gray-500">Color</label>
+                                                    <label htmlFor={`extra-track-color-${extraTrack.assetId}`} className="type-caption text-muted-foreground">Color</label>
                                                     <input
                                                         id={`extra-track-color-${extraTrack.assetId}`}
                                                         type="color"
@@ -231,7 +231,7 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                                                                 opacity: extraTrack.trackStyle?.opacity || 1,
                                                             }
                                                         })}
-                                                        className="w-6 h-6 bg-neutral-800 border-neutral-700 rounded cursor-pointer"
+                                                        className="w-6 h-6 bg-card border-border rounded-control cursor-pointer"
                                                     />
                                                 </div>
                                             </div>
@@ -243,7 +243,7 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                                         ref={addTrackSelectRef}
                                         id="add-extra-track-select"
                                         aria-label="Select a GPX asset to add"
-                                        className="flex-1 bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
+                                        className="flex-1 bg-background border border-border rounded-control px-2 py-1 type-body-sm text-foreground"
                                     >
                                         <option value="">Select a GPX asset...</option>
                                         {assets
@@ -258,7 +258,7 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                                                 addExtraTrackToClip(activeClip.id, addTrackSelectRef.current.value);
                                             }
                                         }}
-                                        className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-1 px-3 rounded text-sm"
+                                        className="bg-primary hover:bg-primary-10 text-primary-foreground font-bold py-1 px-3 rounded-control type-body-sm"
                                     >
                                         Add
                                     </button>
@@ -271,8 +271,8 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                 {activeClip.type === 'data' && (
                     <>
                         <MapSyncControl clipId={activeClip.id} className="mb-6" />
-                        <div className="border-t border-neutral-700 pt-4">
-                            <h4 className="text-sm font-bold mb-3">Display Fields</h4>
+                        <div className="border-t border-border pt-4">
+                            <h4 className="type-body-sm font-bold mb-3">Display Fields</h4>
                             <div className="space-y-2">
                                 {(['showSpeed', 'showDistance', 'showElevation'] as const).map((field: keyof Pick<DataOverlayOptions, 'showSpeed' | 'showDistance' | 'showElevation'>) => (
                                     <div key={field} className="flex items-center">
@@ -283,27 +283,27 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                                             onChange={(e) => updateClipProperties(activeClip.id, {
                                                 dataOverlay: { ...activeClip.properties.dataOverlay, [field]: e.target.checked }
                                             })}
-                                            className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 ring-offset-gray-800 focus:ring-2"
+                                            className="w-4 h-4 text-primary bg-muted border-input rounded-control focus:ring-ring ring-offset-card focus:ring-2"
                                         />
-                                        <label htmlFor={`data-${field}`} className="ml-2 text-sm text-gray-300">
+                                        <label htmlFor={`data-${field}`} className="ml-2 type-body-sm text-foreground">
                                             Show {field.replace('show', '')}
                                         </label>
                                     </div>
                                 ))}
                             </div>
                         </div>
-                        <div className="border-t border-neutral-700 pt-4 mt-4">
-                            <h4 className="text-sm font-bold mb-3">Units</h4>
+                        <div className="border-t border-border pt-4 mt-4">
+                            <h4 className="type-body-sm font-bold mb-3">Units</h4>
                             <div className="space-y-3">
                                 <div>
-                                    <label htmlFor="speed-unit" className="text-xs text-gray-500 block mb-1">Speed Unit</label>
+                                    <label htmlFor="speed-unit" className="type-caption text-muted-foreground block mb-1">Speed Unit</label>
                                     <select
                                         id="speed-unit"
                                         value={activeClip.properties.dataOverlay?.speedUnit || 'kmh'}
                                         onChange={(e) => updateClipProperties(activeClip.id, {
                                             dataOverlay: { ...activeClip.properties.dataOverlay, speedUnit: e.target.value }
                                         })}
-                                        className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
+                                        className="w-full bg-background border border-border rounded-control px-2 py-1 type-body-sm text-foreground"
                                     >
                                         <option value="kmh">km/h</option>
                                         <option value="mph">mph</option>
@@ -311,14 +311,14 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                                     </select>
                                 </div>
                                 <div>
-                                    <label htmlFor="distance-unit" className="text-xs text-gray-500 block mb-1">Distance Unit</label>
+                                    <label htmlFor="distance-unit" className="type-caption text-muted-foreground block mb-1">Distance Unit</label>
                                     <select
                                         id="distance-unit"
                                         value={activeClip.properties.dataOverlay?.distanceUnit || 'km'}
                                         onChange={(e) => updateClipProperties(activeClip.id, {
                                             dataOverlay: { ...activeClip.properties.dataOverlay, distanceUnit: e.target.value }
                                         })}
-                                        className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
+                                        className="w-full bg-background border border-border rounded-control px-2 py-1 type-body-sm text-foreground"
                                     >
                                         <option value="km">km</option>
                                         <option value="mi">miles</option>
@@ -326,14 +326,14 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                                     </select>
                                 </div>
                                 <div>
-                                    <label htmlFor="elevation-unit" className="text-xs text-gray-500 block mb-1">Elevation Unit</label>
+                                    <label htmlFor="elevation-unit" className="type-caption text-muted-foreground block mb-1">Elevation Unit</label>
                                     <select
                                         id="elevation-unit"
                                         value={activeClip.properties.dataOverlay?.elevationUnit || 'm'}
                                         onChange={(e) => updateClipProperties(activeClip.id, {
                                             dataOverlay: { ...activeClip.properties.dataOverlay, elevationUnit: e.target.value }
                                         })}
-                                        className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
+                                        className="w-full bg-background border border-border rounded-control px-2 py-1 type-body-sm text-foreground"
                                     >
                                         <option value="m">meters</option>
                                         <option value="ft">feet</option>
@@ -345,11 +345,11 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                 )}
 
                 {activeClip.type === 'data' && (
-                    <div className="border-t border-neutral-700 pt-4 mt-4">
-                        <h4 className="text-sm font-bold mb-3">Text Styling</h4>
+                    <div className="border-t border-border pt-4 mt-4">
+                        <h4 className="type-body-sm font-bold mb-3">Text Styling</h4>
                         <div className="space-y-3">
                             <div>
-                                <label htmlFor="font-size" className="text-xs text-gray-500 block mb-1">Font Size</label>
+                                <label htmlFor="font-size" className="type-caption text-muted-foreground block mb-1">Font Size</label>
                                 <input
                                     id="font-size"
                                     type="number"
@@ -357,11 +357,11 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                                     onChange={(e) => updateClipProperties(activeClip.id, {
                                         textStyle: { ...activeClip.textStyle, fontSize: parseInt(e.target.value) }
                                     })}
-                                    className="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-sm text-gray-200"
+                                    className="w-full bg-background border border-border rounded-control px-2 py-1 type-body-sm text-foreground"
                                 />
                             </div>
                             <div>
-                                <label htmlFor="text-color" className="text-xs text-gray-500 block mb-1">Text Color</label>
+                                <label htmlFor="text-color" className="type-caption text-muted-foreground block mb-1">Text Color</label>
                                 <input
                                     id="text-color"
                                     type="color"
@@ -369,11 +369,11 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                                     onChange={(e) => updateClipProperties(activeClip.id, {
                                         textStyle: { ...activeClip.textStyle, color: e.target.value }
                                     })}
-                                    className="w-full h-8 bg-neutral-900 border border-neutral-700 rounded cursor-pointer"
+                                    className="w-full h-8 bg-background border border-border rounded-control cursor-pointer"
                                 />
                             </div>
                             <div>
-                                <label htmlFor="background-color" className="text-xs text-gray-500 block mb-1">Background Color</label>
+                                <label htmlFor="background-color" className="type-caption text-muted-foreground block mb-1">Background Color</label>
                                 <input
                                     id="background-color"
                                     type="color"
@@ -381,7 +381,7 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                                     onChange={(e) => updateClipProperties(activeClip.id, {
                                         textStyle: { ...activeClip.textStyle, backgroundColor: e.target.value }
                                     })}
-                                    className="w-full h-8 bg-neutral-900 border border-neutral-700 rounded cursor-pointer"
+                                    className="w-full h-8 bg-background border border-border rounded-control cursor-pointer"
                                 />
                             </div>
                         </div>
@@ -392,8 +392,8 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                      <div className="space-y-6">
                          <div>
                             <div className="flex justify-between mb-1">
-                                <label htmlFor="opacity-slider" className="text-xs text-gray-500">Opacity</label>
-                                <span className="text-xs text-gray-400">{Math.round(activeClip.properties.opacity * 100)}%</span>
+                                <label htmlFor="opacity-slider" className="type-caption text-muted-foreground">Opacity</label>
+                                <span className="type-caption text-muted-foreground">{Math.round(activeClip.properties.opacity * 100)}%</span>
                             </div>
                             <input
                                 id="opacity-slider"
@@ -401,15 +401,15 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                                 min="0" max="1" step="0.01"
                                 value={activeClip.properties.opacity}
                                 onChange={(e) => updateClipProperties(activeClip.id, { opacity: parseFloat(e.target.value) })}
-                                className="w-full mb-2 bg-neutral-900 h-2 rounded-lg appearance-none cursor-pointer"
+                                className="w-full mb-2 bg-background h-2 rounded-surface appearance-none cursor-pointer"
                             />
                             <KeyframeList clipId={activeClip.id} property="opacity" label="Opacity Animation" step={0.01} />
                          </div>
 
                          <div>
                             <div className="flex justify-between mb-1">
-                                <label htmlFor="rotation-slider" className="text-xs text-gray-500">Rotation</label>
-                                <span className="text-xs text-gray-400">{Math.round(activeClip.properties.rotation)}°</span>
+                                <label htmlFor="rotation-slider" className="type-caption text-muted-foreground">Rotation</label>
+                                <span className="type-caption text-muted-foreground">{Math.round(activeClip.properties.rotation)}°</span>
                             </div>
                             <input
                                 id="rotation-slider"
@@ -417,15 +417,15 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                                 min="0" max="360" step="1"
                                 value={activeClip.properties.rotation}
                                 onChange={(e) => updateClipProperties(activeClip.id, { rotation: parseInt(e.target.value) })}
-                                className="w-full mb-2 bg-neutral-900 h-2 rounded-lg appearance-none cursor-pointer"
+                                className="w-full mb-2 bg-background h-2 rounded-surface appearance-none cursor-pointer"
                             />
                             <KeyframeList clipId={activeClip.id} property="rotation" label="Rotation Animation" step={1} />
                          </div>
 
                          <div>
                              <div className="flex justify-between mb-1">
-                                <label htmlFor="pos-x-slider" className="text-xs text-gray-500">Position X (%)</label>
-                                <span className="text-xs text-gray-400">{Math.round(activeClip.properties.x)}%</span>
+                                <label htmlFor="pos-x-slider" className="type-caption text-muted-foreground">Position X (%)</label>
+                                <span className="type-caption text-muted-foreground">{Math.round(activeClip.properties.x)}%</span>
                              </div>
                              <input
                                 id="pos-x-slider"
@@ -433,15 +433,15 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                                 min="0" max="100" step="1"
                                 value={activeClip.properties.x}
                                 onChange={(e) => updateClipProperties(activeClip.id, { x: parseFloat(e.target.value) })}
-                                className="w-full mb-2 bg-neutral-900 h-2 rounded-lg appearance-none cursor-pointer"
+                                className="w-full mb-2 bg-background h-2 rounded-surface appearance-none cursor-pointer"
                              />
                              <KeyframeList clipId={activeClip.id} property="x" label="X Animation" step={1} />
                          </div>
 
                          <div>
                              <div className="flex justify-between mb-1">
-                                <label htmlFor="pos-y-slider" className="text-xs text-gray-500">Position Y (%)</label>
-                                <span className="text-xs text-gray-400">{Math.round(activeClip.properties.y)}%</span>
+                                <label htmlFor="pos-y-slider" className="type-caption text-muted-foreground">Position Y (%)</label>
+                                <span className="type-caption text-muted-foreground">{Math.round(activeClip.properties.y)}%</span>
                              </div>
                              <input
                                 id="pos-y-slider"
@@ -449,7 +449,7 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                                 min="0" max="100" step="1"
                                 value={activeClip.properties.y}
                                 onChange={(e) => updateClipProperties(activeClip.id, { y: parseFloat(e.target.value) })}
-                                className="w-full mb-2 bg-neutral-900 h-2 rounded-lg appearance-none cursor-pointer"
+                                className="w-full mb-2 bg-background h-2 rounded-surface appearance-none cursor-pointer"
                              />
                              <KeyframeList clipId={activeClip.id} property="y" label="Y Animation" step={1} />
                          </div>
@@ -462,104 +462,104 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
 
   return (
     <div className="h-full flex flex-col">
-      <div className="bg-neutral-800 border-b border-neutral-700 px-4 py-2 font-bold text-sm">
+      <div className="bg-card border-b border-border px-4 py-2 font-bold type-body-sm">
         Metadata
       </div>
       <div className="p-4 overflow-y-auto flex-1">
         {activeAsset ? (
           <div className="space-y-4">
             {activeAsset.thumbnail && (
-              <div className="rounded overflow-hidden border border-neutral-700">
+              <div className="rounded-control overflow-hidden border border-border">
                 <img src={activeAsset.thumbnail} alt="Thumbnail" className="w-full h-auto" />
               </div>
             )}
 
             <div>
-              <div className="text-xs text-neutral-400 mb-1">Name</div>
-              <div className="text-sm break-all">{activeAsset.name}</div>
+              <div className="type-caption text-muted-foreground mb-1">Name</div>
+              <div className="type-body-sm break-all">{activeAsset.name}</div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <div className="text-xs text-neutral-400 mb-1">Type</div>
-                <div className="text-sm capitalize">{activeAsset.type}</div>
+                <div className="type-caption text-muted-foreground mb-1">Type</div>
+                <div className="type-body-sm capitalize">{activeAsset.type}</div>
               </div>
               {activeAsset.creationTime && (
                 <div className="mb-4">
-                  <div className="text-xs text-gray-500 mb-1">Created</div>
-                  <div className="text-sm">{activeAsset.creationTime.toLocaleString()}</div>
-                  <div className="text-[10px] text-gray-500">Source: {activeAsset.creationTimeSource}</div>
+                  <div className="type-caption text-muted-foreground mb-1">Created</div>
+                  <div className="type-body-sm">{activeAsset.creationTime.toLocaleString()}</div>
+                  <div className="type-caption text-muted-foreground">Source: {activeAsset.creationTimeSource}</div>
                 </div>
               )}
               {activeAsset.file && (
                 <div>
-                  <div className="text-xs text-neutral-400 mb-1">Size</div>
-                  <div className="text-sm">{(activeAsset.file.size / 1024 / 1024).toFixed(2)} MB</div>
+                  <div className="type-caption text-muted-foreground mb-1">Size</div>
+                  <div className="type-body-sm">{(activeAsset.file.size / 1024 / 1024).toFixed(2)} MB</div>
                 </div>
               )}
             </div>
 
             {activeAsset.type === 'video' && (
                <>
-                 <div className="grid grid-cols-2 gap-4 border-t border-neutral-700 pt-4">
+                 <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
                    <div>
-                     <div className="text-xs text-neutral-400 mb-1">Duration</div>
-                     <div className="text-sm">{activeAsset.duration ? `${Math.round(activeAsset.duration)}s` : 'Unknown'}</div>
+                     <div className="type-caption text-muted-foreground mb-1">Duration</div>
+                     <div className="type-body-sm">{activeAsset.duration ? `${Math.round(activeAsset.duration)}s` : 'Unknown'}</div>
                    </div>
                    <div>
-                     <div className="text-xs text-neutral-400 mb-1">Resolution</div>
-                     <div className="text-sm">
+                     <div className="type-caption text-muted-foreground mb-1">Resolution</div>
+                     <div className="type-body-sm">
                        {activeAsset.resolution ? `${activeAsset.resolution.width}x${activeAsset.resolution.height}` : 'Unknown'}
                      </div>
                    </div>
                  </div>
 
                  {activeAsset.videoMetadata && (
-                    <div className="space-y-4 border-t border-neutral-700 pt-4">
-                        <h5 className="font-bold text-sm text-gray-300">Video Details</h5>
-                        <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-sm">
+                    <div className="space-y-4 border-t border-border pt-4">
+                        <h5 className="font-bold type-body-sm text-foreground">Video Details</h5>
+                        <div className="grid grid-cols-2 gap-y-3 gap-x-2 type-body-sm">
                             {activeAsset.videoMetadata.format && (
                                 <>
-                                    <div className="text-neutral-400 text-xs">Container</div>
+                                    <div className="text-muted-foreground type-caption">Container</div>
                                     <div className="truncate" title={activeAsset.videoMetadata.format}>{activeAsset.videoMetadata.format}</div>
                                 </>
                             )}
                             {activeAsset.videoMetadata.videoCodec && (
                                 <>
-                                    <div className="text-neutral-400 text-xs">Video Codec</div>
+                                    <div className="text-muted-foreground type-caption">Video Codec</div>
                                     <div className="truncate" title={activeAsset.videoMetadata.videoCodec}>{activeAsset.videoMetadata.videoCodec}</div>
                                 </>
                             )}
                             {activeAsset.videoMetadata.frameRate && (
                                 <>
-                                    <div className="text-neutral-400 text-xs">Frame Rate</div>
+                                    <div className="text-muted-foreground type-caption">Frame Rate</div>
                                     <div>{activeAsset.videoMetadata.frameRate} fps</div>
                                 </>
                             )}
                             {activeAsset.videoMetadata.bitrate && (
                                 <>
-                                    <div className="text-neutral-400 text-xs">Bitrate</div>
+                                    <div className="text-muted-foreground type-caption">Bitrate</div>
                                     <div>{(activeAsset.videoMetadata.bitrate / 1000000).toFixed(2)} Mbps</div>
                                 </>
                             )}
                             {(activeAsset.videoMetadata.audioCodec || activeAsset.videoMetadata.sampleRate) && (
-                                <div className="col-span-2 text-xs font-semibold text-gray-500 mt-1">Audio Track</div>
+                                <div className="col-span-2 type-caption font-semibold text-muted-foreground mt-1">Audio Track</div>
                             )}
                             {activeAsset.videoMetadata.audioCodec && (
                                 <>
-                                    <div className="text-neutral-400 text-xs">Audio Codec</div>
+                                    <div className="text-muted-foreground type-caption">Audio Codec</div>
                                     <div className="truncate" title={activeAsset.videoMetadata.audioCodec}>{activeAsset.videoMetadata.audioCodec}</div>
                                 </>
                             )}
                             {activeAsset.videoMetadata.sampleRate && (
                                 <>
-                                    <div className="text-neutral-400 text-xs">Sample Rate</div>
+                                    <div className="text-muted-foreground type-caption">Sample Rate</div>
                                     <div>{activeAsset.videoMetadata.sampleRate / 1000} kHz</div>
                                 </>
                             )}
                             {activeAsset.videoMetadata.channels && (
                                 <>
-                                    <div className="text-neutral-400 text-xs">Channels</div>
+                                    <div className="text-muted-foreground type-caption">Channels</div>
                                     <div>{activeAsset.videoMetadata.channels}</div>
                                 </>
                             )}
@@ -570,26 +570,26 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
             )}
 
             {activeAsset.type === 'gpx' && activeAsset.stats && (
-                <div className="space-y-2 border-t border-neutral-700 pt-4">
-                  <h5 className="font-bold text-sm mb-2">GPX Statistics</h5>
-                  <div className="grid grid-cols-2 gap-y-2 text-sm">
-                      <div className="text-neutral-400">Distance</div>
+                <div className="space-y-2 border-t border-border pt-4">
+                  <h5 className="font-bold type-body-sm mb-2">GPX Statistics</h5>
+                  <div className="grid grid-cols-2 gap-y-2 type-body-sm">
+                      <div className="text-muted-foreground">Distance</div>
                       <div>{(activeAsset.stats.distance.total / 1000).toFixed(2)} km</div>
 
-                      <div className="text-neutral-400">Elev. Gain</div>
+                      <div className="text-muted-foreground">Elev. Gain</div>
                       <div>{activeAsset.stats.elevation.gain.toFixed(0)} m</div>
 
-                      <div className="text-neutral-400">Duration</div>
+                      <div className="text-muted-foreground">Duration</div>
                       <div>{new Date(activeAsset.stats.time.duration).toISOString().substr(11, 8)}</div>
                   </div>
                 </div>
             )}
 
             {activeAsset.type === 'gpx' && (
-              <div className="space-y-2 border-t border-neutral-700 pt-4">
-                <h5 className="font-bold text-sm mb-2">GPX Processing</h5>
+              <div className="space-y-2 border-t border-border pt-4">
+                <h5 className="font-bold type-body-sm mb-2">GPX Processing</h5>
                 <div className="mb-3">
-                  <label htmlFor="gpx-simplification" className="text-xs text-gray-500 block mb-1">
+                  <label htmlFor="gpx-simplification" className="type-caption text-muted-foreground block mb-1">
                     Simplification Tolerance ({settings.simplificationTolerance})
                   </label>
                   <input
@@ -600,9 +600,9 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                     step="0.00001"
                     value={settings.simplificationTolerance}
                     onChange={(e) => setSettings({ simplificationTolerance: parseFloat(e.target.value) })}
-                    className="w-full h-2 bg-neutral-900 rounded-lg appearance-none cursor-pointer"
+                    className="w-full h-2 bg-background rounded-surface appearance-none cursor-pointer"
                   />
-                  <p className="text-xs text-neutral-500 mt-1">
+                  <p className="type-caption text-muted-foreground mt-1">
                     Higher values reduce detail.
                   </p>
                 </div>
@@ -612,7 +612,7 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                       reprocessGpxAsset(activeAsset.id, settings.simplificationTolerance);
                     }
                   }}
-                  className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded text-sm transition-colors"
+                  className="w-full bg-primary hover:bg-primary-10 text-primary-foreground font-bold py-2 px-4 rounded-control type-body-sm transition-state"
                 >
                   Re-process GPX
                 </button>
@@ -620,7 +620,7 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
             )}
           </div>
         ) : (
-          <div className="text-neutral-500 italic text-center mt-10">Select an asset to view details</div>
+          <div className="text-muted-foreground italic text-center mt-10">Select an asset to view details</div>
         )}
       </div>
     </div>

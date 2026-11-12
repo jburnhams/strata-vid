@@ -60,15 +60,15 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose, options
   return (
     <div
       ref={menuRef}
-      className="fixed z-50 bg-gray-800 border border-gray-700 rounded shadow-xl py-1 min-w-[150px]"
+      className="fixed z-50 bg-card border border-border rounded-control shadow-overlay py-1 min-w-[150px]"
       style={{ top: position.top, left: position.left }}
       role="menu"
     >
       {options.map((option, index) => (
         <button
           key={index}
-          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-700 flex items-center gap-2 transition-colors ${
-            option.danger ? 'text-red-400' : 'text-gray-200'
+          className={`w-full text-left px-4 py-2 type-body-sm hover:bg-muted flex items-center gap-2 transition-state ${
+            option.danger ? 'text-danger' : 'text-foreground'
           } ${option.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
           onClick={(e) => {
              if (option.disabled) return;

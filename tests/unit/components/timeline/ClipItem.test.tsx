@@ -125,19 +125,19 @@ describe('ClipItem', () => {
   it('applies correct color class for video', () => {
     render(<ClipItem {...defaultProps} clip={{ ...mockClip, type: 'video' }} />);
     const clipElement = screen.getByTestId('clip-item-clip-1');
-    expect(clipElement.className).toContain('bg-blue-600/80');
+    expect(clipElement.className).toContain('bg-media-video/25');
   });
 
   it('applies correct color class for audio', () => {
     render(<ClipItem {...defaultProps} clip={{ ...mockClip, type: 'audio' }} />);
     const clipElement = screen.getByTestId('clip-item-clip-1');
-    expect(clipElement.className).toContain('bg-emerald-600/80');
+    expect(clipElement.className).toContain('bg-media-audio/25');
   });
 
   it('applies correct color class for map', () => {
     render(<ClipItem {...defaultProps} clip={{ ...mockClip, type: 'map' }} />);
     const clipElement = screen.getByTestId('clip-item-clip-1');
-    expect(clipElement.className).toContain('bg-orange-600/80');
+    expect(clipElement.className).toContain('bg-media-map/25');
   });
 
   it('calls onResize when dragging right handle', () => {

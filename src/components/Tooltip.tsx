@@ -27,7 +27,7 @@ export const Tooltip: React.FC<TooltipProps> = ({ children, content, position = 
     <div className="relative flex items-center" onMouseEnter={() => setIsVisible(true)} onMouseLeave={() => setIsVisible(false)}>
       {children}
       {isVisible && (
-        <div className={`absolute z-50 px-2 py-1 text-xs text-white bg-neutral-800 rounded shadow-lg whitespace-nowrap pointer-events-none ${positionClasses[position]}`}>
+        <div className={`absolute z-50 px-2 py-1 type-caption text-foreground bg-card rounded-control shadow-overlay whitespace-nowrap pointer-events-none ${positionClasses[position]}`}>
           {content}
           <div className={`absolute border-4 ${arrowClasses[position]}`} />
         </div>

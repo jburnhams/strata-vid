@@ -58,30 +58,30 @@ export const PreviewPanel: React.FC = () => {
   const displayScale = 1 / renderScale;
 
   return (
-    <div className="flex flex-col w-full h-full bg-neutral-900">
-      <div className="relative flex-1 bg-black flex items-center justify-center overflow-hidden">
+    <div className="flex flex-col w-full h-full bg-background">
+      <div className="relative flex-1 bg-footage flex items-center justify-center overflow-hidden">
 
         {/* Preview Toolbar */}
-        <div className="absolute top-4 right-4 z-50 flex gap-2 bg-neutral-800/80 p-2 rounded backdrop-blur-sm">
+        <div className="absolute top-4 right-4 z-50 flex gap-2 bg-card/80 p-2 rounded-control backdrop-blur-sm">
            <button
              onClick={() => setShowSafeAreas(!showSafeAreas)}
-             className={`px-2 py-1 text-xs rounded transition-colors ${showSafeAreas ? 'bg-blue-600 text-white' : 'bg-neutral-700 text-gray-300 hover:bg-neutral-600'}`}
+             className={`px-2 py-1 type-caption rounded-control transition-state ${showSafeAreas ? 'bg-primary text-primary-foreground' : 'bg-muted text-primary-foreground hover:bg-neutral-5'}`}
              title="Toggle Safe Areas"
            >
              Safe Areas
            </button>
            <button
              onClick={() => setShowGrid(!showGrid)}
-             className={`px-2 py-1 text-xs rounded transition-colors ${showGrid ? 'bg-blue-600 text-white' : 'bg-neutral-700 text-gray-300 hover:bg-neutral-600'}`}
+             className={`px-2 py-1 type-caption rounded-control transition-state ${showGrid ? 'bg-primary text-primary-foreground' : 'bg-muted text-primary-foreground hover:bg-neutral-5'}`}
              title="Toggle Grid"
            >
              Grid
            </button>
-           <div className="w-px bg-neutral-600 mx-1"></div>
+           <div className="w-px bg-neutral-5 mx-1"></div>
            <select
              value={settings.previewQuality}
              onChange={(e) => setSettings({ previewQuality: e.target.value as ProjectSettings['previewQuality'] })}
-             className="bg-neutral-700 text-gray-300 text-xs rounded px-2 py-1 border-none outline-none cursor-pointer hover:bg-neutral-600"
+             className="bg-muted text-foreground type-caption rounded-control px-2 py-1 border-none outline-none cursor-pointer hover:bg-neutral-5"
              title="Preview Quality"
            >
              <option value="low">Low (50%)</option>
@@ -102,7 +102,7 @@ export const PreviewPanel: React.FC = () => {
              backgroundColor: '#000',
              overflow: 'hidden'
            }}
-           className="shadow-lg ring-1 ring-neutral-800"
+           className="shadow-overlay ring-1 ring-card"
            data-testid="preview-container"
         >
              {/* Scaled Content Layer */}
@@ -170,7 +170,7 @@ export const PreviewPanel: React.FC = () => {
 
              {activeClips.length === 0 && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                    <div className="text-gray-600 text-sm font-mono">
+                    <div className="text-muted-foreground type-body-sm font-mono">
                        {currentTime.toFixed(2)}s
                     </div>
                 </div>

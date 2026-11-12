@@ -1,77 +1,11 @@
 @import "tailwindcss";
+@import "strata-react/strata.css";
+@import "./theme.generated.css";
+@import "./theme.css";
 
-:root {
-  --header-height: 50px;
-  --sidebar-width: 300px;
-  --timeline-height: 200px;
-  --bg-dark: #1e1e1e;
-  --bg-panel: #252526;
-  --border-color: #3e3e42;
-  --text-color: #cccccc;
-  --accent-color: #007acc;
-}
-
-body, html, #root {
+/* The editor fills the window; panels scroll inside themselves, never the page. */
+html, body, #root {
   height: 100%;
   margin: 0;
-  background-color: var(--bg-dark);
-  color: var(--text-color);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   overflow: hidden;
-}
-
-/* Legacy Layout - To be replaced by Tailwind classes */
-.app-container {
-  display: grid;
-  grid-template-areas:
-    "header header header"
-    "library preview metadata"
-    "timeline timeline timeline";
-  grid-template-columns: var(--sidebar-width) 1fr var(--sidebar-width);
-  grid-template-rows: var(--header-height) 1fr var(--timeline-height);
-  height: 100vh;
-  width: 100vw;
-}
-
-.toolbar { grid-area: header; }
-.library { grid-area: library; }
-.preview { grid-area: preview; }
-.metadata { grid-area: metadata; }
-.timeline { grid-area: timeline; }
-
-/* Keep basic panel styles for now */
-.toolbar, .library, .metadata, .timeline {
-  border-color: var(--border-color);
-  background: var(--bg-panel);
-}
-
-.toolbar { border-bottom-width: 1px; display: flex; align-items: center; padding: 0 1rem; gap: 1rem; }
-.library { border-right-width: 1px; display: flex; flex-direction: column; }
-.metadata { border-left-width: 1px; display: flex; flex-direction: column; }
-.timeline { border-top-width: 1px; display: flex; flex-direction: column; }
-
-.preview {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  background: #000;
-  overflow: hidden;
-}
-
-.panel-header {
-  padding: 0.5rem 1rem;
-  font-weight: bold;
-  font-size: 0.9rem;
-  background: #333;
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.panel-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1rem;
 }

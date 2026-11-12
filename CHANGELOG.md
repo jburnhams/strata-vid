@@ -54,8 +54,9 @@ two framework gaps found on the way are left to strata-react.
   and the new behaviour.
 - `strata-visual.config.ts`, `tests/visual/README.md`, `tests/visual/baselines/`: new `exported` state (an 8 s
   clip exported to the end; the download is checked); the map states match the route to the footage first;
-  `clip-moved` expects the music on its own track. All 32 baselines rewritten and looked at; a rerun matched
-  all 32.
+  `clip-moved` expects the music on its own track. The route's map is now an inset on the stage in most
+  states, so `tests/visual/flows.ts` waits for its tiles to load and finish Leaflet's fade before a shot (CI
+  caught `clip-selected` mid-fade). All 32 baselines rewritten and looked at; two reruns matched all 32.
 - `docs/PORT.md`, `docs/FEATURES.md`: the bug list is marked fixed; E1–E3 and M8 are Done again.
 - Not fixed here, framework gaps: strata-react's LineChart labels its last point "now" (wrong for a
   profile), and Leaflet's attribution covers much of the small route inset (the map moves to strata-react #80).

@@ -50,9 +50,24 @@ export async function useScheme(page: Page, shot: Shot) {
   await restPointer(page);
 }
 
-/** Puts the pointer somewhere neutral, so no row is left in its hover state for the shot. */
+/** Puts the pointer somewhere neutral, so no row is left in its hover state for the shot, and lets the route's map settle. */
 export async function restPointer(page: Page) {
   await page.mouse.move(2, 898);
+  await waitForMapTiles(page);
+}
+
+/**
+ * The route's map is an inset on the stage over the footage whenever the playhead is on it. Waits
+ * until it has tiles, each loaded and done with Leaflet's fade-in, which runs on real time and would
+ * otherwise land mid-fade in a shot.
+ */
+export async function waitForMapTiles(page: Page) {
+  await page.waitForFunction(() =>
+    [...document.querySelectorAll('[data-testid="preview"] .leaflet-container')].every((map) => {
+      const tiles = [...map.querySelectorAll<HTMLImageElement>('img.leaflet-tile')];
+      return tiles.length > 0 && tiles.every((tile) => tile.complete && tile.classList.contains('leaflet-tile-loaded') && getComputedStyle(tile).opacity === '1');
+    }),
+  );
 }
 
 /** A library row by file name. */
@@ -157,11 +172,12 @@ export async function closeToasts(page: Page) {
   }
 }
 
-/** Waits until every video in the preview has the frame for its current time decoded. */
+/** Waits until every video in the preview has the frame for its current time decoded, and the route's map tiles have faded in. */
 export async function waitForFrames(page: Page) {
   await page.waitForFunction(() =>
     [...document.querySelectorAll<HTMLVideoElement>('[data-testid="preview"] video')].every((v) => !v.seeking && v.readyState >= 2),
   );
+  await waitForMapTiles(page);
   // One more frame for the compositor to paint what was decoded.
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
 }

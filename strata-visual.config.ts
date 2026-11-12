@@ -10,7 +10,7 @@
 import { readFile } from 'node:fs/promises';
 import { defineVisualConfig, type RouteState } from 'strata-react/visual';
 import {
-  FILES, addFiles, addToTimeline, buildEdit, closeToasts, serveTiles, chooseFile, clip, drag, expect, libraryItem, playhead, restPointer, seekTo, useScheme, waitForFrames,
+  FILES, addFiles, addToTimeline, buildEdit, closeToasts, serveTiles, chooseFile, clip, drag, expect, libraryItem, playhead, restPointer, seekTo, useScheme, waitForFrames, waitForMapTiles,
 } from './tests/visual/flows';
 
 /** Matches the route to the first clip's recorded time from the sync panel, and checks where that puts the clip's start. */
@@ -78,6 +78,7 @@ const states: Record<string, RouteState> = {
       const lane = await clip(page, FILES.lane).boundingBox();
       const box = await target.boundingBox();
       await drag(page, target, (lane!.x + 20) - (box!.x + 4), 0, { release: false });
+      await waitForMapTiles(page);
     },
   },
 

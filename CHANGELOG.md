@@ -10,7 +10,7 @@ a factual error. Work before 2026-11-12 is in the git history only.
 
 ## 2026-11-12
 
-**Fix the app bugs the visual tests found** (branch `claude/project-thread-6a5jli`, issues #141 to #145).
+**Fix the app bugs the visual tests found** (branch `claude/project-thread-6a5jli`, PR #146, issues #141 to #145).
 Jonathan asked for the app bugs listed in `docs/PORT.md` to be looked into, now that the strata-react
 ones are handled elsewhere. Each was traced to its cause and fixed, with a test that would have caught it;
 two framework gaps found on the way are left to strata-react.

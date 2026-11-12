@@ -4,31 +4,34 @@ import { WorkerCompositor } from '../../../src/services/WorkerCompositor';
 // Mock WorkerCompositor
 jest.mock('../../../src/services/WorkerCompositor');
 // Mock mediabunny
+const mockAudioSource = { add: jest.fn().mockResolvedValue(undefined) };
+const mockOutput = {
+    addVideoTrack: jest.fn(),
+    addAudioTrack: jest.fn(),
+    start: jest.fn(),
+    finalize: jest.fn(),
+    target: { buffer: new ArrayBuffer(8) }
+};
+const mockCanEncodeAudio = jest.fn();
+const mockCanEncodeVideo = jest.fn();
 jest.mock('mediabunny', () => ({
-    Output: jest.fn().mockImplementation(() => ({
-        addVideoTrack: jest.fn(),
-        addAudioTrack: jest.fn(),
-        start: jest.fn(),
-        finalize: jest.fn(),
-        target: { buffer: new ArrayBuffer(8) }
+    Output: jest.fn().mockImplementation(() => mockOutput),
+    Mp4OutputFormat: jest.fn().mockImplementation(() => ({
+        getSupportedVideoCodecs: () => ['avc', 'hevc', 'vp9', 'av1'],
+        getSupportedAudioCodecs: () => ['aac', 'opus', 'mp3'],
     })),
-    Mp4OutputFormat: jest.fn(),
-    WebMOutputFormat: jest.fn(),
+    WebMOutputFormat: jest.fn().mockImplementation(() => ({
+        getSupportedVideoCodecs: () => ['vp9', 'vp8', 'av1'],
+        getSupportedAudioCodecs: () => ['opus', 'vorbis'],
+    })),
     BufferTarget: jest.fn(),
-    CanvasSource: jest.fn().mockImplementation(() => ({
-        addFrame: jest.fn(),
-        add: jest.fn()
-    })),
-    Input: jest.fn().mockImplementation(() => ({
-        getAudioTracks: jest.fn().mockResolvedValue([{ id: 'track1' }])
-    })),
-    BlobSource: jest.fn()
+    CanvasSource: jest.fn().mockImplementation(() => ({ add: jest.fn() })),
+    AudioSampleSource: jest.fn().mockImplementation(() => mockAudioSource),
+    AudioSample: jest.fn().mockImplementation((init: any) => ({ init, close: jest.fn() })),
+    canEncodeAudio: (...args: any[]) => mockCanEncodeAudio(...args),
+    canEncodeVideo: (...args: any[]) => mockCanEncodeVideo(...args),
 }));
-// Mock utils
-jest.mock('../../../src/utils/audioUtils', () => ({
-    createWavBlob: jest.fn(() => new Blob([])),
-    readFileToArrayBuffer: jest.fn().mockResolvedValue(new ArrayBuffer(100))
-}));
+import { AudioSampleSource, AudioSample } from 'mediabunny';
 
 describe('exportWorker', () => {
     const mockPostMessage = jest.fn();
@@ -46,31 +49,17 @@ describe('exportWorker', () => {
             getContext() { return { filter: '' }; }
         } as any;
 
-        // Mock OfflineAudioContext for worker environment
-        global.OfflineAudioContext = class {
-            constructor(channels: number, length: number, sampleRate: number) {
-                this.sampleRate = sampleRate;
-                this.destination = {};
-            }
-            sampleRate: number;
-            destination: any;
-            createGain() { return { gain: { value: 1 }, connect: jest.fn() }; }
-            createBufferSource() { return { buffer: null, connect: jest.fn(), start: jest.fn(), playbackRate: { value: 1 } }; }
-            decodeAudioData(buffer: any) { return Promise.resolve({ duration: 1, getChannelData: () => new Float32Array(100) }); }
-            startRendering() { return Promise.resolve({ numberOfChannels: 2, getChannelData: () => new Float32Array(100), sampleRate: 44100 }); }
-        } as any;
-
-        // Ensure self has OfflineAudioContext too since AudioCompositor checks scope
-        // @ts-ignore
-        global.self.OfflineAudioContext = global.OfflineAudioContext;
     });
 
     beforeEach(() => {
         jest.clearAllMocks();
         setIsCancelled(false);
+        mockCanEncodeAudio.mockResolvedValue(true);
+        mockCanEncodeVideo.mockResolvedValue(true);
         (WorkerCompositor as jest.Mock).mockClear();
         (WorkerCompositor as jest.Mock).mockImplementation(() => ({
             initialize: jest.fn(),
+            planFrames: jest.fn(),
             renderFrame: jest.fn(),
             cleanup: jest.fn()
         }));
@@ -137,5 +126,66 @@ describe('exportWorker', () => {
             type: 'progress',
             progress: expect.objectContaining({ status: 'cancelled' })
         }));
+    });
+
+    const project = { settings: { duration: 2.5 }, assets: {}, tracks: {}, clips: {}, trackOrder: [] };
+    const sound = (seconds: number, sampleRate = 48000) => ({
+        channels: [new Float32Array(seconds * sampleRate).fill(0.25), new Float32Array(seconds * sampleRate).fill(-0.25)],
+        sampleRate,
+    });
+    const completed = () => mockPostMessage.mock.calls.find((c) => c[0].type === 'complete')?.[0];
+
+    it('plans the video frames before the first frame is drawn', async () => {
+        await runExport({ project, exportSettings: { width: 100, height: 100, fps: 10 } });
+        // The worker made its compositor when it loaded; its methods are the automock's, on the prototype.
+        const compositor = WorkerCompositor.prototype as unknown as Record<string, jest.Mock>;
+        expect(compositor.planFrames).toHaveBeenCalledWith(expect.anything(), 10, 25);
+        expect(compositor.planFrames.mock.invocationCallOrder[0]).toBeLessThan(compositor.renderFrame.mock.invocationCallOrder[0]);
+        expect(compositor.renderFrame).toHaveBeenCalledTimes(25);
+        expect(completed()).toEqual(expect.objectContaining({ totalFrames: 25, notes: [] }));
+    });
+
+    it('encodes the sound it is given, in one-second planar samples, in the chosen codec', async () => {
+        await runExport({ project, exportSettings: { width: 100, height: 100, fps: 10, format: 'webm', audioCodec: 'opus' }, audioData: sound(2.5) });
+        expect(AudioSampleSource).toHaveBeenCalledWith(expect.objectContaining({ codec: 'opus' }));
+        expect(mockOutput.addAudioTrack).toHaveBeenCalledWith(mockAudioSource);
+        const samples = (AudioSample as unknown as jest.Mock).mock.calls.map((c) => c[0]);
+        expect(samples.map((s) => s.timestamp)).toEqual([0, 1, 2]);
+        expect(samples.map((s) => s.data.length)).toEqual([96000, 96000, 48000]);
+        expect(samples[0]).toEqual(expect.objectContaining({ format: 'f32-planar', numberOfChannels: 2, sampleRate: 48000 }));
+        // Planar: the first channel's samples, then the second's.
+        expect(samples[2].data[0]).toBe(0.25);
+        expect(samples[2].data[24000]).toBe(-0.25);
+        expect(completed().notes).toEqual([]);
+    });
+
+    it('swaps to a codec the browser can encode, and says so', async () => {
+        mockCanEncodeAudio.mockImplementation(async (codec: string) => codec === 'opus');
+        await runExport({ project, exportSettings: { width: 100, height: 100, fps: 10, format: 'mp4', audioCodec: 'aac' }, audioData: sound(1) });
+        expect(AudioSampleSource).toHaveBeenCalledWith(expect.objectContaining({ codec: 'opus' }));
+        expect(completed().notes).toEqual(['The sound is Opus: this browser cannot encode AAC.']);
+    });
+
+    it('says the export has no sound when no codec can be encoded', async () => {
+        mockCanEncodeAudio.mockResolvedValue(false);
+        await runExport({ project, exportSettings: { width: 100, height: 100, fps: 10, format: 'mp4', audioCodec: 'aac' }, audioData: sound(1) });
+        expect(mockOutput.addAudioTrack).not.toHaveBeenCalled();
+        expect(completed().notes).toEqual(['Saved without sound: this browser cannot encode AAC audio.']);
+    });
+
+    it('passes on the note from the main thread when the sound could not be mixed', async () => {
+        await runExport({ project, exportSettings: { width: 100, height: 100, fps: 10 }, audioNote: 'Saved without sound: the sound could not be mixed (decode failed).' });
+        expect(completed().notes).toEqual(['Saved without sound: the sound could not be mixed (decode failed).']);
+    });
+
+    it('stops with a reason when the browser cannot encode the chosen video codec', async () => {
+        mockCanEncodeVideo.mockResolvedValue(false);
+        await expect(runExport({ project, exportSettings: { width: 1920, height: 1080, fps: 30, videoCodec: 'hevc' } }))
+            .rejects.toThrow('This browser cannot encode H.265 video at 1920×1080. Choose another video codec or a smaller size.');
+    });
+
+    it('stops with a reason when the container cannot hold the chosen video codec', async () => {
+        await expect(runExport({ project, exportSettings: { width: 100, height: 100, fps: 30, format: 'webm', videoCodec: 'avc' } }))
+            .rejects.toThrow('WebM cannot hold H.264 video. Choose another video codec.');
     });
 });

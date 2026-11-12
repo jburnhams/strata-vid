@@ -45,15 +45,10 @@ no longer imported; removing it from `package.json` is Jonathan's call.
 
 ## App bugs noted
 
-Found while writing the visual tests (2026-11-12), with the media in `tests/fixtures/media`. Noted, not
-fixed, per the order above.
+Found while writing the visual tests (2026-11-12), with the media in `tests/fixtures/media`, and filed
+as issues #141 to #145. Each is struck from this list in the PR that fixes it. Fixed so far: export
+never rendering a frame and always dropping the sound (#141).
 
-- **Export never starts rendering.** With one 8 s clip on the timeline, MP4 or WebM, the dialog stays at
-  "Starting the export engine." for minutes and reports no failure; the worker sends no progress after
-  its first message. Seen in Playwright's Chromium, which encodes H.264 and VP9 (checked with
-  `VideoEncoder.isConfigSupported`).
-- **Export drops the sound every time.** The worker renders audio with `OfflineAudioContext`, which
-  workers do not have ("OfflineAudioContext not supported", then "proceeding with video only").
 - **MP4 metadata is mostly not read.** For a GoPro-style H.264/AAC MP4 that ffprobe reads in full, the
   inspector shows Container, Frame rate and Bitrate as "–" and takes the date from the file's modified
   time ("Date from: file") although the file has `creation_time`, so map sync starts from the wrong time.

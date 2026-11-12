@@ -9,8 +9,8 @@ import { AudioCompositor } from '../../src/services/AudioCompositor';
 // Mock workerUtils
 jest.mock('../../src/utils/workerUtils');
 
-// Mock AudioCompositor - not called in main thread anymore, but might be imported
-// We just verify it is NOT called on main thread
+// The sound is mixed on the main thread (workers have no OfflineAudioContext; issue #141), so the
+// mixer is stubbed here and the test checks its result reaches the worker.
 const mockRender = jest.fn();
 jest.mock('../../src/services/AudioCompositor', () => {
     return {
@@ -40,7 +40,12 @@ describe('Export with Audio Integration', () => {
     beforeEach(() => {
         jest.setTimeout(10000);
         jest.clearAllMocks();
-        mockRender.mockClear();
+        mockRender.mockReset();
+        mockRender.mockResolvedValue({
+            numberOfChannels: 2,
+            sampleRate: 44100,
+            getChannelData: () => new Float32Array(22050).fill(0.1),
+        });
 
         // Reset store
         useProjectStore.setState({
@@ -78,7 +83,7 @@ describe('Export with Audio Integration', () => {
         } as any;
     });
 
-    it('should trigger export and delegate audio to worker', async () => {
+    it('mixes the sound on the main thread and hands it to the worker', async () => {
         // Setup worker mock
         const mockPostMessage = jest.fn();
         const mockWorker = {
@@ -96,7 +101,7 @@ describe('Export with Audio Integration', () => {
                      if (mockWorker.onmessage) {
                         mockWorker.onmessage({ data: { type: 'progress', progress: { status: 'initializing', currentFrame: 0, totalFrames: 100, percentage: 0 } } } as MessageEvent);
                         mockWorker.onmessage({ data: { type: 'progress', progress: { status: 'rendering', percentage: 50, currentFrame: 50, totalFrames: 100 } } } as MessageEvent);
-                        mockWorker.onmessage({ data: { type: 'complete', blob: new Blob(['v'], {type: 'video/mp4'}), progress: { status: 'completed', percentage: 100, currentFrame: 100, totalFrames: 100 } } } as MessageEvent);
+                        mockWorker.onmessage({ data: { type: 'complete', blob: new Blob(['v'], {type: 'video/mp4'}), totalFrames: 100, notes: ['The sound is Opus: this browser cannot encode AAC.'] } } as MessageEvent);
                      }
                  }, 50);
              }
@@ -113,27 +118,19 @@ describe('Export with Audio Integration', () => {
             fireEvent.click(screen.getByRole('button', { name: 'Export' }));
         });
 
-        // Verify AudioCompositor was NOT used in Main Thread
-        expect(AudioCompositor).not.toHaveBeenCalled();
-        expect(mockRender).not.toHaveBeenCalled();
-
-        // Verify worker payload does NOT contain audio data (because it's generated in worker)
-        await waitFor(() => {
-             expect(mockPostMessage).toHaveBeenCalledWith(expect.objectContaining({
-                 type: 'start',
-                 payload: expect.objectContaining({
-                     // audioData should be missing or undefined
-                 })
-             }));
-
-             // Ensure audioData is NOT present in the payload
-             const payload = mockPostMessage.mock.calls[0][0].payload;
-             expect(payload.audioData).toBeUndefined();
-        });
+        await waitFor(() => expect(mockPostMessage).toHaveBeenCalled());
+        expect(mockRender).toHaveBeenCalledTimes(1);
+        const [message, transfer] = mockPostMessage.mock.calls[0];
+        expect(message.type).toBe('start');
+        expect(message.payload.audioData.sampleRate).toBe(44100);
+        expect(message.payload.audioData.channels).toHaveLength(2);
+        expect(message.payload.audioData.channels[0]).toHaveLength(22050);
+        expect(transfer).toHaveLength(2);
 
         // Wait for completion
         await waitFor(() => {
              expect(screen.getByText('Exported')).toBeInTheDocument();
         });
+        expect(screen.getAllByText('Saved 100 frames to your downloads. The sound is Opus: this browser cannot encode AAC.').length).toBeGreaterThan(0);
     });
 });

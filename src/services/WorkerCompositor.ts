@@ -5,46 +5,37 @@ import { calculateObjectFit } from '../utils/layoutUtils';
 import { Input, BlobSource, ALL_FORMATS, CanvasSink } from 'mediabunny';
 import type { Feature, LineString } from 'geojson';
 
-class PushableGenerator<T> implements AsyncIterable<T> {
-  private queue: T[] = [];
-  private signal: (() => void) | null = null;
-  private finished = false;
+// How the export reads video frames. mediabunny's `canvasesAtTimestamps` answers a timestamp with
+// "the last frame starting at or before it", and it only knows a frame is the last one when the
+// decoder hands it the next frame or is flushed. Feeding it one timestamp at a time and waiting for
+// that answer (what this file did until 2026-11-12) therefore waits forever on the first frame:
+// the export sat at "Starting the export engine." (issue #141). So each video clip gets every
+// timestamp it will be asked for up front, from `planFrames`, and the sink decodes ahead of the
+// render loop (its own queue limit keeps that bounded); the loop then takes one answer per frame.
 
-  push(value: T) {
-    this.queue.push(value);
-    if (this.signal) {
-      this.signal();
-      this.signal = null;
-    }
-  }
-
-  finish() {
-    this.finished = true;
-    if (this.signal) this.signal();
-  }
-
-  async *[Symbol.asyncIterator]() {
-    while (true) {
-      if (this.queue.length > 0) {
-        yield this.queue.shift()!;
-      } else if (this.finished) {
-        return;
-      } else {
-        await new Promise<void>(resolve => this.signal = resolve);
-      }
-    }
-  }
-}
-
-interface VideoSession {
+interface VideoSource {
     input: any; // Input
     sink: any; // CanvasSink
-    timestampGen: PushableGenerator<number>;
-    frameIterator: AsyncIterator<any>; // WrappedCanvas
 }
 
+/** One video clip's frames for the whole export: the clip-local times, in render order. */
+interface ClipFrames {
+    times: number[];
+    cursor: number;
+    iterator: AsyncIterator<any> | null; // WrappedCanvas | null
+}
+
+/** The clip-local time a frame at `globalTime` shows (the same sum `drawClip` uses). */
+const clipLocalTime = (clip: Clip, globalTime: number) => (globalTime - clip.start) * (clip.playbackRate || 1) + clip.offset;
+
+/** True when a clip is on screen at `time` (the same test `renderFrame` uses). */
+const isActive = (clip: Clip | undefined, time: number): clip is Clip => !!clip && time >= clip.start && time < clip.start + clip.duration;
+
+const EPSILON = 1e-9;
+
 export class WorkerCompositor {
-  private videoPool: Map<string, VideoSession> = new Map();
+  private videoPool: Map<string, VideoSource> = new Map();
+  private clipFrames: Map<string, ClipFrames> = new Map();
   private imageCache: Map<string, ImageBitmap> = new Map();
   private tileCache: Map<string, ImageBitmap> = new Map();
 
@@ -59,28 +50,12 @@ export class WorkerCompositor {
              const input = new Input({ source, formats: ALL_FORMATS });
 
              const track = await input.getPrimaryVideoTrack();
-             let sink = null;
-             let timestampGen = new PushableGenerator<number>();
-             let frameIterator: AsyncIterator<any> | null = null;
-
              if (track) {
-                 sink = new CanvasSink(track, { poolSize: 3, alpha: true }); // Enable alpha just in case
-                 const iterator = sink.canvasesAtTimestamps(timestampGen);
-                 frameIterator = iterator[Symbol.asyncIterator]();
-             }
-
-             if (sink && frameIterator) {
-                this.videoPool.set(asset.id, {
-                    input,
-                    sink,
-                    timestampGen,
-                    frameIterator
-                });
+                 this.videoPool.set(asset.id, { input, sink: new CanvasSink(track, { poolSize: 3, alpha: true }) });
              } else {
                  console.warn(`No video track found for asset ${asset.id}`);
                  input.dispose();
              }
-
            } catch (e) {
              console.error(`Failed to init video input for ${asset.id}`, e);
            }
@@ -99,11 +74,43 @@ export class WorkerCompositor {
     }
   }
 
+  /**
+   * Lists, for each video clip, the clip-local time of every frame the export will draw it in, so
+   * its frames can be decoded ahead of the render loop. Call after `initialize` and before the
+   * first `renderFrame`, with the same project, frame rate and frame count the loop uses.
+   */
+  public planFrames(
+    project: { tracks: Track[]; clips: Record<string, Clip>; assets: Record<string, Asset> },
+    fps: number,
+    totalFrames: number
+  ) {
+    this.closeClipFrames();
+    const clips = project.tracks
+      .filter((track) => !track.isMuted)
+      .flatMap((track) => track.clips.map((id) => project.clips[id]))
+      .filter((clip): clip is Clip => !!clip && clip.type === 'video' && this.videoPool.has(clip.assetId) && project.assets[clip.assetId]?.type === 'video');
+    for (const clip of clips) {
+      const times: number[] = [];
+      const first = Math.max(0, Math.floor(clip.start * fps) - 1);
+      const last = Math.min(totalFrames - 1, Math.ceil((clip.start + clip.duration) * fps) + 1);
+      for (let frame = first; frame <= last; frame++) {
+        const time = frame / fps;
+        if (isActive(clip, time)) times.push(clipLocalTime(clip, time));
+      }
+      if (times.length > 0) this.clipFrames.set(clip.id, { times, cursor: 0, iterator: null });
+    }
+  }
+
+  private closeClipFrames() {
+    this.clipFrames.forEach((frames) => { void frames.iterator?.return?.(); });
+    this.clipFrames.clear();
+  }
+
   public cleanup() {
-    this.videoPool.forEach((session) => {
-        session.timestampGen.finish();
+    this.closeClipFrames();
+    this.videoPool.forEach((source) => {
         // CanvasSink doesn't have explicit close, but Input.dispose cleans up tracks
-        if (session.input.dispose) session.input.dispose();
+        if (source.input.dispose) source.input.dispose();
     });
     this.videoPool.clear();
 
@@ -237,17 +244,19 @@ export class WorkerCompositor {
     dstW: number,
     dstH: number
   ) {
-    const session = this.videoPool.get(asset.id);
-    if (!session) return;
+    const source = this.videoPool.get(asset.id);
+    const frames = this.clipFrames.get(clip.id);
+    if (!source || !frames) return;
 
     try {
-        // Request frame at 'time' using CanvasSink generator pattern (verified correct API)
-        session.timestampGen.push(time);
+        // Skip any planned frames this render did not ask for, then take this frame's answer.
+        while (frames.cursor < frames.times.length && frames.times[frames.cursor] < time - EPSILON) {
+            await this.nextFrame(source, frames);
+        }
+        if (frames.cursor >= frames.times.length || Math.abs(frames.times[frames.cursor] - time) > 1e-6) return;
+        const frameData = await this.nextFrame(source, frames);
 
-        // Wait for the result
-        const { value: frameData, done } = await session.frameIterator.next();
-
-        if (!done && frameData && frameData.canvas) {
+        if (frameData && frameData.canvas) {
              const image = frameData.canvas; // HTMLCanvasElement or OffscreenCanvas
              const srcW = image.width;
              const srcH = image.height;
@@ -261,6 +270,18 @@ export class WorkerCompositor {
         // Fallback or ignore
         console.error("Video draw error", e);
     }
+  }
+
+  /** The next planned frame of a clip, starting its decoder on first use and closing it after the last. */
+  private async nextFrame(source: VideoSource, frames: ClipFrames) {
+    frames.iterator ??= source.sink.canvasesAtTimestamps(frames.times)[Symbol.asyncIterator]();
+    const { value, done } = await frames.iterator!.next();
+    frames.cursor++;
+    if (frames.cursor >= frames.times.length) {
+      void frames.iterator!.return?.();
+      frames.iterator = null;
+    }
+    return done ? null : value;
   }
 
   private drawImage(

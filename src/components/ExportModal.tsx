@@ -93,7 +93,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ onClose }) => {
     : progress.status === 'error'
       ? progress.error ?? 'The export stopped.'
       : progress.status === 'completed'
-        ? `Saved ${progress.totalFrames} frames to your downloads.`
+        ? [`Saved ${progress.totalFrames} frames to your downloads.`, ...(progress.notes ?? [])].join(' ')
         : `${progress.status === 'encoding' ? 'Encoding' : 'Rendering'} frame ${progress.currentFrame} of ${progress.totalFrames}.`;
 
   return (

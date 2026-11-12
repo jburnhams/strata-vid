@@ -18,7 +18,7 @@ installs (`npx playwright install chromium`), the same one CI uses.
 
 ## What is covered
 
-Each state is taken light and dark at 1440×900 (the editor's grid is desktop-only), 30 shots in about 40 s.
+Each state is taken light and dark at 1440×900 (the editor's grid is desktop-only), 32 shots in about 50 s.
 
 | State | What a person did | Checked beyond the picture |
 |---|---|---|
@@ -36,12 +36,12 @@ Each state is taken light and dark at 1440×900 (the editor's grid is desktop-on
 | `map-preview` | Selected the route clip with the playhead on it | |
 | `map-edited` | Chose satellite tiles and turned on the elevation profile | the switch is on |
 | `export-settings` | Opened Export, chose 720p and WebM, opened Encoding | the preset's width |
+| `exported` | Put the lane clip on the timeline and exported it at the defaults (1080p MP4) | the download is an MP4 of more than 500 kB |
 | `remove-used-file` | Removed a file the timeline uses | |
 
 Not yet a state: **the keyboard shortcuts sheet**. Its ← and → keys are outside the bundled faces'
 character set, so they are drawn in a machine font and the runner fails the shot; that needs a fix
-in strata-react's key legend. And **running an export**. It stays at "Starting the export engine." in this app today
-(see the CHANGELOG, 2026-11-12); add the state when that is fixed.
+in strata-react's key legend.
 
 ## How the states stay the same on every run
 

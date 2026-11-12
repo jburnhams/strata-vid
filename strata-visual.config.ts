@@ -7,9 +7,10 @@
 //
 //   npm run build && npx strata-visual            compare with tests/visual/baselines
 //   npm run build && npx strata-visual --update   write new baselines (look at them first)
+import { readFile } from 'node:fs/promises';
 import { defineVisualConfig, type RouteState } from 'strata-react/visual';
 import {
-  FILES, addFiles, buildEdit, chooseFile, clip, drag, expect, libraryItem, playhead, restPointer, seekTo, useScheme, waitForFrames,
+  FILES, addFiles, addToTimeline, buildEdit, closeToasts, serveTiles, chooseFile, clip, drag, expect, libraryItem, playhead, restPointer, seekTo, useScheme, waitForFrames,
 } from './tests/visual/flows';
 
 const fit = async (page: import('playwright').Page) => {
@@ -175,8 +176,7 @@ const states: Record<string, RouteState> = {
     },
   },
 
-  // Export settings changed: 720p, WebM, the encoding options open. (Running the export is not a
-  // state yet: it stays at "Starting the export engine." in this app today; see the CHANGELOG.)
+  // Export settings changed: 720p, WebM, the encoding options open.
   'export-settings': {
     setup: async (page) => {
       await buildEdit(page);
@@ -186,6 +186,29 @@ const states: Record<string, RouteState> = {
       await dialog.getByRole('combobox', { name: 'Container format' }).selectOption('webm');
       await dialog.getByRole('button', { name: 'Encoding' }).click();
       expect(await dialog.getByRole('textbox', { name: 'Width' }).inputValue() === '1,280', 'the 720p preset should set the width to 1,280');
+      await restPointer(page);
+    },
+  },
+
+  // An export run to the end: one 8 s clip at the default 1080p MP4. The dialog says how many frames
+  // it saved and, in a browser with no AAC encoder (Playwright's Chromium), that the sound is Opus.
+  // The file itself is checked here: a picture cannot say it has frames and sound.
+  exported: {
+    setup: async (page) => {
+      await serveTiles(page);
+      await addFiles(page, [FILES.lane]);
+      await addToTimeline(page, FILES.lane);
+      await closeToasts(page);
+      await page.getByRole('button', { name: 'Export video' }).click();
+      const dialog = page.getByRole('dialog', { name: 'Export video' });
+      const [download] = await Promise.all([
+        page.waitForEvent('download', { timeout: 120_000 }),
+        dialog.getByRole('button', { name: 'Export', exact: true }).click(),
+      ]);
+      expect(download.suggestedFilename().endsWith('.mp4'), `the export should save an MP4, not ${download.suggestedFilename()}`);
+      const size = (await readFile((await download.path())!)).length;
+      expect(size > 500_000, `an 8 s 1080p export should be more than 500 kB, it is ${size} bytes`);
+      await page.getByRole('dialog', { name: 'Exporting video' }).getByText('Exported', { exact: true }).waitFor();
       await restPointer(page);
     },
   },

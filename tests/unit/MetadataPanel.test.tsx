@@ -263,6 +263,25 @@ describe('MetadataPanel', () => {
         expect(addExtraTrackToClip).toHaveBeenCalledWith('clip-map', 'gpx-3');
     });
 
+    it('drops a chosen route that the next selected clip cannot take', () => {
+        const addExtraTrackToClip = jest.fn();
+        useProjectStore.setState({ addExtraTrackToClip });
+        render(<MetadataPanel assets={gpxAssets} selectedAssetId={null} settings={mockSettings} setSettings={mockSetSettings} />);
+
+        fireEvent.change(screen.getByLabelText('Add a route'), { target: { value: 'gpx-3' } });
+
+        // Another map clip whose own route is the one chosen above
+        const otherClip = { ...mapClip, id: 'clip-other', assetId: 'gpx-3', extraTrackAssets: [] };
+        act(() => {
+            useProjectStore.setState({ selectedClipId: 'clip-other', clips: { 'clip-map': mapClip, 'clip-other': otherClip } });
+        });
+
+        const addButton = screen.getByTestId('add-extra-track-button');
+        expect(addButton).toBeDisabled();
+        fireEvent.click(addButton);
+        expect(addExtraTrackToClip).not.toHaveBeenCalled();
+    });
+
     it('calls removeExtraTrackFromClip when Remove button is clicked', () => {
         const removeExtraTrackFromClip = jest.fn();
         useProjectStore.setState({ removeExtraTrackFromClip });

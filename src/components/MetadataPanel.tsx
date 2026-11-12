@@ -73,6 +73,8 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
     const props = activeClip.properties;
     const addableGpx = assets.filter(a =>
       a.type === 'gpx' && a.id !== activeClip.assetId && !(activeClip.extraTrackAssets || []).some(et => et.assetId === a.id));
+    // The choice is kept across selections, so only a route this clip can take counts.
+    const routeToAdd = addableGpx.some(a => a.id === extraTrackToAdd) ? extraTrackToAdd : '';
 
     return (
       <div className="h-full overflow-y-auto p-3" data-testid="metadata-panel-clip">
@@ -180,13 +182,13 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                   label="Add a route"
                   hint={addableGpx.length === 0 ? 'Load another GPX file to show it here.' : undefined}
                   action={
-                    <Button data-testid="add-extra-track-button" disabled={!extraTrackToAdd}
-                      onClick={() => { addExtraTrackToClip(activeClip.id, extraTrackToAdd); setExtraTrackToAdd(''); }}>
+                    <Button data-testid="add-extra-track-button" disabled={!routeToAdd}
+                      onClick={() => { addExtraTrackToClip(activeClip.id, routeToAdd); setExtraTrackToAdd(''); }}>
                       Add
                     </Button>
                   }
                 >
-                  <NativeSelect value={extraTrackToAdd} onChange={(e) => setExtraTrackToAdd(e.target.value)} disabled={addableGpx.length === 0}>
+                  <NativeSelect value={routeToAdd} onChange={(e) => setExtraTrackToAdd(e.target.value)} disabled={addableGpx.length === 0}>
                     <option value="">Choose a GPX file</option>
                     {addableGpx.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                   </NativeSelect>

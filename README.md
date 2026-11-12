@@ -63,6 +63,7 @@ npm run dev            # http://localhost:5173
 | `npm test` / `npm run test:unit` | unit tests (Jest, jsdom, mocks) |
 | `npm run test:coverage` | unit tests with coverage; coverage comes from this suite only |
 | `npm run test:integration` | integration tests (Jest, jsdom, real store and components, fixtures in `tests/fixtures/`) |
+| `npm run test:visual` | visual tests: the editor's states screenshotted light and dark against `tests/visual/baselines` (after `npm run build`; see [tests/visual/README.md](tests/visual/README.md)) |
 | `npm run type-check` | `tsc --noEmit` |
 
 `?strict=false` on the URL turns React's StrictMode off, for checking double-run effects. In

@@ -14,6 +14,7 @@
     "test": "npm run test:unit",
     "test:unit": "NODE_OPTIONS='--max-old-space-size=2048' jest --config jest.unit.config.js --runInBand",
     "test:integration": "NODE_OPTIONS='--max-old-space-size=2048' jest --config jest.integration.config.js --runInBand",
+    "test:visual": "strata-visual",
     "test:coverage": "NODE_OPTIONS='--max-old-space-size=2048' jest --config jest.unit.config.js --coverage --runInBand",
     "test:watch": "jest --config jest.unit.config.js --watch --runInBand",
     "type-check": "tsc --noEmit",

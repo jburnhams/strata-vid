@@ -32,8 +32,8 @@ port stands and what it is waiting on: [docs/PORT.md](docs/PORT.md). What change
   speed below; stage guides and a preview quality setting.
 - **GPX sync**: a map clip's offset is set from the video's creation time or by hand.
 - **Audio**: per-clip and per-track volume through Web Audio, mixed into the export.
-- **Project**: undo and redo (50 steps), save to and open from a `.svp` file, auto-save to
-  `localStorage` every 60 seconds.
+- **Project**: undo and redo of named steps ("Undo trim clip", 50 kept), save to and open from a `.svp`
+  file, auto-save to `localStorage` a moment after each change, with "Saved" and the time in the header.
 - **Export**: MP4 or WebM, rendered frame by frame in a Web Worker with WebCodecs (via mediabunny),
   with progress and cancel.
 - **Commands**: every action has a shortcut and appears in the command menu and the Edit menu; the

@@ -16,8 +16,9 @@ import { ToastContainer } from './components/Toast';
 import { LoadingOverlay } from './components/LoadingOverlay';
 import { handleError, showSuccess } from './utils/errorHandler';
 import { useAutoSave } from './hooks/useAutoSave';
+import { useDocumentHistory } from './hooks/useDocumentHistory';
 import { Keyboard } from 'lucide-react';
-import { AlertDialog, Button, ColorSchemeChoice, CommandMenu, IconButton, Menu, Pane, Split, Workspace, useWorkspaceState, type Command } from 'strata-react';
+import { AlertDialog, Button, ColorSchemeChoice, CommandMenu, IconButton, Menu, Pane, SaveStatus, Split, Workspace, useWorkspaceState, type Command } from 'strata-react';
 
 function App() {
   const [showExport, setShowExport] = React.useState(false);
@@ -28,8 +29,9 @@ function App() {
   });
 
   const toggleHelp = () => setShowHelp(prev => !prev);
-  const commands = useKeyboardShortcuts(toggleHelp);
-  useAutoSave();
+  const history = useDocumentHistory();
+  const autoSave = useAutoSave();
+  const commands = useKeyboardShortcuts(toggleHelp, history.commands);
   const workspace = useWorkspaceState('strata-vid.workspace');
 
   const {
@@ -152,10 +154,11 @@ function App() {
           <header className="h-12 shrink-0 border-b border-border bg-card flex items-center px-4 gap-2">
             <span className="type-label mr-2">Strata Vid</span>
             <ProjectMenu />
-            <EditMenu />
+            <EditMenu commands={history.commands} />
             <Menu label="View" items={viewCommands} trigger={<Button variant="ghost">View</Button>} />
 
             <div className="ml-auto flex items-center gap-2">
+              <SaveStatus state={autoSave.state} onRetry={() => void autoSave.saveNow()} />
               <IconButton variant="ghost" icon={Keyboard} label="Keyboard shortcuts" hint="?" onClick={toggleHelp} />
               <ColorSchemeChoice compact />
               <Button variant="default" onClick={() => setShowExport(true)}>

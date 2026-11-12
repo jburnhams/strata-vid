@@ -1,92 +1,63 @@
-import { renderHook } from '@testing-library/react';
-import { useAutoSave } from '../../../src/hooks/useAutoSave';
+import { act, renderHook } from '@testing-library/react';
+import { AUTO_SAVE_DELAY_MS, AUTO_SAVE_KEY, useAutoSave } from '../../../src/hooks/useAutoSave';
 import { useProjectStore } from '../../../src/store/useProjectStore';
-import { serializeProject, deserializeProject } from '../../../src/utils/projectSerializer';
+import { serializeProject } from '../../../src/utils/projectSerializer';
+import type { Track } from '../../../src/types';
 
-jest.mock('../../../src/store/useProjectStore');
-jest.mock('../../../src/utils/projectSerializer');
+const empty = useProjectStore.getState();
+const track: Track = { id: 't1', type: 'video', label: 'Track 1', isMuted: false, isLocked: false, volume: 1, clips: [] };
+const store = () => useProjectStore.getState();
 
 describe('useAutoSave', () => {
-  const mockStore = {
-    assets: {},
-    tracks: {},
-    addAsset: jest.fn(),
-    setSettings: jest.fn(),
-    loadProject: jest.fn(),
-  };
-
   beforeEach(() => {
-    jest.clearAllMocks();
+    useProjectStore.setState(empty, true);
+    window.localStorage.clear();
     jest.useFakeTimers();
-
-    // Mock local storage
-    Object.defineProperty(window, 'localStorage', {
-      value: {
-        getItem: jest.fn(),
-        setItem: jest.fn(),
-      },
-      writable: true,
-    });
-
-    (useProjectStore as unknown as jest.Mock).mockReturnValue(mockStore);
-    // Mock getState
-    (useProjectStore as any).getState = jest.fn().mockReturnValue(mockStore);
   });
-
   afterEach(() => {
+    jest.restoreAllMocks();
     jest.useRealTimers();
   });
 
-  it('should restore from local storage on mount if store is empty', () => {
-    const savedState = { mock: 'state' };
-    (window.localStorage.getItem as jest.Mock).mockReturnValue('json-string');
-    (deserializeProject as jest.Mock).mockReturnValue(savedState);
+  it('saves a moment after the project stops changing, and says so', async () => {
+    const { result } = renderHook(() => useAutoSave());
+    act(() => store().addTrack(track));
+    expect(result.current.state.status).toBe('dirty');
 
-    // Store is empty
-    (useProjectStore as any).getState.mockReturnValue({ assets: {}, tracks: {} });
+    await act(async () => { jest.advanceTimersByTime(AUTO_SAVE_DELAY_MS); });
 
-    renderHook(() => useAutoSave());
-
-    expect(window.localStorage.getItem).toHaveBeenCalledWith('strata_vid_autosave');
-    expect(deserializeProject).toHaveBeenCalledWith('json-string');
-    expect(mockStore.loadProject).toHaveBeenCalledWith(savedState);
+    expect(result.current.state.status).toBe('saved');
+    expect(JSON.parse(window.localStorage.getItem(AUTO_SAVE_KEY)!).timeline.tracks.t1).toBeDefined();
   });
 
-  it('should NOT restore if store has data', () => {
-    (window.localStorage.getItem as jest.Mock).mockReturnValue('json-string');
-    (deserializeProject as jest.Mock).mockReturnValue({});
-
-    // Store has data
-    (useProjectStore as any).getState.mockReturnValue({ assets: { a1: {} }, tracks: {} });
+  it('restores the last auto-save into an empty editor', () => {
+    useProjectStore.setState({ tracks: { t1: track }, trackOrder: ['t1'] });
+    window.localStorage.setItem(AUTO_SAVE_KEY, serializeProject(store()));
+    useProjectStore.setState(empty, true);
 
     renderHook(() => useAutoSave());
 
-    expect(mockStore.loadProject).not.toHaveBeenCalled();
+    expect(store().tracks.t1).toBeDefined();
   });
 
-  it('should save to local storage periodically', () => {
-    // Mock state for save
-    const stateToSave = { assets: { a1: {} }, tracks: {} };
-    (useProjectStore as any).getState.mockReturnValue(stateToSave);
-    (serializeProject as jest.Mock).mockReturnValue('serialized-json');
+  it('does not restore over a project that is open', () => {
+    window.localStorage.setItem(AUTO_SAVE_KEY, serializeProject({ ...store(), tracks: { t9: { ...track, id: 't9' } }, trackOrder: ['t9'] }));
+    useProjectStore.setState({ tracks: { t1: track }, trackOrder: ['t1'] });
 
     renderHook(() => useAutoSave());
 
-    // Advance time
-    jest.advanceTimersByTime(60000);
-
-    expect(serializeProject).toHaveBeenCalledWith(stateToSave);
-    expect(window.localStorage.setItem).toHaveBeenCalledWith('strata_vid_autosave', 'serialized-json');
+    expect(store().tracks.t9).toBeUndefined();
   });
 
-  it('should NOT save if store is empty', () => {
-    (useProjectStore as any).getState.mockReturnValue({ assets: {}, tracks: {} });
+  it('says why a save failed when storage is full', async () => {
+    jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('full', 'QuotaExceededError');
+    });
+    const { result } = renderHook(() => useAutoSave());
+    act(() => store().addTrack(track));
 
-    renderHook(() => useAutoSave());
+    await act(async () => { jest.advanceTimersByTime(AUTO_SAVE_DELAY_MS); });
 
-    jest.advanceTimersByTime(60000);
-
-    expect(serializeProject).not.toHaveBeenCalled();
-    expect(window.localStorage.setItem).not.toHaveBeenCalled();
+    expect(result.current.state).toEqual({ status: 'failed', reason: 'The browser’s storage for this site is full.' });
   });
 });

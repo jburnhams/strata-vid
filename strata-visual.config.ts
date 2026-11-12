@@ -2,7 +2,7 @@
 // tests itself with). The editor is one screen whose state lives in the browser, so each shot is a
 // state reached by doing what a person does: add files, put them on the timeline, drag and trim
 // clips, play and step, edit the inspector, look at the map, export. Every state is taken light
-// and dark at 1440×900 (the editor's grid is desktop-only). Steps are in tests/visual/flows.ts,
+// and dark at 1440×900 (the editor is for a desktop). Steps are in tests/visual/flows.ts,
 // media in tests/fixtures/media, map tiles drawn by tests/visual/tiles.mjs.
 //
 //   npm run build && npx strata-visual            compare with tests/visual/baselines
@@ -10,7 +10,7 @@
 import { readFile } from 'node:fs/promises';
 import { defineVisualConfig, type RouteState } from 'strata-react/visual';
 import {
-  FILES, addFiles, addToTimeline, buildEdit, closeToasts, serveTiles, chooseFile, clip, drag, expect, libraryItem, playhead, restPointer, seekTo, useScheme, waitForFrames, waitForMapTiles,
+  FILES, settleSave, addFiles, addToTimeline, buildEdit, closeToasts, serveTiles, chooseFile, clip, drag, expect, libraryItem, playhead, restPointer, seekTo, useScheme, waitForFrames, waitForMapTiles,
 } from './tests/visual/flows';
 
 /** Matches the route to the first clip's recorded time from the sync panel, and checks where that puts the clip's start. */
@@ -249,7 +249,14 @@ export default defineVisualConfig({
     viewports: [{ width: 1440, height: 900 }],
     // The editor makes no fetch or XHR calls; map tiles are images, answered in serveTiles.
     onUnhandledRequest: 'bypass',
-    routes: [{ name: 'editor', path: '/', setup: useScheme, states }],
+    // Every state ends with the save sign settled and its time fixed (settleSave).
+    routes: [{
+      name: 'editor', path: '/', setup: useScheme,
+      states: Object.fromEntries(Object.entries(states).map(([name, state]) => [name, {
+        ...state,
+        setup: async (page, shot) => { await state.setup?.(page, shot); await settleSave(page); },
+      }])),
+    }],
   },
 });
 

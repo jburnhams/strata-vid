@@ -52,7 +52,7 @@ features as rows (new IDs continue the letter, or start N).
 | ID | Feature | Status | Notes |
 |---|---|---|---|
 | D1 | Position at a time (binary search, interpolation) | Done | `getGpxPositionAtTime` |
-| D2 | Map clip with track and moving marker | Done | Leaflet; to move to strata-react #80 |
+| D2 | Map clip with track and moving marker | Done | Leaflet; moves to strata-react `RouteMap` once #161 lands. Preview fits the route and ignores the clip's zoom, which export uses |
 | D3 | Manual sync | Done | `MapSyncControl`; the number is an absolute GPX time in epoch ms |
 | D4 | Auto-sync from the video's creation time | Done | |
 | D5 | Map styles, track and marker styling | Done | |
@@ -73,8 +73,8 @@ features as rows (new IDs continue the letter, or start N).
 | ID | Feature | Status | Notes |
 |---|---|---|---|
 | F1–F3 | Save and open a `.svp` file | Done | Files are not stored in it; an opened project relinks them |
-| F4 | Undo and redo | Done | 50 steps; the UI part waits on strata-react #81 |
-| F5 | Auto-save to `localStorage` | Done | Every 60 s; restored when the editor opens empty |
+| F4 | Undo and redo | Done | strata-react `useHistory` since 2026-11-12: named steps, a slider drag is one step, Undo disabled when there is nothing to undo; 50 steps |
+| F5 | Auto-save to `localStorage` | Done | 1.5 s after a change (was every 60 s), with `SaveStatus` in the header and a reason when it fails; restored when the editor opens empty |
 | F6 | New project | Done | |
 
 ## G. User experience

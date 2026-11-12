@@ -101,13 +101,19 @@ exports through the worker.
 
 ## Saving
 
-- **Undo/redo**: `historyMiddleware` takes a snapshot when assets, tracks, clips, track order or
-  settings change (so playback does not fill the history) and keeps 50 steps.
+- **Undo/redo**: strata-react's `useHistory` holds the steps (`src/hooks/useDocumentHistory.ts`). The
+  store's `historyMiddleware` reports each change to the document (assets, tracks, clips, track order,
+  settings, markers; never playback or selection) as a before/after pair; `src/utils/historyLabels.ts`
+  names it from what changed ("move clip", "change opacity") and keys continuous controls so a slider
+  drag is one step; undo and redo put a side back with `restoreDocument`, keeping the playhead and each
+  file's current thumbnail. Opening or starting a project clears the history. 50 steps.
 - **File**: `projectSerializer` writes a versioned JSON (`.svp`) without the files themselves; assets
   are listed by name and metadata, so an opened project shows each file as missing until it is
   relinked from the library.
-- **Auto-save**: `useAutoSave` writes the same JSON to `localStorage` (`strata_vid_autosave`) every
-  60 seconds and restores it on load when the editor is empty.
+- **Auto-save**: `useAutoSave` (on strata-react's) writes the same JSON to `localStorage`
+  (`strata_vid_autosave`) 1.5 s after the document stops changing, shows `SaveStatus` in the header, asks
+  before the tab closes while a change is unsaved, and restores the save on load when the editor is empty.
+  An empty project removes the save. The visual tests fix the shown time (`settleSave` in `tests/visual/flows.ts`).
 
 ## Code layout
 

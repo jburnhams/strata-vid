@@ -62,6 +62,27 @@ export async function restPointer(page: Page) {
  * scheme switch, was taken mid-zoom on CI), only one zoom level's tiles are left, and each tile has
  * loaded and finished its fade-in. All of these run on real time.
  */
+/**
+ * The header's save sign (strata-react `SaveStatus`) prints the wall-clock time of the last auto-save,
+ * and says "Unsaved changes" for a second and a half after an edit. Waits for the save to settle, then
+ * prints a fixed time, as a frozen clock would; the editor cannot run on one (playback and Leaflet's
+ * tile fade need real time). Run last in every state, after the shot's own steps.
+ */
+export async function settleSave(page: Page) {
+  await page.waitForFunction(() => {
+    const sign = document.querySelector('header [data-status]');
+    return !sign || sign.getAttribute('data-status') === 'saved' || sign.getAttribute('data-status') === 'failed';
+  }, null, { timeout: 10_000 });
+  await page.evaluate(() => {
+    const sign = document.querySelector('header [data-status="saved"]');
+    if (!sign) return;
+    const walker = document.createTreeWalker(sign, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      node.textContent = node.textContent!.replace(/\d{1,2}:\d{2}/, '09:30');
+    }
+  });
+}
+
 export async function waitForMapTiles(page: Page) {
   const settled = () =>
     page.evaluate(() =>

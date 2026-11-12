@@ -86,7 +86,8 @@ describe('Undo/Redo Integration', () => {
     // 5. Undo via Menu
     // Hover Edit menu
     await user.click(screen.getByRole('button', { name: 'Edit' }));
-    await user.click(screen.getByRole('menuitem', { name: /Undo/ }));
+    expect(screen.getByRole('menuitem', { name: /Redo/ })).toHaveAttribute('aria-disabled', 'true');
+    await user.click(screen.getByRole('menuitem', { name: /Undo delete clip/ }));
 
     // Verify clip is back
     await waitFor(() => {
@@ -96,7 +97,7 @@ describe('Undo/Redo Integration', () => {
 
     // 6. Redo via Menu
     await user.click(screen.getByRole('button', { name: 'Edit' }));
-    await user.click(screen.getByRole('menuitem', { name: /Redo/ }));
+    await user.click(screen.getByRole('menuitem', { name: /Redo delete clip/ }));
 
     // Verify clip is gone again
     await waitFor(() => {

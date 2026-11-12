@@ -54,6 +54,7 @@ export const createProjectSlice: StateCreator<
       state.trackOrder = project.trackOrder;
 
       state.selectedClipId = null;
+      state.markers = [];
 
       // Reset Playback
       state.currentTime = 0;

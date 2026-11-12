@@ -1,11 +1,11 @@
 /**
- * The Edit menu: the same undo and redo commands the keys run (useKeyboardShortcuts), drawn by
- * strata-react's `Menu` with their shortcuts, so menu and keys cannot disagree.
+ * The Edit menu: the same Undo and Redo commands the keys run, from the document history
+ * (`useDocumentHistory`), drawn by strata-react's `Menu` with their shortcuts and the step's name, so
+ * menu and keys cannot disagree.
  */
 import React from 'react';
-import { Button, Menu } from 'strata-react';
-import { historyCommands } from '../hooks/useKeyboardShortcuts';
+import { Button, Menu, type Command } from 'strata-react';
 
-export const EditMenu: React.FC = () => (
-  <Menu label="Edit" items={historyCommands} trigger={<Button variant="ghost">Edit</Button>} />
+export const EditMenu: React.FC<{ commands: readonly Command[] }> = ({ commands }) => (
+  <Menu label="Edit" items={[...commands]} trigger={<Button variant="ghost">Edit</Button>} />
 );

@@ -37,13 +37,23 @@ was removed from `package.json` on 2026-11-12 (Jonathan's yes).
 - [#68](https://github.com/jburnhams/strata-react/issues/68) Workspace layout: the editor's four panels are
   `Pane`s in a `Workspace` (library, preview, inspector, timeline); each resizes, the side panes and the
   timeline fold, sizes are remembered, and a View menu shows or hides them.
+- [#81](https://github.com/jburnhams/strata-react/issues/81) Document history and save state: `useHistory`
+  holds named undo steps fed by the store, and `useAutoSave` with `SaveStatus` replaces the 60-second
+  timer (see ARCHITECTURE.md, Saving).
+
+## Waiting on strata-react again
+
+- [#80](https://github.com/jburnhams/strata-react/issues/80) Map is closed, but `RouteMap` cannot yet draw
+  the map clip as the export does: it fits the route instead of holding the clip's zoom on the runner, and
+  has one position, where a clip with extra tracks shows one marker per track in its colour. Filed as
+  [strata-react #161](https://github.com/jburnhams/strata-react/issues/161); the preview keeps its Leaflet
+  panel until then. Found on the way: preview and export already disagree here (preview fits the route
+  and ignores the zoom; export centres on the runner at the zoom), which the swap will end.
 
 ## Closed in strata-react, to swap here
 
 | Issue | What it is for |
 |---|---|
-| [#80](https://github.com/jburnhams/strata-react/issues/80) Map | Themed map with routes, a moving position and overlays (replaces the Leaflet panel in preview) |
-| [#81](https://github.com/jburnhams/strata-react/issues/81) Document history and save state | Undo/redo and "Saved" (replaces `historyMiddleware` wiring and auto-save notices) |
 | [#116](https://github.com/jburnhams/strata-react/issues/116) Fixes from the port | Controlled dialog warning, inspector overflow, colour picker names, Jest setup docs |
 | [#117](https://github.com/jburnhams/strata-react/issues/117) Density | One density setting reaching overlays; small sizes across controls |
 | [#121](https://github.com/jburnhams/strata-react/issues/121) Timeline for editors | Drops from outside, lane height, kind colours, header width |

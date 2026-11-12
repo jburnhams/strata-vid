@@ -10,6 +10,34 @@ a factual error. Work before 2026-11-12 is in the git history only.
 
 ## 2026-11-12
 
+**Undo, redo and auto-save on strata-react's history and save state** (branch `claude/project-thread-3drc3w`).
+The next port swap (strata-react #81). The map swap (#80) was tried first and stopped: `RouteMap` cannot
+hold the clip's zoom on the runner or show one marker per track, so that is strata-react #161 and the
+Leaflet panel stays for now.
+- `src/store/middleware/historyMiddleware.ts`: rewritten. It no longer keeps its own stacks; it reports
+  each change to the document (now including markers) as a before/after pair and restores a side quietly,
+  keeping playback, the selection where it still exists, and each file's current thumbnail. Opening a
+  project reports a reset. **Corrects** the old behaviour, where undo also put back the playhead and the
+  playing state, and a thumbnail arriving after a file was added became an undo step.
+- `src/utils/historyLabels.ts`: **new**. Names a change from what differs ("trim clip", "change opacity",
+  "ripple delete") and keys continuous controls so a slider drag merges into one step.
+- `src/hooks/useDocumentHistory.ts`: **new**. strata-react `useHistory` (50 steps) fed by the store.
+- `src/hooks/useAutoSave.ts`: on strata-react's `useAutoSave` and `useLeaveGuard`: saves 1.5 s after a
+  change instead of every 60 s, says why a save failed (storage full), and an empty project removes the save.
+- `src/hooks/useKeyboardShortcuts.ts`, `src/components/EditMenu.tsx`, `src/App.tsx`: Undo and Redo are the
+  history's commands, named after the step and disabled with a reason; `SaveStatus` sits in the header.
+- `src/components/ProjectMenu.tsx`, `src/store/slices/projectSlice.ts`: "New project" loads an empty project
+  in one step, so the history starts again instead of recording each removal; opening a project clears
+  markers (they are not saved in `.svp` files yet).
+- Tests: `tests/unit/store/historyMiddleware.test.ts`, `tests/unit/hooks/useAutoSave.test.ts` and
+  `tests/unit/components/EditMenu.test.tsx` rewritten against the real store; **new**
+  `tests/unit/utils/historyLabels.test.ts` and `tests/unit/hooks/useDocumentHistory.test.ts`;
+  `tests/integration/undoRedo.integration.test.tsx` checks the step's name and the disabled Redo.
+- `tests/visual/flows.ts`, `strata-visual.config.ts`: every state ends with `settleSave`, which waits for the
+  save to settle and prints a fixed time in the save sign. All 32 baselines re-recorded (the header gains
+  "Saved 09:30"); a second run matched all 32.
+- `docs/PORT.md`, `docs/FEATURES.md` (D2, F4, F5), `docs/ARCHITECTURE.md`, `README.md`: updated.
+
 **Editor panels as strata-react workspace panes** (branch `claude/project-thread-3drc3w`).
 The first port swap after Jonathan's feature decisions (PR #147, merged). strata-react #68 is closed, so the
 fixed CSS grid gave way to its `Workspace`.

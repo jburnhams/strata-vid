@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router';
 import { StrataQueryProvider, StrataToastRegion, ThemeProvider } from 'strata-react';
 import App from './App';
+import '@fontsource-variable/overpass';
+import '@fontsource-variable/overpass-mono';
 import 'leaflet/dist/leaflet.css';
 import './index.css';
 import { useProjectStore } from './store/useProjectStore';

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, GeoJSON as LeafletGeoJSON, useMap } from 'react-leaflet';
 import { type LatLngExpression, GeoJSON as LGeoJSON } from 'leaflet';
 import L from 'leaflet';
+import { Mountain } from 'lucide-react';
 import ElevationProfile from './preview/ElevationProfile';
 import HeatmapOverlay from './preview/HeatmapOverlay';
 import type { FeatureCollection, Geometry, GeoJsonProperties } from 'geojson';
@@ -269,9 +270,11 @@ export const MapPanel: React.FC<MapPanelProps> = ({
                   className={`elevation-toggle ${showElevationProfile ? 'active' : ''}`}
                   href="#"
                   title="Toggle Elevation Profile"
+                  aria-label="Toggle Elevation Profile"
                   onClick={(e) => { e.preventDefault(); onToggleElevationProfile(); }}
                 >
-                  🏔️
+                  {/* An icon, not the emoji it was: an emoji is drawn by whatever font the machine has */}
+                  <Mountain size={16} aria-hidden className="inline-block align-middle" />
                 </a>
               </div>
             </div>

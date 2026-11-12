@@ -199,19 +199,9 @@ const states: Record<string, RouteState> = {
       await restPointer(page);
     },
   },
-
-  // The keyboard shortcuts sheet.
-  shortcuts: {
-    setup: async (page) => {
-      await page.getByRole('button', { name: 'Keyboard shortcuts' }).click();
-      await page.getByRole('dialog').waitFor();
-      await restPointer(page);
-    },
-  },
 };
 
 export default defineVisualConfig({
-  systemFonts: 'warn', // SCRATCH until the font packages are approved
   // No frozen clock: playback and Leaflet's tile fade run on real time. The dates the editor prints
   // come from the files (addFiles stamps each with a fixed time), in the runner's own zone.
   timezone: 'Europe/London',

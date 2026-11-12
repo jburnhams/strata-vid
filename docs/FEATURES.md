@@ -7,7 +7,9 @@ the full task lists, with their acceptance criteria and hour estimates, are in g
 
 Status was checked against the code on 2026-11-12, after PR #138; where that differs from the old
 section file, the note says so. **Done** works in the app. **Partial** exists in part (the note says
-which part). **Not started** has no code. Update a row in the same PR that changes it, and add new
+which part). **Not started** has no code. **Planned** and **Dropped** are Jonathan's decisions of
+2026-11-12 on what to build after the port and what not to build; a dropped row stays so its ID can
+still be traced, with the reason. Update a row in the same PR that changes it, and add new
 features as rows (new IDs continue the letter, or start N).
 
 ## A. Playback
@@ -26,14 +28,14 @@ features as rows (new IDs continue the letter, or start N).
 | B1–B3 | Clips drawn on tracks; move; trim from either end | Done | Pointer and keyboard since #138 |
 | B4 | Snapping (clip edges, playhead) | Done | Toggle in the timeline toolbar |
 | B5 | Collision rules | Done | A move that would overlap is refused with a reason; "Allow overlaps" lifts it |
-| B5b | Ripple move (a move pushes neighbours along) | Not started | Only ripple **delete** exists (H3) |
+| B5b | Ripple move (a move pushes neighbours along) | Dropped | "Add to timeline" places footage end to end, and ripple delete (H3) plus snapping cover the rest |
 | B6 | Multiple tracks; add and delete; move clips between them | Done | |
-| B6b | Reorder tracks | Not started | |
+| B6b | Reorder tracks | Planned | Track order decides what draws on top (a route inset over footage) |
 | B7 | Select a clip; context menu; Delete key | Done | |
-| B7b | Multi-select (Shift/Ctrl-click) | Not started | Store holds one `selectedClipId` |
+| B7b | Multi-select (Shift/Ctrl-click) | Dropped | A run edit has a handful of clips; the store keeps one `selectedClipId` |
 | B8 | Zoom, scroll, zoom to fit | Done | `TimelineZoomControls` |
-| B8b | Zoom anchored to the pointer | Not started | |
-| — | Drag a file from the library onto a lane | Not started | Removed with `@dnd-kit` in #138; waits on strata-react #121. "Add to timeline" instead |
+| B8b | Zoom anchored to the pointer | Dropped here | Zoom belongs to strata-react's `Timeline`; raise it there if wanted |
+| — | Drag a file from the library onto a lane | Planned | Removed with `@dnd-kit` in #138; strata-react #121 (closed) adds drops from outside, so it comes back with the port |
 
 ## C. Preview rendering
 
@@ -41,7 +43,7 @@ features as rows (new IDs continue the letter, or start N).
 |---|---|---|---|
 | C1 | Layers composed bottom to top | Done | |
 | C2–C4 | Video, image and text clips with position, size, rotation, opacity | Done | |
-| C5 | HTML clips | Not started | The clip type exists and the timeline labels it; nothing renders it. The old plan required sanitising (DOMPurify or similar), which would be a new dependency |
+| C5 | HTML clips | Dropped | Sanitising needs a new dependency, the export worker cannot draw HTML, and text clips and the data overlay cover the uses. The `html` clip type was removed on 2026-11-12 |
 | C6 | Preview quality setting | Done | |
 | C7 | Safe-area guides | Done | strata-react `StageGuides` since #138 |
 
@@ -64,7 +66,7 @@ features as rows (new IDs continue the letter, or start N).
 | E5 | Progress and cancel | Done | strata-react `JobStatus` |
 | E6 | Settings (resolution, fps, format, quality) | Done | MP4 or WebM |
 | E7–E8 | Download; error handling | Done | |
-| — | Checked by hand in a browser | Not done | The old file left "manual verify in browser" open; tests cover the pipeline |
+| — | Checked by hand in a browser | Planned | Once the port is done; tests and the `exported` visual state cover the pipeline |
 
 ## F. Project
 
@@ -84,7 +86,7 @@ features as rows (new IDs continue the letter, or start N).
 | G4 | Asset thumbnails | Done | |
 | G5 | Editable properties panel | Done | strata-react `Inspector` |
 | G6 | Dark and light mode | Done | Was open in the old file; done by #137 (`ThemeProvider`, `ColorSchemeChoice`) |
-| G7 | Layout for narrow screens | Not started | Workspace panes wait on strata-react #68 |
+| G7 | Layout for narrow screens | Dropped (phone); planned (panes) | Editing and WebCodecs export on a phone is not a goal. Collapsible panes come with strata-react's `Workspace` (#68) in the port |
 | G8 | Accessibility | Done | Mostly through strata-react's controls since #137 |
 
 ## H. Advanced timeline
@@ -93,9 +95,9 @@ features as rows (new IDs continue the letter, or start N).
 |---|---|---|---|
 | H1–H3 | Split, duplicate, ripple delete | Done | Clip context menu |
 | H4 | Crossfade transitions | Done | Preview and export |
-| H5 | Speed (per-clip playback rate) | Partial | Store action `updateClipPlaybackRate` and rendering exist; no control calls it. The old file said done |
+| H5 | Speed (per-clip playback rate) | Partial, planned | Store action `updateClipPlaybackRate` and rendering exist; no control calls it. The old file said done. Needs a control, and the map, profile and sound checked at 2× |
 | H6 | Markers | Done | |
-| H7 | Video filters | Partial | `properties.filter` is applied in preview and export; no control sets it. The old file said done |
+| H7 | Video filters | Partial, planned | `properties.filter` is applied in preview and export; no control sets it. The old file said done. Planned as brightness, contrast and saturation sliders, not a filter library |
 | H8 | Keyframe animation | Done | `KeyframeList`; the old file marked it partial |
 
 ## I/M. Audio
@@ -110,7 +112,7 @@ Section I was replaced by M; I's open items (waveforms, volume, export) were don
 | M6 | Volume controls | Done | Track volume in the track settings popover since #138 |
 | M7 | Waveforms on the timeline | Done | Shown as a strip until strata-react #121 (lane height) |
 | M8 | Audio in export | Done | Mixed on the main thread by `AudioCompositor` and encoded in the worker (issue #141). A browser that cannot encode the chosen codec gets another the container takes, and the finished export says so |
-| M9 | Equaliser, compressor, reverb | Not started | Marked "future" |
+| M9 | Equaliser, compressor, reverb | Dropped | Out of scope for a run video |
 
 ## J. Performance
 
@@ -121,7 +123,7 @@ Section I was replaced by M; I's open items (waveforms, volume, export) were don
 | J3 | Export in a Web Worker | Done | |
 | J4 | Debounced expensive work | Done | `useDebounce` |
 | J5 | Memory: blob URLs revoked, history capped | Done | |
-| J6 | Frame dropping when playback lags | Unverified | Marked done in the old file; no code found that names it |
+| J6 | Frame dropping when playback lags | Dropped | Marked done in the old file, but no code does it; preview plays real `<video>` elements, which keep time themselves |
 
 ## K. Advanced map
 
@@ -136,12 +138,13 @@ Section I was replaced by M; I's open items (waveforms, volume, export) were don
 
 ## L. Sharing and cloud
 
-None started. All need a server, which the app does not have; whether they are still wanted is open.
+All dropped (2026-11-12). They need a server, and the app's premise is that nothing is uploaded. Sharing,
+if ever wanted, would be a new section.
 
 | ID | Feature | Status |
 |---|---|---|
-| L1 | Share a project by link | Not started |
-| L2 | Cloud storage for assets | Not started |
-| L3 | Real-time collaboration | Not started |
-| L4 | Comments on the timeline | Not started |
-| L5 | Version history | Not started |
+| L1 | Share a project by link | Dropped |
+| L2 | Cloud storage for assets | Dropped |
+| L3 | Real-time collaboration | Dropped |
+| L4 | Comments on the timeline | Dropped |
+| L5 | Version history | Dropped |

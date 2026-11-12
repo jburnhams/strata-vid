@@ -28,7 +28,7 @@ How the editor is built, as of the move onto strata-react (2026-11). What it doe
 | Maps | Leaflet + react-leaflet | Preview map; export draws OSM tiles itself onto the canvas |
 | GPX | `@we-gold/gpxjs` | Parsed to points, stats and GeoJSON in `AssetLoader`; simplified by `settings.simplificationTolerance` |
 | Icons | lucide-react | |
-| Charts | strata-react `LineChart` | The elevation profile. `recharts` is still a devDependency but nothing imports it; removing it is Jonathan's call |
+| Charts | strata-react `LineChart` | The elevation profile |
 | Tests | Jest 30 + Testing Library, jsdom | Babel transform (no ts-jest); `@napi-rs/canvas` for canvas code; see [AGENTS.md](../AGENTS.md) |
 
 ## Data model
@@ -45,7 +45,7 @@ tracks        Record<id, Track>     video | audio | overlay; label, isMuted, isL
                                     clips (ordered ids), viewMode (frames | waveform | both)
 trackOrder    string[]
 clips         Record<id, Clip>      assetId, trackId, start, duration, offset (trim into the source),
-                                    type (video | audio | image | map | text | html | data),
+                                    type (video | audio | image | map | text | data),
                                     properties, textStyle, content, syncOffset, extraTrackAssets,
                                     transitionIn, playbackRate, keyframes, volume
 playback      currentTime, isPlaying, playbackRate

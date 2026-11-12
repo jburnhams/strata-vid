@@ -10,6 +10,21 @@ a factual error. Work before 2026-11-12 is in the git history only.
 
 ## 2026-11-12
 
+**Decide which open features to build and which to drop** (branch `claude/project-thread-3drc3w`).
+Jonathan asked to go through the docs and settle the remaining features. He agreed to the proposal: finish
+the port now that every strata-react issue it waited on is closed, then build four kept features, and drop
+the rest.
+- `docs/FEATURES.md`: new **Planned** and **Dropped** statuses. Planned: library drag onto a lane, H5 speed
+  control, H7 brightness/contrast/saturation, B6b track reordering, a manual export check. Dropped, each with
+  its reason: B5b, B7b, B8b (a strata-react `Timeline` concern), C5, G7's phone layout (panes stay, via
+  `Workspace`), M9, J6 (no code ever did it), L1 to L5.
+- `src/types.ts`, `src/components/MetadataPanel.tsx`, `src/components/TimelinePanel.tsx`: the `html` clip
+  type is removed; nothing rendered it.
+- `package.json`, `package-lock.json`: `recharts` removed (Jonathan's yes); nothing imported it since #138.
+- `docs/PORT.md`: on 1.0.20; the strata-react table is now "closed, to swap here"; "After the port" lists
+  the planned features. `docs/ARCHITECTURE.md`, `README.md`: recharts and HTML clips gone; gaps rewritten
+  as planned and dropped.
+
 **Update all dependencies** (branch `claude/project-thread-6a5jli`, PR #146).
 Jonathan asked for every dependency to be updated. Only two were behind their ranges' latest: strata-react
 and Playwright. The rest of the lockfile was refreshed to the newest versions the ranges allow.

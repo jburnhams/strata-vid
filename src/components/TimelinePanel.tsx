@@ -35,7 +35,7 @@ import type { Clip } from '../types';
 import { TrackHeader, trackName } from './timeline/TrackHeader';
 import { WaveformOverlay } from './timeline/WaveformOverlay';
 
-const KIND: Record<Clip['type'], string> = { video: 'Video', audio: 'Audio', map: 'Map', image: 'Image', text: 'Text', html: 'HTML', data: 'Data' };
+const KIND: Record<Clip['type'], string> = { video: 'Video', audio: 'Audio', map: 'Map', image: 'Image', text: 'Text', data: 'Data' };
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 200;
 const clampZoom = (z: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z));

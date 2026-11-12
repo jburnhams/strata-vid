@@ -18,8 +18,8 @@ export interface Placement {
 }
 
 const FULL_FRAME: Clip['properties'] = { x: 0, y: 0, width: 100, height: 100, rotation: 0, opacity: 1, zIndex: 0 };
-/** The route's map as an inset: top-right, a quarter of the frame wide, clear of the edges. */
-const ROUTE_INSET: Clip['properties'] = { x: 72, y: 4, width: 24, height: 32, rotation: 0, opacity: 1, zIndex: 1 };
+/** The route's map as an inset: top-right, about two fifths of the frame wide, clear of the edges. */
+const ROUTE_INSET: Clip['properties'] = { x: 58, y: 4, width: 38, height: 60, rotation: 0, opacity: 1, zIndex: 1 };
 const DEFAULT_SECONDS = 10;
 
 const trackKind = (asset: Asset): Track['type'] => (asset.type === 'audio' ? 'audio' : asset.type === 'gpx' ? 'overlay' : 'video');

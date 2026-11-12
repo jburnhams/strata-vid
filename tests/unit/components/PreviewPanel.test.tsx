@@ -29,9 +29,10 @@ describe('PreviewPanel', () => {
     });
   });
 
-  test('renders current time when no clips are active', () => {
+  test('says what fills the stage when the timeline is empty', () => {
     render(<PreviewPanel />);
-    expect(screen.getByText('10.00s')).toBeInTheDocument();
+    expect(screen.getByText('Add a clip to the timeline to see it here.')).toBeInTheDocument();
+    expect(screen.queryByText('10.00s')).not.toBeInTheDocument();
   });
 
   test('renders video player for active video clips', () => {

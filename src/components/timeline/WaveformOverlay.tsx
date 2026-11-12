@@ -6,6 +6,7 @@ interface WaveformOverlayProps {
   offset: number; // Source offset in seconds
   duration: number; // Timeline duration in seconds
   playbackRate: number;
+  /** A CSS colour; by default the muted foreground role, so it reads on both schemes. */
   color?: string;
 }
 
@@ -15,7 +16,7 @@ export const WaveformOverlay: React.FC<WaveformOverlayProps> = ({
   offset,
   duration,
   playbackRate,
-  color = 'rgba(255, 255, 255, 0.5)'
+  color = 'currentColor'
 }) => {
   const pathData = useMemo(() => {
     if (!waveform || waveform.length === 0 || assetDuration <= 0) return '';
@@ -66,10 +67,12 @@ export const WaveformOverlay: React.FC<WaveformOverlayProps> = ({
   if (!pathData) return null;
 
   return (
+    // Drawn in the muted foreground role, faint, behind the clip's name: until 2026-11-12 it was
+    // white at 30%, which vanished on the light scheme's pale clips and sat over the name in dark
+    // (issue #145).
     <div
-      className="absolute inset-0 pointer-events-none z-0"
+      className="absolute inset-0 pointer-events-none z-0 text-muted-foreground opacity-35"
       data-testid="waveform-overlay"
-      style={{ opacity: 0.6 }} // Fixed opacity, color passed via fill
     >
        <svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 100 100">
          <path d={pathData} fill={color} stroke="none" />

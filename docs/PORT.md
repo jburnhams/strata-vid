@@ -45,15 +45,18 @@ no longer imported; removing it from `package.json` is Jonathan's call.
 ## App bugs noted
 
 Found while writing the visual tests (2026-11-12), with the media in `tests/fixtures/media`, and filed
-as issues #141 to #145. Each is struck from this list in the PR that fixes it. Fixed so far: export
-never rendering a frame and always dropping the sound (#141); MP4 details and dates, and GPX dates, not
-read (#142); the library's race order, "Add to timeline" selecting the file and stacking everything
-on the video track, rows that were buttons holding buttons, and the audio file's map icon (#143); the sync panel's unlabelled epoch field and
-mixed date styles, and the elevation profile marking a different place from the map (#144). The
-profile still labels the route's end "now": strata-react's LineChart always does.
+as issues #141 to #145. All fixed on 2026-11-12 (branch `claude/project-thread-6a5jli`):
 
-- **The empty stage shows "0.00s"** in monospace in its middle.
-- **In the light scheme the audio clip's waveform is invisible** (it shows in dark).
+- #141: export never rendered a frame, and always dropped the sound.
+- #142: MP4 details and dates, and GPX dates, were not read.
+- #143: the library listed files in a race order; "Add to timeline" selected the file and stacked
+  everything on the video track; rows were buttons holding buttons; an audio file showed the map icon.
+- #144: the sync panel's unlabelled epoch field and mixed date styles; the elevation profile marked a
+  different place from the map, on an axis from 0 m.
+- #145: the empty stage's "0.00s"; the waveform invisible in light.
+
+Left for strata-react: the profile still labels the route's end "now", which LineChart always does
+(passed on as a framework gap), and clip kind colours that swap between schemes (#121).
 
 ## After the port
 

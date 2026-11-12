@@ -13,6 +13,14 @@ import {
   FILES, addFiles, addToTimeline, buildEdit, closeToasts, serveTiles, chooseFile, clip, drag, expect, libraryItem, playhead, restPointer, seekTo, useScheme, waitForFrames,
 } from './tests/visual/flows';
 
+/** Matches the route to the first clip's recorded time from the sync panel, and checks where that puts the clip's start. */
+const syncRouteToFootage = async (page: import('playwright').Page) => {
+  await page.getByRole('button', { name: `Match ${FILES.lane}'s recorded time` }).click();
+  // GX010412 was recorded at 06:43:38, 150 s after the route's first point (06:41:08).
+  const into = await page.getByRole('textbox', { name: 'Clip starts into the route' }).inputValue();
+  expect(into === '150', `the route clip should start 150 s into the route, not ${into}`);
+};
+
 const fit = async (page: import('playwright').Page) => {
   await page.getByRole('button', { name: 'Fit to view' }).click();
 };
@@ -73,7 +81,7 @@ const states: Record<string, RouteState> = {
     },
   },
 
-  // Move: the music clip, last on the track, dragged two seconds right leaves a gap before it.
+  // Move: the music clip, on its own audio track from 0:00, dragged two seconds right.
   'clip-moved': {
     setup: async (page) => {
       await buildEdit(page);
@@ -82,8 +90,8 @@ const states: Record<string, RouteState> = {
       // Two seconds' worth of pixels at this zoom: the 8 s lane clip's width / 4.
       await drag(page, clip(page, FILES.music), lane!.width / 4);
       const after = await clip(page, FILES.music).getAttribute('aria-label');
-      // Labels floor to the second and a drag lands on a frame, so two seconds reads 0:33 or 0:34.
-      expect(/0:3[34] to 0:5[34]/.test(after ?? ''), `the music clip should start about 0:34 after the move, not "${after}"`);
+      // Labels floor to the second and a drag lands on a frame, so two seconds reads 0:01 or 0:02.
+      expect(/0:0[12] to 0:2[12]/.test(after ?? ''), `the music clip should start about 0:02 after the move, not "${after}"`);
       await restPointer(page);
     },
   },
@@ -149,13 +157,14 @@ const states: Record<string, RouteState> = {
     },
   },
 
-  // The route on the stage: the map clip under the playhead, its inspector open.
+  // The route on the stage: the map clip, matched to the first clip's recorded time, 5 s in.
   'map-preview': {
     setup: async (page) => {
       await buildEdit(page);
       await fit(page);
       await clip(page, FILES.gpx).click();
-      await seekTo(page, 27);
+      await syncRouteToFootage(page);
+      await seekTo(page, 5);
       await page.waitForLoadState('networkidle');
       await restPointer(page);
     },
@@ -167,7 +176,8 @@ const states: Record<string, RouteState> = {
       await buildEdit(page);
       await fit(page);
       await clip(page, FILES.gpx).click();
-      await seekTo(page, 27);
+      await syncRouteToFootage(page);
+      await seekTo(page, 5);
       await page.getByRole('combobox', { name: 'Map style' }).selectOption('satellite');
       await page.getByText('Show elevation profile').click();
       expect(await page.getByRole('switch', { name: 'Show elevation profile' }).isChecked(), 'the elevation profile switch did not turn on');

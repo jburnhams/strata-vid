@@ -25,15 +25,15 @@ Each state is taken light and dark at 1440×900 (the editor's grid is desktop-on
 | `empty` | Opened the editor | |
 | `imported` | Dropped three clips, the GPX and the music on the library; chose a phone photo with "Add files" | the photo is refused with its reason |
 | `gpx-details` | Dropped the GPX and selected it | |
-| `timeline` | Put everything on the timeline with "Add to timeline", fitted it, moved to 0:02 | each clip appears |
+| `timeline` | Put everything on the timeline with "Add to timeline" (clips on Track 1, the route over them, the music on Audio), fitted it, moved to 0:02 | each clip appears |
 | `clip-selected` | Clicked the woods clip, moved to 0:11 | |
 | `move-refused` | Is dragging the ridge clip onto the first clip (pointer still down) | |
-| `clip-moved` | Dragged the music clip two seconds right | the clip's new start |
+| `clip-moved` | Dragged the music clip two seconds right on its audio track | the clip's new start |
 | `clip-trimmed` | Dragged the woods clip's end in by two seconds | the clip's new span |
 | `clip-menu` | Right-clicked the woods clip with the playhead inside it | |
 | `frame-step` | Played from 0:09 for a second, paused, went to 0:10, stepped three frames | playback moved the playhead |
 | `inspector-edits` | Set the ridge clip to 50% opacity and 4° from the keyboard | the opacity value |
-| `map-preview` | Selected the route clip with the playhead on it | |
+| `map-preview` | Selected the route clip, matched it to the first clip's recorded time, moved to 0:05 | the clip starts 150 s into the route |
 | `map-edited` | Chose satellite tiles and turned on the elevation profile | the switch is on |
 | `export-settings` | Opened Export, chose 720p and WebM, opened Encoding | the preset's width |
 | `exported` | Put the lane clip on the timeline and exported it at the defaults (1080p MP4) | the download is an MP4 of more than 500 kB |

@@ -303,4 +303,75 @@ describe('WorkerCompositor', () => {
 
     expect(interpolateValue).toHaveBeenCalled();
   });
+
+  describe('video frames for an export', () => {
+    // Like mediabunny's canvasesAtTimestamps: it answers a timestamp only once it has seen the next
+    // one (or the end of the list), which is why a one-at-a-time feed never got its first frame.
+    const lookAheadSink = () => {
+      const asked: number[][] = [];
+      mockCanvasSink.canvasesAtTimestamps.mockImplementation(((timestamps: number[]) => {
+        asked.push([...timestamps]);
+        return (async function* () {
+          for (const t of timestamps) yield { canvas: { width: 100, height: 100, label: `frame@${t.toFixed(2)}` }, timestamp: t };
+        })();
+      }) as any);
+      return asked;
+    };
+
+    const video: Asset = { id: 'v1', type: 'video', src: 'blob:v1', file: new File([''], 'v1.mp4') } as Asset;
+    const clipAt = (over: Partial<Clip>): Clip => ({
+      id: 'c1', trackId: 't1', type: 'video', assetId: 'v1', start: 1, duration: 1, offset: 2,
+      properties: { x: 0, y: 0, width: 100, height: 100, opacity: 1, rotation: 0, zIndex: 0 }, ...over,
+    } as Clip);
+
+    it('asks for every frame of a clip at once and draws one per rendered frame', async () => {
+      const asked = lookAheadSink();
+      const project = createProject({ c1: clipAt({}) }, { v1: video }, [{ id: 't1', type: 'video', clips: ['c1'], isMuted: false }] as Track[]);
+      await compositor.initialize([video]);
+      compositor.planFrames(project as any, 10, 30);
+
+      for (let frame = 0; frame < 30; frame++) await compositor.renderFrame(mockCtx, frame / 10, project as any);
+
+      expect(asked).toHaveLength(1);
+      expect(asked[0].map((t) => t.toFixed(2))).toEqual(['2.00', '2.10', '2.20', '2.30', '2.40', '2.50', '2.60', '2.70', '2.80', '2.90']);
+      expect(mockCtx.drawImage.mock.calls.map((c: any[]) => c[0].label)).toEqual(asked[0].map((t) => `frame@${t.toFixed(2)}`));
+    });
+
+    it('follows the clip\'s speed', async () => {
+      const asked = lookAheadSink();
+      const project = createProject({ c1: clipAt({ start: 0, offset: 0, duration: 0.5, playbackRate: 2 }) }, { v1: video }, [{ id: 't1', type: 'video', clips: ['c1'], isMuted: false }] as Track[]);
+      await compositor.initialize([video]);
+      compositor.planFrames(project as any, 10, 10);
+      for (let frame = 0; frame < 10; frame++) await compositor.renderFrame(mockCtx, frame / 10, project as any);
+      expect(asked[0].map((t) => t.toFixed(1))).toEqual(['0.0', '0.2', '0.4', '0.6', '0.8']);
+      expect(mockCtx.drawImage).toHaveBeenCalledTimes(5);
+    });
+
+    it('plans nothing for a muted track', async () => {
+      const asked = lookAheadSink();
+      const project = createProject({ c1: clipAt({}) }, { v1: video }, [{ id: 't1', type: 'video', clips: ['c1'], isMuted: true }] as Track[]);
+      await compositor.initialize([video]);
+      compositor.planFrames(project as any, 10, 30);
+      for (let frame = 0; frame < 30; frame++) await compositor.renderFrame(mockCtx, frame / 10, project as any);
+      expect(asked).toHaveLength(0);
+      expect(mockCtx.drawImage).not.toHaveBeenCalled();
+    });
+  });
+
+  it("draws a clip with a higher zIndex on top, whatever its track's place", async () => {
+    const drawn: string[] = [];
+    mockCtx.fillText.mockImplementation((text: string) => drawn.push(text));
+    const text = (id: string, trackId: string, zIndex: number): Clip => ({
+      id, trackId, type: 'text', assetId: '', start: 0, duration: 5, offset: 0, content: id, volume: 1,
+      properties: { x: 0, y: 0, width: 100, height: 100, opacity: 1, rotation: 0, zIndex },
+    } as Clip);
+    // The inset's track was made first, so it comes first in the order.
+    const project = createProject(
+      { inset: text('inset', 'route', 1), footage: text('footage', 'video', 0) },
+      {},
+      [{ id: 'route', type: 'overlay', clips: ['inset'], isMuted: false }, { id: 'video', type: 'video', clips: ['footage'], isMuted: false }] as Track[],
+    );
+    await compositor.renderFrame(mockCtx, 1, project as any);
+    expect(drawn).toEqual(['footage', 'inset']);
+  });
 });

@@ -15,12 +15,14 @@ describe('MapSyncControl', () => {
     id: 'clip-1',
     assetId: 'asset-1',
     type: 'map',
-    syncOffset: 1000,
+    // The clip starts 90 s into the route
+    syncOffset: Date.parse('2023-01-01T10:01:30Z'),
   };
 
   const mockAsset = {
     id: 'asset-1',
     type: 'gpx',
+    gpxPoints: [{ time: Date.parse('2023-01-01T10:00:00Z'), lat: 0, lon: 0 }],
     stats: {
       time: {
         start: new Date('2023-01-01T10:00:00Z'),
@@ -55,29 +57,25 @@ describe('MapSyncControl', () => {
     });
   });
 
-  it('renders sync control', () => {
+  it('writes the dates as the inspector does, and the offset as seconds into the route, labelled', () => {
     render(<MapSyncControl clipId="clip-1" />);
-    expect(screen.getByText('Synchronization')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('1000')).toBeInTheDocument();
+    expect(screen.getByText('Route starts')).toBeInTheDocument();
+    expect(screen.getByText('video.mp4 recorded')).toBeInTheDocument();
+    const field = screen.getByRole('textbox', { name: 'Clip starts into the route' });
+    expect(field).toHaveValue('90');
   });
 
-  it('updates offset on button click', () => {
+  it('stores the seconds typed as the route time at the clip start', () => {
     render(<MapSyncControl clipId="clip-1" />);
-    const input = screen.getByDisplayValue('1000');
-    fireEvent.change(input, { target: { value: '2000' } });
-
-    const setButton = screen.getByText('Set');
-    fireEvent.click(setButton);
-
-    expect(mockUpdateClipSyncOffset).toHaveBeenCalledWith('clip-1', 2000);
+    const field = screen.getByRole('textbox', { name: 'Clip starts into the route' });
+    fireEvent.change(field, { target: { value: '120' } });
+    fireEvent.blur(field);
+    expect(mockUpdateClipSyncOffset).toHaveBeenCalledWith('clip-1', Date.parse('2023-01-01T10:02:00Z'));
   });
 
-  it('auto syncs using video creation time', () => {
+  it("matches the footage's recorded time", () => {
     render(<MapSyncControl clipId="clip-1" />);
-    const autoButton = screen.getByText('Auto-Sync to Video Metadata');
-    fireEvent.click(autoButton);
-
-    // Should call with video creation time (epoch)
+    fireEvent.click(screen.getByRole('button', { name: "Match video.mp4's recorded time" }));
     expect(mockUpdateClipSyncOffset).toHaveBeenCalledWith('clip-1', mockVideoAsset.creationTime.getTime());
   });
 

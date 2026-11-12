@@ -145,11 +145,13 @@ export const PreviewPanel: React.FC = () => {
 
              {(showSafeAreas || showGrid) && <StageGuides safe={showSafeAreas} thirds={showGrid} />}
 
+             {/* Nothing under the playhead: say what fills the stage, instead of the bare time this
+                 printed in monospace until 2026-11-12 (issue #145); the transport shows the time. */}
              {activeClips.length === 0 && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                    <div className="text-muted-foreground type-body-sm font-mono">
-                       {currentTime.toFixed(2)}s
-                    </div>
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 p-6">
+                    <p className="text-muted-foreground type-body-sm text-center">
+                       {Object.keys(clips).length === 0 ? 'Add a clip to the timeline to see it here.' : 'No clip at the playhead.'}
+                    </p>
                 </div>
             )}
           </div>

@@ -8,6 +8,7 @@ import { EditMenu } from './components/EditMenu';
 import { useProjectStore } from './store/useProjectStore';
 import type { Asset, Track, Clip } from './types';
 import { AssetLoader } from './services/AssetLoader';
+import { placeOnTimeline } from './utils/timelinePlacement';
 import { ExportModal } from './components/ExportModal';
 import { HelpModal } from './components/HelpModal';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -51,12 +52,22 @@ function App() {
   const clips = Object.values(clipsRecord || {});
   const tracks = Object.values(tracksRecord || {});
 
+  // Files added together finish loading in any order; each takes its place in the library when it
+  // is added, not when it is ready (issue #143).
+  const importCount = React.useRef(0);
+  const nextImportOrder = () => {
+    const highest = Math.max(0, ...Object.values(useProjectStore.getState().assets).map(a => a.importOrder ?? 0));
+    importCount.current = Math.max(importCount.current, highest) + 1;
+    return importCount.current;
+  };
+
   /** Loads one file for the library's file intake: a throw becomes that file's "Failed" row, with a retry. */
   const handleAddFile = async (file: File) => {
+    const importOrder = nextImportOrder();
     const asset = await AssetLoader.loadAsset(file, {
       simplificationTolerance: settings.simplificationTolerance,
     });
-    addAsset(asset);
+    addAsset({ ...asset, importOrder });
     selectAsset(asset.id);
     // The thumbnail follows; the asset is usable without it.
     if (asset.file) {
@@ -107,59 +118,16 @@ function App() {
     }
   };
 
-  // Add Asset Helper (Button)
-  const addAssetToShortestTrack = (assetId: string) => {
+  /** "Add to timeline": the track and span come from placeOnTimeline; the selection is left alone. */
+  const addToTimeline = (assetId: string) => {
       const asset = assetsRecord[assetId];
-      if(!asset) return;
-
-      let bestTrackId = null;
-      let minEndTime = Infinity;
-
-      if (tracks.length === 0) {
-           const newTrackId = Math.random().toString(36).substr(2, 9);
-           addTrack({
-               id: newTrackId,
-               type: 'video',
-               label: 'Track 1',
-               isMuted: false,
-               isLocked: false,
-               volume: 1.0,
-               clips: []
-           });
-           bestTrackId = newTrackId;
-           minEndTime = 0;
-      } else {
-          tracks.forEach(track => {
-              const trackClips = track.clips.map(id => clipsRecord[id]).filter(Boolean);
-              let endTime = 0;
-              trackClips.forEach(c => {
-                  const e = c.start + c.duration;
-                  if (e > endTime) endTime = e;
-              });
-
-              if (endTime < minEndTime) {
-                  minEndTime = endTime;
-                  bestTrackId = track.id;
-              }
-          });
-      }
-
-      if (bestTrackId) {
-            addClip({
-               id: Math.random().toString(36).substr(2, 9),
-               assetId: asset.id,
-               trackId: bestTrackId,
-               start: minEndTime,
-               duration: asset.duration || 10,
-               offset: 0,
-               type: asset.type === 'image' ? 'image' : asset.type === 'video' ? 'video' : asset.type === 'audio' ? 'audio' : 'map',
-               properties: {
-                   x: 0, y: 0, width: 100, height: 100, rotation: 0, opacity: 1, zIndex: 0
-               },
-               volume: 1.0
-           });
-           showSuccess('Added to timeline');
-      }
+      if (!asset) return;
+      const { trackOrder } = useProjectStore.getState();
+      const newId = () => Math.random().toString(36).slice(2, 11);
+      const { newTrack, clip } = placeOnTimeline(asset, { tracks: tracksRecord, trackOrder, clips: clipsRecord }, newId);
+      if (newTrack) addTrack(newTrack);
+      addClip(clip);
+      showSuccess('Added to timeline');
   };
 
   return (
@@ -196,7 +164,7 @@ function App() {
                 onAssetSelect={selectAsset}
                 onAssetRemove={handleAssetRemove}
                 onAssetUpdate={handleAssetUpdate}
-                onAddToTimeline={addAssetToShortestTrack}
+                onAddToTimeline={addToTimeline}
             />
           </div>
 

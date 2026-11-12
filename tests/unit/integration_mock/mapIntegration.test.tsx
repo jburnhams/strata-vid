@@ -112,13 +112,12 @@ describe('Map Integration', () => {
     // Now, let's change the Sync Offset using the Control.
     render(<MapSyncControl clipId="clip-1" />);
 
-    // Initially input shows '0'.
-    // We set Sync Offset to 2000ms.
-    // This means Video Time 0 corresponds to GPX Time 2000ms.
-
-    const input = screen.getByDisplayValue('0');
-    fireEvent.change(input, { target: { value: '2000' } });
-    fireEvent.click(screen.getByText('Set'));
+    // Initially the clip starts 0 s into the route (no offset: the route's first point, 1000 ms).
+    // Starting it 1 s into the route makes Video Time 0 correspond to GPX Time 2000 ms.
+    const input = screen.getByRole('textbox', { name: 'Clip starts into the route' });
+    expect(input).toHaveValue('0');
+    fireEvent.change(input, { target: { value: '1' } });
+    fireEvent.blur(input);
 
     // Verify store update
     expect(useProjectStore.getState().clips['clip-1'].syncOffset).toBe(2000);

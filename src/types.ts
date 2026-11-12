@@ -42,6 +42,8 @@ export interface Asset {
   videoMetadata?: VideoMetadata;
   creationTime?: Date;
   creationTimeSource?: 'metadata' | 'file' | 'none';
+  /** When the file was added, counted per project: the library lists files in this order, not the order they finished loading. */
+  importOrder?: number;
   thumbnail?: string; // Blob URL for thumbnail
   waveform?: number[]; // Array of peak values (0-1) for audio visualization
 }

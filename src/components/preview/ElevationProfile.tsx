@@ -5,8 +5,12 @@
  * a table for a screen reader, which the hand-drawn SVG (stretched with preserveAspectRatio="none")
  * had none of.
  *
- * Distance maps to clip time the way the old profile did: by the share of the track's own time at
- * that distance, stretched over the clip.
+ * The playhead's place on the route is found the way the map's marker finds it: the route's own
+ * clock, started at the track's sync offset (or its first point) when the clip starts, at real
+ * speed. Until 2026-11-12 the profile instead stretched the whole route over the clip, so it marked
+ * 2.6 km while the marker sat at the start (issue #144). A playhead before or after the recording
+ * draws no rule. The height axis starts at a round number below the route's lowest point, not at
+ * 0 m, so the climb is not drawn flat.
  */
 import React, { useMemo, useState } from 'react';
 import { Field, LineChart, NativeSelect, format } from 'strata-react';
@@ -17,8 +21,10 @@ interface ElevationProfileProps {
   mainAssetId: string;
   extraTracks: ExtraTrack[];
   onSeek: (time: number) => void;
+  /** Seconds into the clip. */
   currentTime: number;
-  clipDuration: number;
+  /** The main route's sync offset: the GPX time (epoch ms) at the clip's start. */
+  syncOffset?: number;
 }
 
 type Reading = { dist: number; ele: number; time: number };
@@ -52,7 +58,15 @@ const along = (rows: Reading[], by: 'dist' | 'time', at: number, to: 'dist' | 't
   return rows[rows.length - 1][to];
 };
 
-const ElevationProfile: React.FC<ElevationProfileProps> = ({ gpxAssets, mainAssetId, extraTracks, onSeek, currentTime, clipDuration }) => {
+/** A round bottom for the height axis, below the lowest reading: a step people write (1, 2, 2.5 or 5 × 10ⁿ m) for about four steps over the range. */
+export const heightFloor = (min: number, max: number): number => {
+  const rough = Math.max(max - min, 1) / 4;
+  const mag = 10 ** Math.floor(Math.log10(rough));
+  const step = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((s) => s >= rough) ?? 10 * mag;
+  return Math.floor(min / step) * step;
+};
+
+const ElevationProfile: React.FC<ElevationProfileProps> = ({ gpxAssets, mainAssetId, extraTracks, onSeek, currentTime, syncOffset }) => {
   const [selectedTrackId, setSelectedTrackId] = useState<string>(mainAssetId);
   const selectedAsset = gpxAssets.find(asset => asset?.id === selectedTrackId);
 
@@ -64,13 +78,14 @@ const ElevationProfile: React.FC<ElevationProfileProps> = ({ gpxAssets, mainAsse
   );
 
   const first = rows[0], last = rows[rows.length - 1];
-  const trackDuration = rows.length > 1 ? last.time - first.time : 0;
 
-  // Clip time and distance, both ways, through the track's own clock
-  const distanceAt = (t: number) =>
-    trackDuration > 0 && clipDuration > 0 ? along(rows, 'time', first.time + (t / clipDuration) * trackDuration, 'dist') : 0;
-  const timeAt = (d: number) =>
-    trackDuration > 0 ? ((along(rows, 'dist', d, 'time') - first.time) / trackDuration) * clipDuration : 0;
+  // Clip time and distance, both ways, through the route's own clock (as the map's marker does)
+  const offset = selectedTrackId === mainAssetId ? syncOffset : extraTracks.find(t => t.assetId === selectedTrackId)?.syncOffset;
+  const base = offset || first?.time || 0;
+  const gpxTime = base + currentTime * 1000;
+  const current = rows.length > 1 && gpxTime >= first.time && gpxTime <= last.time ? along(rows, 'time', gpxTime, 'dist') : undefined;
+  const timeAt = (d: number) => (along(rows, 'dist', d, 'time') - base) / 1000;
+  const heights = rows.map(r => r.ele);
 
   return (
     <div className="bg-card text-foreground p-2 grid gap-1">
@@ -99,7 +114,8 @@ const ElevationProfile: React.FC<ElevationProfileProps> = ({ gpxAssets, mainAsse
           formatX={formatDistance}
           formatY={(m) => `${format.integer(m)} m`}
           xTicks={distanceTicks(last.dist)}
-          current={distanceAt(currentTime)}
+          yMin={rows.length > 1 ? heightFloor(Math.min(...heights), Math.max(...heights)) : undefined}
+          current={current}
           readout
           onPick={(d) => onSeek(timeAt(d))}
           area

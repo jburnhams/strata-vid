@@ -8,9 +8,18 @@ import path from 'path';
 jest.mock('mediabunny', () => {
     return {
         BlobSource: jest.fn(),
+        // Shaped like mediabunny's Input: async getters on the input and its tracks.
         Input: jest.fn().mockImplementation(() => ({
-            getFormat: jest.fn().mockResolvedValue({ duration: 100 }),
-            getVideoTracks: jest.fn().mockResolvedValue([{ width: 1920, height: 1080 }]),
+            getFormat: jest.fn().mockResolvedValue({ name: 'MP4' }),
+            computeDuration: jest.fn().mockResolvedValue(100),
+            getMetadataTags: jest.fn().mockResolvedValue({}),
+            getPrimaryVideoTrack: jest.fn().mockResolvedValue({
+                getDisplayWidth: async () => 1920,
+                getDisplayHeight: async () => 1080,
+                getCodec: async () => 'avc',
+                computePacketStats: async () => ({ packetCount: 0, averagePacketRate: 0, averageBitrate: 0 }),
+            }),
+            getPrimaryAudioTrack: jest.fn().mockResolvedValue(null),
             dispose: jest.fn()
         }))
     };

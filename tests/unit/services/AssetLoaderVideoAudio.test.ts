@@ -18,13 +18,20 @@ describe('AssetLoader Video Audio Extraction', () => {
   const mockInput = {
     getFormat: jest.fn(),
     computeDuration: jest.fn(),
-    getVideoTracks: jest.fn(),
+    getMetadataTags: jest.fn(),
+    getPrimaryVideoTrack: jest.fn(),
+    getPrimaryAudioTrack: jest.fn(),
     dispose: jest.fn(),
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
     (Input as unknown as jest.Mock).mockImplementation(() => mockInput);
+    mockInput.getFormat.mockResolvedValue({ name: 'MP4' });
+    mockInput.computeDuration.mockResolvedValue(10);
+    mockInput.getMetadataTags.mockResolvedValue({});
+    mockInput.getPrimaryVideoTrack.mockResolvedValue(null);
+    mockInput.getPrimaryAudioTrack.mockResolvedValue(null);
     (global.URL.createObjectURL as jest.Mock).mockReturnValue('blob:test-url');
     (global.URL.revokeObjectURL as jest.Mock).mockImplementation(() => {});
 
@@ -38,12 +45,6 @@ describe('AssetLoader Video Audio Extraction', () => {
   it('should extract waveform data for video assets', async () => {
     const file = new File([''], 'test.mp4', { type: 'video/mp4' });
 
-    // Mock video metadata extraction
-    mockInput.getFormat.mockResolvedValue({
-      duration: 10, // Matching duration
-      tags: { creation_time: '2023-05-20T10:00:00Z' }
-    });
-    mockInput.getVideoTracks.mockResolvedValue([]);
 
     const asset = await AssetLoader.loadAsset(file);
 
@@ -55,8 +56,7 @@ describe('AssetLoader Video Audio Extraction', () => {
     const file = new File([''], 'test.mp4', { type: 'video/mp4' });
 
     // Video metadata missing duration
-    mockInput.getFormat.mockResolvedValue({});
-    mockInput.getVideoTracks.mockResolvedValue([]);
+    mockInput.computeDuration.mockResolvedValue(0);
 
     // Audio metadata provides duration
     (extractAudioMetadata as jest.Mock).mockResolvedValue({
@@ -72,8 +72,6 @@ describe('AssetLoader Video Audio Extraction', () => {
   it('should handle audio extraction failure gracefully', async () => {
       const file = new File([''], 'test.mp4', { type: 'video/mp4' });
 
-      mockInput.getFormat.mockResolvedValue({ duration: 5 });
-      mockInput.getVideoTracks.mockResolvedValue([]);
 
       // Mock failure
       (extractAudioMetadata as jest.Mock).mockRejectedValue(new Error('Audio extraction failed'));

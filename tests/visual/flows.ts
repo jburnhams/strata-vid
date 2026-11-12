@@ -50,9 +50,40 @@ export async function useScheme(page: Page, shot: Shot) {
   await restPointer(page);
 }
 
-/** Puts the pointer somewhere neutral, so no row is left in its hover state for the shot. */
+/** Puts the pointer somewhere neutral, so no row is left in its hover state for the shot, and lets the route's map settle. */
 export async function restPointer(page: Page) {
   await page.mouse.move(2, 898);
+  await waitForMapTiles(page);
+}
+
+/**
+ * The route's map is an inset on the stage over the footage whenever the playhead is on it. Waits
+ * until it has settled: Leaflet's zoom to the route's bounds has ended (a dark shot, which skips the
+ * scheme switch, was taken mid-zoom on CI), only one zoom level's tiles are left, and each tile has
+ * loaded and finished its fade-in. All of these run on real time.
+ */
+export async function waitForMapTiles(page: Page) {
+  const settled = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll('[data-testid="preview"] .leaflet-container')].map((map) => {
+        const levels = [...map.querySelectorAll('.leaflet-tile-container')].filter((level) => level.children.length > 0);
+        const tiles = [...map.querySelectorAll<HTMLImageElement>('img.leaflet-tile')];
+        const ready = !map.classList.contains('leaflet-zoom-anim') && levels.length === 1 && tiles.length > 0
+          && tiles.every((tile) => tile.complete && tile.classList.contains('leaflet-tile-loaded') && getComputedStyle(tile).opacity === '1');
+        return ready ? (map.querySelector<HTMLElement>('.leaflet-map-pane')?.style.transform ?? '') : null;
+      }),
+    );
+  // Settled, and still the same a quarter of a second later (no pan or zoom under way).
+  for (let tries = 0; tries < 100; tries++) {
+    const first = await settled();
+    if (!first.includes(null)) {
+      await page.waitForTimeout(250);
+      if (JSON.stringify(await settled()) === JSON.stringify(first)) return;
+    } else {
+      await page.waitForTimeout(100);
+    }
+  }
+  throw new Error('the route map on the stage did not settle');
 }
 
 /** A library row by file name. */
@@ -157,11 +188,12 @@ export async function closeToasts(page: Page) {
   }
 }
 
-/** Waits until every video in the preview has the frame for its current time decoded. */
+/** Waits until every video in the preview has the frame for its current time decoded, and the route's map tiles have faded in. */
 export async function waitForFrames(page: Page) {
   await page.waitForFunction(() =>
     [...document.querySelectorAll<HTMLVideoElement>('[data-testid="preview"] video')].every((v) => !v.seeking && v.readyState >= 2),
   );
+  await waitForMapTiles(page);
   // One more frame for the compositor to paint what was decoded.
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
 }

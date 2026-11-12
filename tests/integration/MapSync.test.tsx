@@ -124,8 +124,8 @@ describe('Map Sync Integration', () => {
         });
 
         // 6. Verify Metadata Panel shows Sync Controls
-        // Look for "Auto-Sync to Video Metadata" button
-        const autoSyncBtn = screen.getByText('Auto-Sync to Video Metadata');
+        // The button that matches the route to the footage's recorded time
+        const autoSyncBtn = screen.getByRole('button', { name: /^Match .*'s recorded time$/ });
         expect(autoSyncBtn).toBeInTheDocument();
         expect(autoSyncBtn).not.toBeDisabled();
 

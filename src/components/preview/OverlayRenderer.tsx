@@ -154,7 +154,6 @@ export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, c
                 gpxAssets={Object.values(allAssets || {}).filter(a => a.type === 'gpx')}
                 mainAssetId={asset.id}
                 extraTracks={clip.extraTrackAssets}
-                 clipDuration={clip.duration}
               />
           </div>
       );

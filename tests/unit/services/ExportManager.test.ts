@@ -57,37 +57,70 @@ describe('ExportManager', () => {
     }));
   });
 
-  it('should run export successfully and delegate audio to worker', async () => {
-    mockWorker.postMessage.mockImplementation((msg: any) => {
-         if (msg.type === 'start') {
-             setTimeout(() => {
-                 if (mockWorker.onmessage) {
-                    mockWorker.onmessage({ data: { type: 'progress', progress: { status: 'initializing' } } });
-                    mockWorker.onmessage({ data: { type: 'progress', progress: { status: 'rendering', percentage: 50 } } });
-                    mockWorker.onmessage({ data: { type: 'complete', blob: new Blob(['video'], {type: 'video/webm'}) } });
-                 }
-             }, 0);
-         }
-    });
+  const finishOnStart = () => mockWorker.postMessage.mockImplementation((msg: any) => {
+    if (msg.type === 'start') {
+      setTimeout(() => {
+        mockWorker.onmessage?.({ data: { type: 'progress', progress: { status: 'rendering', percentage: 50 } } });
+        mockWorker.onmessage?.({ data: { type: 'complete', blob: new Blob(['video'], { type: 'video/webm' }), totalFrames: 30, notes: ['A note.'] } });
+      }, 0);
+    }
+  });
 
+  const audibleProject = {
+    ...mockProject,
+    assets: { a1: { id: 'a1', type: 'audio', name: 'music.mp3', src: 'blob:a1' } } as any,
+    clips: { c1: { id: 'c1', assetId: 'a1', trackId: 't1', start: 0, duration: 1, offset: 0, volume: 1, type: 'audio' } } as any,
+  };
+
+  it('runs the export in the worker and reports the frames and notes it finished with', async () => {
+    finishOnStart();
     const onProgress = jest.fn();
     const result = await exportManager.exportProject(mockProject, mockExportSettings, onProgress);
 
-    // Verify correct start message
-    // Note: audioData should NOT be present (or be undefined), and no transferables (2nd arg)
-    expect(mockWorker.postMessage).toHaveBeenCalledWith(expect.objectContaining({
-        type: 'start',
-        payload: expect.objectContaining({
-            project: mockProject,
-            exportSettings: mockExportSettings
-        })
-    }));
-
-    // Verify AudioCompositor was NOT called on main thread
+    expect(mockWorker.postMessage).toHaveBeenCalledWith(
+      { type: 'start', payload: expect.objectContaining({ project: mockProject, exportSettings: mockExportSettings, audioData: null }) },
+      [],
+    );
+    // Nothing on the timeline makes a sound, so nothing is mixed.
     expect(AudioCompositor).not.toHaveBeenCalled();
-
     expect(result).toBeInstanceOf(Blob);
-    expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({ status: 'completed' }));
+    expect(onProgress).toHaveBeenLastCalledWith(expect.objectContaining({ status: 'completed', totalFrames: 30, currentFrame: 30, notes: ['A note.'] }));
+  });
+
+  it('mixes the sound on the main thread and hands it to the worker', async () => {
+    finishOnStart();
+    await exportManager.exportProject(audibleProject, mockExportSettings, jest.fn());
+
+    expect(AudioCompositor).toHaveBeenCalledTimes(1);
+    const [message, transfer] = mockWorker.postMessage.mock.calls.find((c: any[]) => c[0].type === 'start');
+    expect(message.payload.audioData.sampleRate).toBe(44100);
+    expect(message.payload.audioData.channels).toHaveLength(2);
+    expect(transfer).toEqual(message.payload.audioData.channels.map((c: Float32Array) => c.buffer));
+  });
+
+  it('exports without sound, and says why, when mixing fails', async () => {
+    finishOnStart();
+    (AudioCompositor as jest.Mock).mockImplementation(() => ({ render: jest.fn().mockRejectedValue(new Error('decode failed')) }));
+    await exportManager.exportProject(audibleProject, mockExportSettings, jest.fn());
+
+    const [message] = mockWorker.postMessage.mock.calls.find((c: any[]) => c[0].type === 'start');
+    expect(message.payload.audioData).toBeNull();
+    expect(message.payload.audioNote).toBe('Saved without sound: the sound could not be mixed (decode failed).');
+  });
+
+  it('stops before starting the worker when cancelled while the sound is mixed', async () => {
+    let finishMix: (value: unknown) => void = () => {};
+    (AudioCompositor as jest.Mock).mockImplementation(() => ({ render: jest.fn(() => new Promise((r) => { finishMix = r; })) }));
+    const onProgress = jest.fn();
+    const running = exportManager.exportProject(audibleProject, mockExportSettings, onProgress);
+
+    await new Promise((r) => setTimeout(r, 0));
+    exportManager.cancel();
+    finishMix({ numberOfChannels: 1, sampleRate: 44100, getChannelData: () => new Float32Array(10) });
+
+    await expect(running).resolves.toBeNull();
+    expect(createExportWorker).not.toHaveBeenCalled();
+    expect(onProgress).toHaveBeenLastCalledWith(expect.objectContaining({ status: 'cancelled' }));
   });
 
   it('should handle cancellation', async () => {

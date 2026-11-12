@@ -33,7 +33,7 @@
     "react-dom": "^19.3.1",
     "react-leaflet": "^5.0.0",
     "react-router": "^8.5.1",
-    "strata-react": "^1.0.11",
+    "strata-react": "^1.0.20",
     "tailwind-merge": "^3.7.0",
     "zustand": "^5.1.0"
   },
@@ -61,7 +61,7 @@
     "jest": "^30.5.2",
     "jest-environment-jsdom": "^30.5.2",
     "jsdom": "^31.0.0",
-    "playwright": "1.63.0",
+    "playwright": "1.65.0",
     "postcss": "^8.5.32",
     "recharts": "^3.10.1",
     "tailwindcss": "^4.3.5",

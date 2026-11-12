@@ -6,8 +6,8 @@ import type { Asset } from '../../src/types';
 
 describe('LibraryPanel', () => {
   const mockAssets: Asset[] = [
-    { id: '1', name: 'run1.mp4', type: 'video', src: 'blob:1' },
-    { id: '2', name: 'track.gpx', type: 'gpx', src: 'blob:2' }
+    { id: '1', name: 'run1.mp4', type: 'video', src: 'blob:1', file: new File([''], 'run1.mp4') },
+    { id: '2', name: 'track.gpx', type: 'gpx', src: 'blob:2', file: new File([''], 'track.gpx') }
   ];
 
   const mockOnAdd = jest.fn(async () => {});
@@ -90,5 +90,33 @@ describe('LibraryPanel', () => {
     expect(await screen.findByText('Failed')).toBeInTheDocument();
     expect(screen.getByText('This GPX file has no track points.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Try again empty\.gpx/ })).toBeInTheDocument();
+  });
+
+  it('lists files in the order they were added, not the order they loaded', () => {
+    const assets: Asset[] = [
+      { id: 'b', name: 'second.mp4', type: 'video', src: 'blob:b', file: new File([''], 'second.mp4'), importOrder: 2 },
+      { id: 'c', name: 'third.gpx', type: 'gpx', src: 'blob:c', file: new File([''], 'third.gpx'), importOrder: 3 },
+      { id: 'a', name: 'first.mp3', type: 'audio', src: 'blob:a', file: new File([''], 'first.mp3'), importOrder: 1 },
+    ];
+    render(<LibraryPanel assets={assets} selectedAssetId={null} onAddFile={mockOnAdd} onAssetSelect={mockOnSelect} />);
+    const names = screen.getAllByTestId(/^asset-item-/).map((row) => row.querySelector('[title]')?.textContent);
+    expect(names).toEqual(['first.mp3', 'second.mp4', 'third.gpx']);
+  });
+
+  it("keeps a row's actions outside the button that selects it", () => {
+    const onAdd = jest.fn();
+    const onRemove = jest.fn();
+    mockOnSelect.mockClear();
+    render(<LibraryPanel assets={mockAssets} selectedAssetId="1" onAddFile={mockOnAdd} onAssetSelect={mockOnSelect} onAssetRemove={onRemove} onAddToTimeline={onAdd} />);
+
+    // Each name matches one element: the row's button is named by the file alone.
+    const add = screen.getByRole('button', { name: 'Add run1.mp4 to timeline' });
+    const select = screen.getByRole('button', { name: 'run1.mp4 Video' });
+    expect(select).toHaveAttribute('aria-current', 'true');
+    expect(select).not.toContainElement(add);
+
+    fireEvent.click(add);
+    expect(onAdd).toHaveBeenCalledWith('1');
+    expect(mockOnSelect).not.toHaveBeenCalled();
   });
 });

@@ -7,10 +7,19 @@
 //
 //   npm run build && npx strata-visual            compare with tests/visual/baselines
 //   npm run build && npx strata-visual --update   write new baselines (look at them first)
+import { readFile } from 'node:fs/promises';
 import { defineVisualConfig, type RouteState } from 'strata-react/visual';
 import {
-  FILES, addFiles, buildEdit, chooseFile, clip, drag, expect, libraryItem, playhead, restPointer, seekTo, useScheme, waitForFrames,
+  FILES, addFiles, addToTimeline, buildEdit, closeToasts, serveTiles, chooseFile, clip, drag, expect, libraryItem, playhead, restPointer, seekTo, useScheme, waitForFrames, waitForMapTiles,
 } from './tests/visual/flows';
+
+/** Matches the route to the first clip's recorded time from the sync panel, and checks where that puts the clip's start. */
+const syncRouteToFootage = async (page: import('playwright').Page) => {
+  await page.getByRole('button', { name: `Match ${FILES.lane}'s recorded time` }).click();
+  // GX010412 was recorded at 06:43:38, 150 s after the route's first point (06:41:08).
+  const into = await page.getByRole('textbox', { name: 'Clip starts into the route' }).inputValue();
+  expect(into === '150', `the route clip should start 150 s into the route, not ${into}`);
+};
 
 const fit = async (page: import('playwright').Page) => {
   await page.getByRole('button', { name: 'Fit to view' }).click();
@@ -69,10 +78,11 @@ const states: Record<string, RouteState> = {
       const lane = await clip(page, FILES.lane).boundingBox();
       const box = await target.boundingBox();
       await drag(page, target, (lane!.x + 20) - (box!.x + 4), 0, { release: false });
+      await waitForMapTiles(page);
     },
   },
 
-  // Move: the music clip, last on the track, dragged two seconds right leaves a gap before it.
+  // Move: the music clip, on its own audio track from 0:00, dragged two seconds right.
   'clip-moved': {
     setup: async (page) => {
       await buildEdit(page);
@@ -81,8 +91,8 @@ const states: Record<string, RouteState> = {
       // Two seconds' worth of pixels at this zoom: the 8 s lane clip's width / 4.
       await drag(page, clip(page, FILES.music), lane!.width / 4);
       const after = await clip(page, FILES.music).getAttribute('aria-label');
-      // Labels floor to the second and a drag lands on a frame, so two seconds reads 0:33 or 0:34.
-      expect(/0:3[34] to 0:5[34]/.test(after ?? ''), `the music clip should start about 0:34 after the move, not "${after}"`);
+      // Labels floor to the second and a drag lands on a frame, so two seconds reads 0:01 or 0:02.
+      expect(/0:0[12] to 0:2[12]/.test(after ?? ''), `the music clip should start about 0:02 after the move, not "${after}"`);
       await restPointer(page);
     },
   },
@@ -148,13 +158,14 @@ const states: Record<string, RouteState> = {
     },
   },
 
-  // The route on the stage: the map clip under the playhead, its inspector open.
+  // The route on the stage: the map clip, matched to the first clip's recorded time, 5 s in.
   'map-preview': {
     setup: async (page) => {
       await buildEdit(page);
       await fit(page);
       await clip(page, FILES.gpx).click();
-      await seekTo(page, 27);
+      await syncRouteToFootage(page);
+      await seekTo(page, 5);
       await page.waitForLoadState('networkidle');
       await restPointer(page);
     },
@@ -166,7 +177,8 @@ const states: Record<string, RouteState> = {
       await buildEdit(page);
       await fit(page);
       await clip(page, FILES.gpx).click();
-      await seekTo(page, 27);
+      await syncRouteToFootage(page);
+      await seekTo(page, 5);
       await page.getByRole('combobox', { name: 'Map style' }).selectOption('satellite');
       await page.getByText('Show elevation profile').click();
       expect(await page.getByRole('switch', { name: 'Show elevation profile' }).isChecked(), 'the elevation profile switch did not turn on');
@@ -175,8 +187,7 @@ const states: Record<string, RouteState> = {
     },
   },
 
-  // Export settings changed: 720p, WebM, the encoding options open. (Running the export is not a
-  // state yet: it stays at "Starting the export engine." in this app today; see the CHANGELOG.)
+  // Export settings changed: 720p, WebM, the encoding options open.
   'export-settings': {
     setup: async (page) => {
       await buildEdit(page);
@@ -186,6 +197,33 @@ const states: Record<string, RouteState> = {
       await dialog.getByRole('combobox', { name: 'Container format' }).selectOption('webm');
       await dialog.getByRole('button', { name: 'Encoding' }).click();
       expect(await dialog.getByRole('textbox', { name: 'Width' }).inputValue() === '1,280', 'the 720p preset should set the width to 1,280');
+      await restPointer(page);
+    },
+  },
+
+  // An export run to the end: one 8 s clip at the default 1080p MP4. The dialog says how many frames
+  // it saved and, in a browser with no AAC encoder (Playwright's Chromium), that the sound is Opus.
+  // The file itself is checked here: a picture cannot say it has frames and sound.
+  exported: {
+    setup: async (page) => {
+      await serveTiles(page);
+      await addFiles(page, [FILES.lane]);
+      await addToTimeline(page, FILES.lane);
+      await closeToasts(page);
+      await page.getByRole('button', { name: 'Export video' }).click();
+      const dialog = page.getByRole('dialog', { name: 'Export video' });
+      const [download] = await Promise.all([
+        page.waitForEvent('download', { timeout: 120_000 }),
+        dialog.getByRole('button', { name: 'Export', exact: true }).click(),
+      ]);
+      expect(download.suggestedFilename().endsWith('.mp4'), `the export should save an MP4, not ${download.suggestedFilename()}`);
+      const size = (await readFile((await download.path())!)).length;
+      expect(size > 500_000, `an 8 s 1080p export should be more than 500 kB, it is ${size} bytes`);
+      const done = page.getByRole('dialog', { name: 'Exporting video' });
+      await done.getByText('Exported', { exact: true }).waitFor();
+      // When the job ends, focus can land on the dialog's close icon, whose tooltip then opens after a
+      // delay that sometimes falls inside the shot: put focus on the footer's Close, which has none.
+      await done.locator('button', { hasText: 'Close' }).focus();
       await restPointer(page);
     },
   },

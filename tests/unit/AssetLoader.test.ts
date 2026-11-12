@@ -10,6 +10,21 @@ jest.mock('../../src/utils/gpxParser', () => ({
 }));
 jest.mock('mediabunny');
 
+/** A stand-in shaped like mediabunny's Input (its async getters), not like ffprobe's output. */
+const mediabunnyInput = ({ duration = 0, tags = {}, video = null }: { duration?: number; tags?: Record<string, unknown>; video?: { width: number; height: number } | null } = {}) => ({
+  getFormat: jest.fn().mockResolvedValue({ name: 'MP4' }),
+  computeDuration: jest.fn().mockResolvedValue(duration),
+  getMetadataTags: jest.fn().mockResolvedValue(tags),
+  getPrimaryVideoTrack: jest.fn().mockResolvedValue(video && {
+    getDisplayWidth: async () => video.width,
+    getDisplayHeight: async () => video.height,
+    getCodec: async () => 'avc',
+    computePacketStats: async () => ({ packetCount: 0, averagePacketRate: 0, averageBitrate: 0 }),
+  }),
+  getPrimaryAudioTrack: jest.fn().mockResolvedValue(null),
+  dispose: jest.fn(),
+});
+
 describe('AssetLoader', () => {
   const mockFile = new File([''], 'test.mp4', { type: 'video/mp4' });
   const mockGpxFile = new File(['<gpx>...</gpx>'], 'test.gpx', { type: 'application/gpx+xml' });
@@ -109,14 +124,7 @@ describe('AssetLoader', () => {
 
   it('should load a video asset with metadata using mediabunny (computeDuration)', async () => {
     // Mock Mediabunny Input
-    const mockInput = {
-      computeDuration: jest.fn().mockResolvedValue(120),
-      getVideoTracks: jest.fn().mockResolvedValue([{
-        displayWidth: 1920,
-        displayHeight: 1080
-      }]),
-      dispose: jest.fn()
-    };
+    const mockInput = mediabunnyInput({ duration: 120, video: { width: 1920, height: 1080 } });
 
     (Input as unknown as jest.Mock).mockImplementation(() => mockInput);
 
@@ -135,37 +143,8 @@ describe('AssetLoader', () => {
       expect(thumbUrl).toBe('blob:test');
   });
 
-  it('should load a video asset with metadata using mediabunny (getFormat)', async () => {
-    // Mock Mediabunny Input with getFormat instead of computeDuration
-    const mockInput = {
-      // computeDuration is undefined
-      getFormat: jest.fn().mockResolvedValue({ duration: 60 }),
-      getVideoTracks: jest.fn().mockResolvedValue([{
-        width: 1280,
-        height: 720
-      }]),
-      dispose: jest.fn()
-    };
-
-    (Input as unknown as jest.Mock).mockImplementation(() => mockInput);
-
-    const asset = await AssetLoader.loadAsset(mockFile);
-
-    expect(asset.type).toBe('video');
-    expect(asset.duration).toBe(60);
-    expect(asset.resolution).toEqual({ width: 1280, height: 720 });
-    expect(mockInput.dispose).toHaveBeenCalled();
-  });
-
   it('should extract creation time from metadata', async () => {
-    const mockInput = {
-      getFormat: jest.fn().mockResolvedValue({
-          duration: 60,
-          tags: { creation_time: '2023-01-01T12:00:00Z' }
-      }),
-      getVideoTracks: jest.fn().mockResolvedValue([]),
-      dispose: jest.fn()
-    };
+    const mockInput = mediabunnyInput({ duration: 60, tags: { creationTime: new Date('2023-01-01T12:00:00Z') } });
     (Input as unknown as jest.Mock).mockImplementation(() => mockInput);
 
     const asset = await AssetLoader.loadAsset(mockFile);
@@ -175,11 +154,7 @@ describe('AssetLoader', () => {
   });
 
   it('should fallback to file.lastModified if metadata missing', async () => {
-    const mockInput = {
-      getFormat: jest.fn().mockResolvedValue({ duration: 60 }), // No tags
-      getVideoTracks: jest.fn().mockResolvedValue([]),
-      dispose: jest.fn()
-    };
+    const mockInput = mediabunnyInput({ duration: 60 }); // No tags
     (Input as unknown as jest.Mock).mockImplementation(() => mockInput);
 
     // Mock file with lastModified. Note: File constructor doesn't take lastModified in JSDOM usually, but let's try or use defineProperty

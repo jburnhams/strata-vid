@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { installLayoutShims } from 'strata-react/testing';
-import ElevationProfile, { distanceTicks } from '../../../../src/components/preview/ElevationProfile';
+import ElevationProfile, { distanceTicks, heightFloor } from '../../../../src/components/preview/ElevationProfile';
 import type { GpxPoint, Asset } from '../../../../src/types';
 
 describe('ElevationProfile', () => {
@@ -37,8 +37,7 @@ describe('ElevationProfile', () => {
     mainAssetId: 'gpx1',
     extraTracks: [{ assetId: 'gpx2', syncOffset: 0 }],
     onSeek: jest.fn(),
-    currentTime: 5,
-    clipDuration: 10,
+    currentTime: 1,
   };
 
   it('draws the route as a chart named for it, with every reading in a table', () => {
@@ -57,8 +56,8 @@ describe('ElevationProfile', () => {
     fireEvent.keyDown(reader, { key: 'End' });
     fireEvent.keyDown(reader, { key: 'Enter' });
 
-    // The last reading is the end of the track, so the end of the clip
-    expect(onSeek).toHaveBeenCalledWith(10);
+    // The last reading is 2 s after the route's first point, which is the clip's start (no sync offset)
+    expect(onSeek).toHaveBeenCalledWith(2);
   });
 
   it('switches to another route', () => {
@@ -71,6 +70,27 @@ describe('ElevationProfile', () => {
     const flat: Asset = { ...mockAsset, gpxPoints: [{ time: 0, lat: 0, lon: 0, dist: 0 } as GpxPoint] };
     render(<ElevationProfile {...requiredProps} gpxAssets={[flat]} extraTracks={[]} />);
     expect(screen.getByText('This route has no heights to draw.')).toBeInTheDocument();
+  });
+
+  it("marks the playhead where the map's marker is: the route's clock from the clip's start, at real speed", () => {
+    const { container, rerender } = render(<ElevationProfile {...requiredProps} currentTime={1} />);
+    // 1 s in is the second point: 50 m along, 110 m up
+    expect(container).toHaveTextContent(/50\sm: 110\sm/);
+
+    // A sync offset of 1500 ms puts the clip's start half a second into the recording: 0.5 s in is the second point again
+    rerender(<ElevationProfile {...requiredProps} syncOffset={1500} currentTime={0.5} />);
+    expect(container).toHaveTextContent(/50\sm: 110\sm/);
+  });
+
+  it('draws no rule when the playhead is outside the recording', () => {
+    const { container } = render(<ElevationProfile {...requiredProps} currentTime={30} />);
+    expect(container).not.toHaveTextContent(/\d\sm: \d+\sm/);
+  });
+
+  it('starts the height axis at a round number below the route, not at zero', () => {
+    expect(heightFloor(215, 429)).toBe(200);
+    expect(heightFloor(1203, 1260)).toBe(1200);
+    expect(heightFloor(-20, 15)).toBe(-20);
   });
 
   it('puts distance ticks at round steps', () => {

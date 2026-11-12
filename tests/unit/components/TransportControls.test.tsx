@@ -44,8 +44,22 @@ describe('TransportControls', () => {
   });
 
   it('formats time correctly', () => {
-    useProjectStore.setState({ currentTime: 65.5 }); // 1m 5s 500ms
+    useProjectStore.setState({ currentTime: 65.5 }); // 1m 5.5s
     render(<TransportControls />);
-    expect(screen.getByText('01:05.500')).toBeInTheDocument();
+    expect(screen.getByLabelText('Position 1:05.500')).toHaveTextContent('1:05.500');
+  });
+
+  it('changes the playback speed', () => {
+    render(<TransportControls />);
+    fireEvent.change(screen.getByRole('combobox', { name: 'Playback speed' }), { target: { value: '2' } });
+    expect(useProjectStore.getState().playbackRate).toBe(2);
+  });
+
+  it('steps one frame and pauses', () => {
+    useProjectStore.setState({ isPlaying: true, currentTime: 1, settings: { ...useProjectStore.getState().settings, fps: 25, duration: 10 } });
+    render(<TransportControls />);
+    fireEvent.click(screen.getByRole('button', { name: 'Forward one frame' }));
+    expect(useProjectStore.getState().isPlaying).toBe(false);
+    expect(useProjectStore.getState().currentTime).toBeCloseTo(1.04);
   });
 });

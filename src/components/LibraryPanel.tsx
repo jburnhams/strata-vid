@@ -65,7 +65,8 @@ const LibraryAssetItem: React.FC<{
       }}
       data-testid={`asset-item-${asset.id}`}
     >
-      {asset.thumbnail ? (
+      {/* A missing file gives its room to the name, the status and Relink (strata's MissingFile has no stacked layout) */}
+      {isMissing ? null : asset.thumbnail ? (
         <div className="w-16 h-10 bg-footage rounded-control overflow-hidden flex-shrink-0 relative">
             <img
               src={asset.thumbnail}
@@ -144,7 +145,7 @@ export const LibraryPanel: React.FC<LibraryPanelProps> = ({
           {settled && <Button size="sm" variant="ghost" className="justify-self-end" onClick={intake.clear}>Clear list</Button>}
         </div>
       )}
-      <div className="flex-1 overflow-y-auto p-2 grid content-start gap-2">
+      <div className="flex-1 overflow-y-auto p-2 grid grid-cols-1 content-start gap-2">
         {assets.length > 0 && (
           <ul className="space-y-1">
             {assets.map(asset => (

@@ -1,4 +1,4 @@
-import { Toggle, ToggleGroup, Toolbar, ToolbarSeparator } from 'strata-react';
+import { MediaStage, StageGuides, Toggle, ToggleGroup, Toolbar, ToolbarSeparator } from 'strata-react';
 import React, { useState, useEffect } from 'react';
 import { useProjectStore } from '../store/useProjectStore';
 import { VideoPlayer } from './preview/VideoPlayer';
@@ -7,7 +7,6 @@ import { OverlayRenderer } from './preview/OverlayRenderer';
 import { TransportControls } from './TransportControls';
 import { usePlaybackLoop } from '../hooks/usePlaybackLoop';
 import type { Clip, ProjectSettings } from '../types';
-import { SafeAreaGuides } from './preview/SafeAreaGuides';
 import { AudioEngine } from '../services/AudioEngine';
 
 export const PreviewPanel: React.FC = () => {
@@ -80,21 +79,9 @@ export const PreviewPanel: React.FC = () => {
           />
         </Toolbar>
 
-        {/* Aspect Ratio Container */}
-        <div
-           style={{
-             aspectRatio: `${settings.width} / ${settings.height}`,
-             width: '100%',
-             height: 'auto',
-             maxHeight: '100%',
-             maxWidth: '100%', // Let flex container constrain it
-             position: 'relative',
-             backgroundColor: '#000',
-             overflow: 'hidden'
-           }}
-           className="shadow-overlay ring-1 ring-card"
-           data-testid="preview-container"
-        >
+        {/* strata-react's stage (issue #78): fits the frame's aspect into the pane and letterboxes it */}
+        <MediaStage aspect={`${settings.width}/${settings.height}`} label="Preview" className="absolute inset-0">
+          <div className="absolute inset-0 bg-footage" data-testid="preview-container">
              {/* Scaled Content Layer */}
              <div
                 style={{
@@ -156,7 +143,7 @@ export const PreviewPanel: React.FC = () => {
                 })}
              </div>
 
-             <SafeAreaGuides showSafeAreas={showSafeAreas} showGrid={showGrid} />
+             {(showSafeAreas || showGrid) && <StageGuides safe={showSafeAreas} thirds={showGrid} />}
 
              {activeClips.length === 0 && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
@@ -165,7 +152,8 @@ export const PreviewPanel: React.FC = () => {
                     </div>
                 </div>
             )}
-        </div>
+          </div>
+        </MediaStage>
       </div>
       <TransportControls />
     </div>

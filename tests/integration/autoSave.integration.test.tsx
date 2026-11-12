@@ -1,6 +1,7 @@
 import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
+import { chooseFiles } from '../utils/files';
 import userEvent from '@testing-library/user-event';
 import App from '../../src/App';
 import { AssetLoader } from '../../src/services/AssetLoader';
@@ -63,13 +64,12 @@ describe('AutoSave Integration', () => {
     renderWithStrata(<App />);
 
     // 2. Add Asset to trigger state change - use accessible selector
-    const libraryInput = screen.getByLabelText('Add Asset');
     const videoFile = new File(['dummy'], 'autosave_video.mp4', { type: 'video/mp4' });
-    await user.upload(libraryInput, videoFile);
+    chooseFiles(screen.getByRole('button', { name: 'Add files' }), [videoFile]);
 
     // Verify asset loaded
     await waitFor(() => {
-        expect(document.body.textContent).toContain('autosave_video.mp4');
+        expect(screen.getByTestId(/^asset-item-/)).toHaveTextContent('autosave_video.mp4');
     });
 
     // 3. Fast-forward time (60s)

@@ -1,6 +1,7 @@
 import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
+import { chooseFiles } from '../utils/files';
 import userEvent from '@testing-library/user-event';
 import App from '../../src/App';
 import { AssetLoader } from '../../src/services/AssetLoader';
@@ -50,11 +51,8 @@ describe('Project Management Integration', () => {
     const { container } = renderWithStrata(<App />);
 
     // 2. Add Asset - Updated selector to match new accessibility structure
-    const libraryInput = screen.getByLabelText('Add Asset');
-    expect(libraryInput).toBeInTheDocument();
-
     const videoFile = new File(['dummy'], 'video.mp4', { type: 'video/mp4' });
-    await user.upload(libraryInput, videoFile);
+    chooseFiles(screen.getByRole('button', { name: 'Add files' }), [videoFile]);
 
     // Verify asset added
     await waitFor(() => {
@@ -100,8 +98,8 @@ describe('Project Management Integration', () => {
 
     // Verify cleared
     await waitFor(() => {
-        expect(screen.getByText(/No assets loaded/i)).toBeInTheDocument();
-        expect(screen.queryByText('video.mp4')).not.toBeInTheDocument();
+        expect(screen.getByText('Drag videos, audio or GPX tracks here')).toBeInTheDocument();
+        expect(screen.queryByTestId(/^asset-item-/)).not.toBeInTheDocument();
     });
 
     // 5. Load Project

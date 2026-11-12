@@ -52,6 +52,10 @@ const ASSET_KIND: Record<string, string> = { video: 'Video file', audio: 'Audio 
 /** The map is drawn on light tiles by default: track and marker colours are checked against them. */
 const MAP_GROUND = '#f2efe9';
 
+/** A reading formatted, or `null` (printed as the missing mark) when the file did not have it. */
+const known = (n: number | undefined, f: (n: number) => string): string | null =>
+  typeof n === 'number' && Number.isFinite(n) ? f(n) : null;
+
 export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAssetId, settings, setSettings }) => {
   const activeAsset = assets.find(a => a.id === selectedAssetId) || null;
   const {
@@ -295,9 +299,9 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
   ] satisfies Property[] : [];
 
   const gpx = activeAsset?.type === 'gpx' && activeAsset.stats ? [
-    { term: 'Distance', value: format.decimal(activeAsset.stats.distance.total / 1000), unit: 'km' },
-    { term: 'Climb', value: format.integer(activeAsset.stats.elevation.gain), unit: 'm' },
-    { term: 'Moving time', value: format.runningTime(activeAsset.stats.time.duration / 1000) },
+    { term: 'Distance', value: known(activeAsset.stats.distance?.total, (m) => format.decimal(m / 1000)), unit: 'km' },
+    { term: 'Climb', value: known(activeAsset.stats.elevation?.gain, format.integer), unit: 'm' },
+    { term: 'Moving time', value: known(activeAsset.stats.time?.duration, (ms) => format.runningTime(ms / 1000)) },
   ] satisfies Property[] : [];
 
   return (

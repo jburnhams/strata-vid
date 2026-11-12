@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import App from '../../src/App';
 import { useProjectStore } from '../../src/store/useProjectStore';
 import { AssetLoader } from '../../src/services/AssetLoader';
+import { chooseFiles } from '../utils/files';
 
 // Mock URL.createObjectURL
 global.URL.createObjectURL = jest.fn(() => 'mock-url');
@@ -78,19 +79,12 @@ describe('App', () => {
     (AssetLoader.loadAsset as jest.Mock).mockRejectedValue(new Error('Load failed'));
     const user = userEvent.setup();
     renderWithStrata(<App />);
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-
-    // Select the library input (accepts video/gpx)
-    const input = document.querySelector('input[accept*="video"]') as HTMLInputElement;
-    // Use a valid file extension to pass 'accept' attribute check in LibraryPanel
     const file = new File(['content'], 'video.mp4', { type: 'video/mp4' });
+    chooseFiles(screen.getByRole('button', { name: 'Add files' }), [file]);
 
-    await user.upload(input, file);
-
-    await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to load video.mp4', expect.any(Error));
-    });
-
-    consoleSpy.mockRestore();
+    // The failure is shown beside the file with its reason, and nothing is added
+    expect(await screen.findByText('Failed')).toBeInTheDocument();
+    expect(screen.getByText('Load failed')).toBeInTheDocument();
+    expect(screen.queryByTestId(/^asset-item-/)).not.toBeInTheDocument();
   });
 });

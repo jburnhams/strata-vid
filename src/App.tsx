@@ -61,7 +61,6 @@ function App() {
     addClip,
     addTrack,
     removeClipsByAssetId,
-    setLoading,
     moveClip,
     selectClip,
     trackOrder,
@@ -82,44 +81,18 @@ function App() {
     })
   );
 
-  const handleAssetAdd = async (fileList: FileList) => {
-    setLoading(true, 'Loading assets...');
-    try {
-      const newAssetsPromises = Array.from(fileList).map(async (file) => {
-        try {
-          return await AssetLoader.loadAsset(file, {
-            simplificationTolerance: settings.simplificationTolerance,
-          });
-        } catch (e) {
-          handleError(e, `Failed to load ${file.name}`);
-          return null;
-        }
-      });
-
-      const newAssets = (await Promise.all(newAssetsPromises)).filter((a): a is Asset => a !== null);
-
-      newAssets.forEach(asset => {
-          // Add basic asset immediately (with duration but no thumbnail)
-          addAsset(asset);
-
-          // Lazy load thumbnail
-          if (asset.file) {
-              AssetLoader.loadThumbnail(asset.file, asset.type).then(thumbnail => {
-                  updateAsset(asset.id, { thumbnail });
-              }).catch(e => {
-                  console.warn(`Failed to generate thumbnail for ${asset.name}`, e);
-              });
-          }
-      });
-
-      if (newAssets.length > 0) {
-          selectAsset(newAssets[0].id);
-          showSuccess(`Loaded ${newAssets.length} asset${newAssets.length > 1 ? 's' : ''}`);
-      }
-    } catch (e) {
-      handleError(e, 'Failed to process assets');
-    } finally {
-      setLoading(false);
+  /** Loads one file for the library's file intake: a throw becomes that file's "Failed" row, with a retry. */
+  const handleAddFile = async (file: File) => {
+    const asset = await AssetLoader.loadAsset(file, {
+      simplificationTolerance: settings.simplificationTolerance,
+    });
+    addAsset(asset);
+    selectAsset(asset.id);
+    // The thumbnail follows; the asset is usable without it.
+    if (asset.file) {
+      AssetLoader.loadThumbnail(asset.file, asset.type)
+        .then(thumbnail => updateAsset(asset.id, { thumbnail }))
+        .catch(e => console.warn(`Failed to generate thumbnail for ${asset.name}`, e));
     }
   };
 
@@ -457,7 +430,7 @@ function App() {
             <LibraryPanel
                 assets={assets}
                 selectedAssetId={selectedAssetId}
-                onAssetAdd={handleAssetAdd}
+                onAddFile={handleAddFile}
                 onAssetSelect={selectAsset}
                 onAssetRemove={handleAssetRemove}
                 onAssetUpdate={handleAssetUpdate}

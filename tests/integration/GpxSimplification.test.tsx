@@ -2,6 +2,7 @@
 import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, fireEvent, act, screen, waitFor, within } from '@testing-library/react';
+import { chooseFiles } from '../utils/files';
 import App from '../../src/App';
 import { useProjectStore } from '../../src/store/useProjectStore';
 import '@testing-library/jest-dom';
@@ -43,14 +44,13 @@ describe('GPX Simplification Integration', () => {
         `;
         const gpxFile = new File([gpxContent], 'route.gpx', { type: 'application/gpx+xml' });
 
-        const fileInput = screen.getByTestId('add-asset-input');
         await act(async () => {
-            fireEvent.change(fileInput, { target: { files: [gpxFile] } });
+            chooseFiles(screen.getByRole('button', { name: 'Add files' }), [gpxFile]);
         });
 
         // Wait for asset to appear in the library and get selected
         const libraryPanel = screen.getByTestId('library-panel');
-        const assetItem = await within(libraryPanel).findByText('route.gpx');
+        const assetItem = await within(libraryPanel).findByTestId(/^asset-item-/);
         act(() => {
             fireEvent.click(assetItem);
         });

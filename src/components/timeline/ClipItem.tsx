@@ -1,3 +1,4 @@
+import { ContextMenu, type MenuEntry } from 'strata-react';
 import React, { useCallback, useState } from 'react';
 import type { Clip, Asset, TrackViewMode } from '../../types';
 import { useDraggable } from '@dnd-kit/core';
@@ -14,6 +15,8 @@ interface ClipItemProps {
   onSelect?: (id: string) => void;
   onResize?: (id: string, newStart: number, newDuration: number, newOffset: number) => void;
   onContextMenu?: (e: React.MouseEvent, id: string) => void;
+  /** When given, the clip opens strata-react's `ContextMenu` with these items. */
+  menuItems?: readonly MenuEntry[];
   viewMode?: TrackViewMode;
 }
 
@@ -25,6 +28,7 @@ export const ClipItem: React.FC<ClipItemProps> = ({
   onSelect,
   onResize,
   onContextMenu,
+  menuItems,
   viewMode = 'frames'
 }) => {
   const [resizeState, setResizeState] = useState<{ direction: 'left' | 'right' } | null>(null);
@@ -112,7 +116,7 @@ export const ClipItem: React.FC<ClipItemProps> = ({
     ? smartShortenFilename(asset.name, pixelWidth)
     : smartShortenFilename(clip.id, pixelWidth); // Fallback to clip id using same logic if needed, or just full id
 
-  return (
+  const body = (
     <div
       ref={setNodeRef}
       style={style}
@@ -129,9 +133,10 @@ export const ClipItem: React.FC<ClipItemProps> = ({
         onSelect?.(clip.id);
       }}
       onContextMenu={(e) => {
-        e.preventDefault();
         e.stopPropagation();
         onSelect?.(clip.id); // Also select on right click
+        if (menuItems) return; // the ContextMenu around this element opens and prevents the browser's
+        e.preventDefault();
         onContextMenu?.(e, clip.id);
       }}
       {...attributes}
@@ -195,4 +200,6 @@ export const ClipItem: React.FC<ClipItemProps> = ({
       />
     </div>
   );
+
+  return menuItems ? <ContextMenu label={`Clip ${displayName}`} items={menuItems}>{body}</ContextMenu> : body;
 };

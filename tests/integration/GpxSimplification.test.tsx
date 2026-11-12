@@ -1,4 +1,5 @@
 
+import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, fireEvent, act, screen, waitFor, within } from '@testing-library/react';
 import App from '../../src/App';
@@ -30,7 +31,7 @@ describe('GPX Simplification Integration', () => {
     });
 
     it('allows user to load a GPX, change tolerance, and re-process it', async () => {
-        const { getByLabelText, getByText, findByText } = render(<App />);
+        const { getByLabelText, getByText, findByText } = renderWithStrata(<App />);
 
         // 1. Load a GPX file
         const gpxContent = `

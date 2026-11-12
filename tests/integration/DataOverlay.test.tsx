@@ -1,3 +1,4 @@
+import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, fireEvent, act, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
@@ -64,7 +65,7 @@ describe('Data Overlay Integration', () => {
   });
 
   it('renders data overlay with initial properties and updates on change', async () => {
-    render(<App />);
+    renderWithStrata(<App />);
 
     // Wait for the overlay to appear
     const overlay = await screen.findByTestId('data-overlay');

@@ -1,4 +1,5 @@
 
+import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { describe, it, expect } from '@jest/globals';
 import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
@@ -83,7 +84,7 @@ describe('Timeline Integration', () => {
   });
 
   it('automatically adds a track and clip when a video is uploaded', async () => {
-    const { container } = render(<App />);
+    const { container } = renderWithStrata(<App />);
 
     // 1. Upload a video
     // Select the library input (accepts video/gpx), not the project load input

@@ -1,3 +1,4 @@
+import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, act } from '@testing-library/react';
 import App from '../../src/App';
@@ -36,7 +37,7 @@ describe('Performance Warning Integration', () => {
     });
 
     it('shows a warning toast when playback lags', async () => {
-        render(<App />);
+        renderWithStrata(<App />);
 
         // Mock performance.now before starting playback so start time is consistent
         const perfSpy = jest.spyOn(performance, 'now');

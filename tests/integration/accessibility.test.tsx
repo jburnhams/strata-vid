@@ -1,3 +1,4 @@
+import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import App from '../../src/App';
@@ -18,7 +19,7 @@ jest.mock('../../src/components/MetadataPanel', () => ({
 
 describe('Integration: Accessibility', () => {
   it('main regions have accessible roles or labels', () => {
-    render(<App />);
+    renderWithStrata(<App />);
 
     expect(screen.getByRole('region', { name: /library/i })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: /timeline/i })).toBeInTheDocument();
@@ -27,7 +28,7 @@ describe('Integration: Accessibility', () => {
   });
 
   it('header buttons have accessible labels', () => {
-    render(<App />);
+    renderWithStrata(<App />);
 
     expect(screen.getByLabelText('Help')).toBeInTheDocument();
     expect(screen.getByLabelText('View Settings')).toBeInTheDocument();

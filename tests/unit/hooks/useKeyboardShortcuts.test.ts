@@ -35,20 +35,20 @@ describe('useKeyboardShortcuts', () => {
 
     // First toggle
     act(() => {
-      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }));
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', code: 'Space' }));
     });
     expect(useProjectStore.getState().isPlaying).toBe(true);
 
     // Try immediate second toggle (should be ignored due to debounce)
     act(() => {
-      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }));
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', code: 'Space' }));
     });
     expect(useProjectStore.getState().isPlaying).toBe(true);
 
     // Advance time beyond debounce threshold (200ms)
     act(() => {
       jest.advanceTimersByTime(250);
-      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }));
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', code: 'Space' }));
     });
     expect(useProjectStore.getState().isPlaying).toBe(false);
   });
@@ -57,7 +57,7 @@ describe('useKeyboardShortcuts', () => {
     renderHook(() => useKeyboardShortcuts());
 
     act(() => {
-      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyK' }));
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', code: 'KeyK' }));
     });
     expect(useProjectStore.getState().isPlaying).toBe(true);
   });
@@ -66,7 +66,7 @@ describe('useKeyboardShortcuts', () => {
     renderHook(() => useKeyboardShortcuts());
 
     act(() => {
-      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyJ' }));
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'j', code: 'KeyJ' }));
     });
     // 10 - 1 = 9
     expect(useProjectStore.getState().currentTime).toBe(9);
@@ -76,7 +76,7 @@ describe('useKeyboardShortcuts', () => {
     renderHook(() => useKeyboardShortcuts());
 
     act(() => {
-      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyL' }));
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'l', code: 'KeyL' }));
     });
     // 10 + 1 = 11
     expect(useProjectStore.getState().currentTime).toBe(11);
@@ -86,7 +86,7 @@ describe('useKeyboardShortcuts', () => {
     renderHook(() => useKeyboardShortcuts());
 
     act(() => {
-      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowLeft' }));
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', code: 'ArrowLeft' }));
     });
     // 10 - 1/30 = 9.9666...
     expect(useProjectStore.getState().currentTime).toBeCloseTo(10 - 1/30, 5);
@@ -97,7 +97,7 @@ describe('useKeyboardShortcuts', () => {
     renderHook(() => useKeyboardShortcuts());
 
     act(() => {
-      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowRight' }));
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', code: 'ArrowRight' }));
     });
     // 10 + 1/30 = 10.0333...
     expect(useProjectStore.getState().currentTime).toBeCloseTo(10 + 1/30, 5);
@@ -108,7 +108,7 @@ describe('useKeyboardShortcuts', () => {
     renderHook(() => useKeyboardShortcuts());
 
     act(() => {
-      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Home' }));
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', code: 'Home' }));
     });
     expect(useProjectStore.getState().currentTime).toBe(0);
   });
@@ -117,7 +117,7 @@ describe('useKeyboardShortcuts', () => {
     renderHook(() => useKeyboardShortcuts());
 
     act(() => {
-      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'End' }));
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', code: 'End' }));
     });
     expect(useProjectStore.getState().currentTime).toBe(100);
   });
@@ -131,7 +131,7 @@ describe('useKeyboardShortcuts', () => {
 
     act(() => {
       // Dispatch event on input
-      const event = new KeyboardEvent('keydown', { code: 'Space', bubbles: true });
+      const event = new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true });
       Object.defineProperty(event, 'target', { value: input, writable: false });
       input.dispatchEvent(event);
     });
@@ -149,7 +149,7 @@ describe('useKeyboardShortcuts', () => {
 
     act(() => {
       // Dispatch event on textarea
-      const event = new KeyboardEvent('keydown', { code: 'Space', bubbles: true });
+      const event = new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true });
       Object.defineProperty(event, 'target', { value: textarea, writable: false });
       textarea.dispatchEvent(event);
     });
@@ -161,8 +161,8 @@ describe('useKeyboardShortcuts', () => {
   it('deletes selected clip on Delete/Backspace', () => {
     renderHook(() => useKeyboardShortcuts());
 
-    // Mock store with a selected clip
-    useProjectStore.setState({
+    // Mock store with a selected clip (in act, so the hook sees the selection and enables Delete)
+    act(() => useProjectStore.setState({
       selectedClipId: 'clip-123',
       clips: {
         'clip-123': { id: 'clip-123', trackId: 'track-1', start: 0, duration: 10, offset: 0, type: 'video' } as any
@@ -170,10 +170,10 @@ describe('useKeyboardShortcuts', () => {
       tracks: {
         'track-1': { id: 'track-1', clips: ['clip-123'] } as any
       }
-    });
+    }));
 
     act(() => {
-      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Delete' }));
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', code: 'Delete' }));
     });
 
     expect(useProjectStore.getState().clips['clip-123']).toBeUndefined();

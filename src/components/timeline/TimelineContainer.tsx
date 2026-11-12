@@ -6,7 +6,8 @@ import { TrackHeader } from './TrackHeader';
 import { Ruler } from './Ruler';
 import { Playhead } from './Playhead';
 import { ZoomControls } from './ZoomControls';
-import { ContextMenu } from './ContextMenu';
+import { Button, Toggle, Toolbar, ToolbarSeparator, type MenuEntry } from 'strata-react';
+import { Copy, Scissors, Trash2 } from 'lucide-react';
 
 interface TimelineContainerProps {
   tracks: Record<string, Track>;
@@ -149,11 +150,33 @@ export const TimelineContainer = forwardRef<HTMLDivElement, TimelineContainerPro
     return () => observer.disconnect();
   }, []);
 
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; clipId: string } | null>(null);
-
-  const handleContextMenu = (e: React.MouseEvent, clipId: string) => {
-    e.preventDefault();
-    setContextMenu({ x: e.clientX, y: e.clientY, clipId });
+  // The clip's context menu, built when it opens: strata-react commands, so an item that cannot
+  // run says why ("Move the playhead inside the clip") instead of only greying out.
+  const clipMenu = (clipId: string): MenuEntry[] => {
+    const clip = clips[clipId];
+    const track = clip ? tracks[clip.trackId] : undefined;
+    const trackClips = track ? track.clips.map(id => clips[id]).filter(Boolean).sort((a, b) => a.start - b.start) : [];
+    const isFirst = trackClips.findIndex(c => c.id === clipId) <= 0;
+    const playheadInside = !!clip && currentTime > clip.start && currentTime < clip.start + clip.duration;
+    return [
+      {
+        id: 'split',
+        label: 'Split clip',
+        icon: Scissors,
+        disabled: playheadInside ? false : 'Move the playhead inside the clip',
+        run: () => onSplitClip(clipId, currentTime),
+      },
+      {
+        id: 'crossfade',
+        label: 'Add crossfade (1s)',
+        disabled: isFirst ? 'No clip before it on this track' : false,
+        run: () => onAddTransition(clipId, { type: 'crossfade', duration: 1 }),
+      },
+      { id: 'duplicate', label: 'Duplicate clip', icon: Copy, run: () => onDuplicateClip(clipId) },
+      'separator',
+      { id: 'ripple-delete', label: 'Ripple delete', destructive: true, run: () => onRippleDeleteClip(clipId) },
+      { id: 'delete', label: 'Delete clip', icon: Trash2, destructive: true, run: () => onRemoveClip(clipId) },
+    ];
   };
 
   useEffect(() => {
@@ -195,33 +218,12 @@ export const TimelineContainer = forwardRef<HTMLDivElement, TimelineContainerPro
         <div className="h-10 bg-background border-b border-border flex items-center px-4 justify-between sticky top-0 z-30">
            <div className="flex items-center gap-4">
                <div className="type-caption text-muted-foreground font-medium uppercase tracking-wider">TIMELINE</div>
-               <button
-                   className="px-2 py-1 bg-card hover:bg-muted border border-border rounded-control type-caption text-foreground transition-state"
-                   onClick={onAddMarker}
-                   title="Add Marker at Playhead"
-               >
-                   + Marker
-               </button>
-               <div className="flex items-center gap-3 border-l border-border pl-4">
-                  <label className="flex items-center gap-1 type-caption text-muted-foreground hover:text-foreground cursor-pointer select-none">
-                    <input
-                        type="checkbox"
-                        className="rounded-control bg-muted border-input text-primary focus:ring-ring focus:ring-offset-background"
-                        checked={snapToGrid}
-                        onChange={(e) => setSettings({ snapToGrid: e.target.checked })}
-                    />
-                    Snap
-                  </label>
-                   <label className="flex items-center gap-1 type-caption text-muted-foreground hover:text-foreground cursor-pointer select-none">
-                    <input
-                        type="checkbox"
-                        className="rounded-control bg-muted border-input text-primary focus:ring-ring focus:ring-offset-background"
-                        checked={allowOverlaps}
-                        onChange={(e) => setSettings({ allowOverlaps: e.target.checked })}
-                    />
-                    Overlap
-                  </label>
-               </div>
+               <Toolbar label="Timeline editing" className="flex items-center gap-2">
+                 <Button size="sm" onClick={onAddMarker}>Add marker</Button>
+                 <ToolbarSeparator />
+                 <Toggle size="sm" label="Snap" pressed={snapToGrid} onChange={(on) => setSettings({ snapToGrid: on })} />
+                 <Toggle size="sm" label="Allow overlaps" pressed={allowOverlaps} onChange={(on) => setSettings({ allowOverlaps: on })} />
+               </Toolbar>
            </div>
 
            <ZoomControls
@@ -323,7 +325,7 @@ export const TimelineContainer = forwardRef<HTMLDivElement, TimelineContainerPro
                                     onMoveClip(id, newStart);
                                 }
                             }}
-                            onContextMenu={handleContextMenu}
+                            clipMenu={clipMenu}
                         />
                     );
                 })}
@@ -333,52 +335,6 @@ export const TimelineContainer = forwardRef<HTMLDivElement, TimelineContainerPro
           </div>
         </div>
 
-      {contextMenu && (
-        <ContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          onClose={() => setContextMenu(null)}
-          options={[
-            {
-              label: 'Split Clip',
-              onClick: () => onSplitClip(contextMenu.clipId, currentTime),
-              disabled: (() => {
-                const clip = clips[contextMenu.clipId];
-                if (!clip) return true;
-                // Only allow split if playhead is strictly inside the clip
-                return currentTime <= clip.start || currentTime >= clip.start + clip.duration;
-              })(),
-            },
-            {
-              label: 'Add Crossfade (1s)',
-              onClick: () => onAddTransition(contextMenu.clipId, { type: 'crossfade', duration: 1 }),
-              disabled: (() => {
-                  const clip = clips[contextMenu.clipId];
-                  if (!clip) return true;
-                  const track = tracks[clip.trackId];
-                  if (!track) return true;
-                  const trackClips = track.clips.map(id => clips[id]).filter(Boolean).sort((a, b) => a.start - b.start);
-                  const index = trackClips.findIndex(c => c.id === clip.id);
-                  return index <= 0; // Disable if first clip
-              })()
-            },
-            {
-              label: 'Duplicate Clip',
-              onClick: () => onDuplicateClip(contextMenu.clipId),
-            },
-            {
-              label: 'Ripple Delete',
-              onClick: () => onRippleDeleteClip(contextMenu.clipId),
-              danger: true,
-            },
-            {
-              label: 'Delete Clip',
-              onClick: () => onRemoveClip(contextMenu.clipId),
-              danger: true,
-            },
-          ]}
-        />
-      )}
       </div>
   );
 });

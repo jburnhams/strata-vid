@@ -1,3 +1,4 @@
+import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import App from '../../src/App';
@@ -96,14 +97,14 @@ describe('Comprehensive Timeline Editing Integration', () => {
     });
 
     it('displays thumbnail on clip', () => {
-        render(<App />);
+        renderWithStrata(<App />);
         const thumb = screen.getByTestId('clip-thumbnail');
         expect(thumb).toBeInTheDocument();
         expect(thumb).toHaveStyle({ backgroundImage: 'url(mock-thumb-url)' });
     });
 
     it('toggles snapping and affects drag behavior', () => {
-        render(<App />);
+        renderWithStrata(<App />);
 
         // 1. Initial State: Snapping ON
         // Move clip to 0.5s (delta -95px from 10s -> 0.5s)
@@ -143,7 +144,7 @@ describe('Comprehensive Timeline Editing Integration', () => {
     });
 
     it('toggles overlap permission and affects drag behavior', () => {
-        render(<App />);
+        renderWithStrata(<App />);
 
         // Setup: Add a second clip to collide with
         act(() => {

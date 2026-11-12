@@ -31,44 +31,45 @@ describe('TrackHeader', () => {
 
   it('calls onRemove when delete button clicked', () => {
     render(<TrackHeader {...defaultProps} />);
-    const deleteBtn = screen.getByTitle('Delete Track');
+    const deleteBtn = screen.getByRole('button', { name: 'Delete track' });
     fireEvent.click(deleteBtn);
     expect(defaultProps.onRemove).toHaveBeenCalledWith('track-1');
   });
 
   it('calls onToggleMute when mute button clicked', () => {
     render(<TrackHeader {...defaultProps} />);
-    const muteBtn = screen.getByTitle('Mute');
+    const muteBtn = screen.getByRole('button', { name: 'Mute' });
     fireEvent.click(muteBtn);
     expect(defaultProps.onToggleMute).toHaveBeenCalledWith('track-1');
   });
 
   it('calls onToggleLock when lock button clicked', () => {
     render(<TrackHeader {...defaultProps} />);
-    const lockBtn = screen.getByTitle('Lock');
+    const lockBtn = screen.getByRole('button', { name: 'Lock' });
     fireEvent.click(lockBtn);
     expect(defaultProps.onToggleLock).toHaveBeenCalledWith('track-1');
   });
 
   it('calls onUpdateVolume when volume input changes', () => {
     render(<TrackHeader {...defaultProps} />);
-    const volumeInput = screen.getByTitle('Volume %');
+    const volumeInput = screen.getByRole('textbox', { name: 'Track volume' });
     fireEvent.change(volumeInput, { target: { value: '50' } });
+    fireEvent.blur(volumeInput);
     expect(defaultProps.onUpdateVolume).toHaveBeenCalledWith('track-1', 0.5);
   });
 
   it('toggles view mode and renders correct icons', () => {
       const { rerender } = render(<TrackHeader {...defaultProps} />);
 
-      const viewModeBtn = screen.getByTitle('Show Video Frames Only');
+      const viewModeBtn = screen.getByRole('button', { name: 'Show Video Frames Only' });
       fireEvent.click(viewModeBtn);
       expect(defaultProps.onToggleViewMode).toHaveBeenCalledWith('track-1');
 
       // Test other modes for coverage
       rerender(<TrackHeader {...defaultProps} track={{...mockTrack, viewMode: 'waveform'}} />);
-      expect(screen.getByTitle('Show Waveform Only')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Show Waveform Only' })).toBeInTheDocument();
 
       rerender(<TrackHeader {...defaultProps} track={{...mockTrack, viewMode: 'both'}} />);
-      expect(screen.getByTitle('Show Both Video and Waveform')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Show Both Video and Waveform' })).toBeInTheDocument();
   });
 });

@@ -1,75 +1,55 @@
 import React from 'react';
 import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { toast } from 'strata-react';
 import { ToastContainer } from '../../../src/components/Toast';
 import { useProjectStore } from '../../../src/store/useProjectStore';
 import { showInfo, showWarning, showSuccess, handleError } from '../../../src/utils/errorHandler';
 
-// Mock Lucide icons
-jest.mock('lucide-react', () => ({
-  X: () => <div data-testid="icon-x" />,
-  CheckCircle: () => <div data-testid="icon-check" />,
-  AlertCircle: () => <div data-testid="icon-alert" />,
-  Info: () => <div data-testid="icon-info" />,
-  AlertTriangle: () => <div data-testid="icon-warning" />,
-}));
-
 describe('ToastContainer', () => {
     beforeEach(() => {
-        // Reset store
-        useProjectStore.setState({
-            toasts: []
-        });
+        useProjectStore.setState({ toasts: [] });
         jest.spyOn(console, 'error').mockImplementation(() => {});
     });
 
     afterEach(() => {
         jest.restoreAllMocks();
+        act(() => toast.clear());
     });
 
-    it('should render nothing when no toasts', () => {
+    it('renders nothing when there are no notices', () => {
         const { container } = render(<ToastContainer />);
         expect(container.firstChild).toBeNull();
     });
 
-    it('should render toasts', () => {
+    it('sends success, info and warning to strata toasts and keeps errors as alerts', () => {
+        const show = jest.spyOn(toast, 'show');
         act(() => {
             useProjectStore.setState({
                 toasts: [
-                    { id: '1', message: 'Success Toast', type: 'success' },
-                    { id: '2', message: 'Error Toast', type: 'error' }
-                ]
+                    { id: '1', message: 'Loaded 2 files', type: 'success' },
+                    { id: '2', message: 'run.gpx could not be read', type: 'error' },
+                ],
             });
         });
 
         render(<ToastContainer />);
-        expect(screen.getByText('Success Toast')).toBeInTheDocument();
-        expect(screen.getByText('Error Toast')).toBeInTheDocument();
-        expect(screen.getByTestId('icon-check')).toBeInTheDocument();
-        expect(screen.getByTestId('icon-alert')).toBeInTheDocument();
+        expect(show).toHaveBeenCalledWith({ title: 'Loaded 2 files', tone: 'success' });
+        expect(screen.getByRole('alert')).toHaveTextContent('run.gpx could not be read');
+        expect(useProjectStore.getState().toasts.map(t => t.id)).toEqual(['2']);
     });
 
-    it('should dismiss toast on click', async () => {
-        const user = userEvent.setup();
+    it('dismisses an error', async () => {
         act(() => {
-            useProjectStore.setState({
-                toasts: [
-                    { id: '1', message: 'Dismiss Me', type: 'info' }
-                ]
-            });
+            useProjectStore.setState({ toasts: [{ id: '1', message: 'Export failed', type: 'error' }] });
         });
 
         render(<ToastContainer />);
-        // The close button wraps the icon
-        const closeButton = screen.getByTestId('icon-x').closest('button');
-        if (!closeButton) throw new Error('Close button not found');
-
-        await user.click(closeButton);
-
+        await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
         expect(useProjectStore.getState().toasts).toHaveLength(0);
     });
 
-    it('should export and use helper functions', () => {
+    it('queues every kind through the helpers', () => {
         act(() => {
             showInfo('Info Message');
             showWarning('Warning Message');

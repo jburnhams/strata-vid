@@ -1,4 +1,5 @@
 
+import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import App from '../../src/App';
@@ -63,7 +64,7 @@ describe('Map Sync Integration', () => {
         });
 
         // 2. Render App
-        render(<App />);
+        renderWithStrata(<App />);
 
         // 3. Upload Files
         // Select the Library "Add" input which accepts video and gpx

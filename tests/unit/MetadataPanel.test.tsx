@@ -24,18 +24,22 @@ describe('MetadataPanel', () => {
         selectedAssetId: null
     });
     mockSetSettings.mockClear();
+    localStorage.clear(); // the inspector remembers open sections
   });
+
+  // A PropertyList value, read beside its term.
+  const valueOf = (term: string) => screen.getByText(term).nextElementSibling?.textContent;
 
   it('renders empty state', () => {
     render(<MetadataPanel assets={[]} selectedAssetId={null} settings={mockSettings} setSettings={mockSetSettings} />);
-    expect(screen.getByText('Select an asset to view details')).toBeInTheDocument();
+    expect(screen.getByText('Nothing selected')).toBeInTheDocument();
   });
 
   it('renders asset details', () => {
     const asset: Asset = { id: '1', name: 'test.mp4', type: 'video', src: 'blob:x' };
     render(<MetadataPanel assets={[asset]} selectedAssetId="1" settings={mockSettings} setSettings={mockSetSettings} />);
     expect(screen.getByText('test.mp4')).toBeInTheDocument();
-    expect(screen.getByText('video')).toBeInTheDocument();
+    expect(screen.getByText('Video file')).toBeInTheDocument();
   });
 
   it('renders GPX stats', () => {
@@ -50,10 +54,10 @@ describe('MetadataPanel', () => {
 
     render(<MetadataPanel assets={[asset]} selectedAssetId="1" settings={mockSettings} setSettings={mockSetSettings} />);
 
-    expect(screen.getByText('GPX Statistics')).toBeInTheDocument();
-    expect(screen.getByText('5.00 km')).toBeInTheDocument();
-    expect(screen.getByText('100 m')).toBeInTheDocument();
-    expect(screen.getByText('00:30:00')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Route' })).toBeInTheDocument();
+    expect(valueOf('Distance')).toMatch(/^5\skm$/);
+    expect(valueOf('Climb')).toMatch(/^100\sm$/);
+    expect(valueOf('Moving time')).toBe('30:00');
   });
 
   it('renders Clip Properties when a clip is selected', () => {
@@ -75,9 +79,9 @@ describe('MetadataPanel', () => {
 
       render(<MetadataPanel assets={[]} selectedAssetId={null} settings={mockSettings} setSettings={mockSetSettings} />);
 
-      expect(screen.getByText('Clip Properties')).toBeInTheDocument();
-      expect(screen.getByText('Opacity')).toBeInTheDocument();
-      expect(screen.getByText('Rotation')).toBeInTheDocument();
+      expect(screen.getByText('Video clip')).toBeInTheDocument();
+      expect(screen.getByRole('slider', { name: 'Opacity' })).toHaveValue('100');
+      expect(screen.getByRole('slider', { name: 'Rotation' })).toHaveValue('0');
   });
 
   it('renders Map Styling controls when a map clip is selected', () => {
@@ -105,27 +109,27 @@ describe('MetadataPanel', () => {
 
       render(<MetadataPanel assets={[]} selectedAssetId={null} settings={mockSettings} setSettings={mockSetSettings} />);
 
-      expect(screen.getByText('Map Styling')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Map' })).toBeInTheDocument();
       expect(screen.getByTestId('map-sync-control')).toBeInTheDocument();
 
       // Test interactions
-      const zoomInput = screen.getByLabelText(/Zoom Level/);
+      const zoomInput = screen.getByRole('slider', { name: 'Zoom level' });
       fireEvent.change(zoomInput, { target: { value: '15' } });
       expect(useProjectStore.getState().clips['clip-map'].properties.mapZoom).toBe(15);
 
-      const styleSelect = screen.getByLabelText(/Map Style/);
+      const styleSelect = screen.getByLabelText('Map style');
       fireEvent.change(styleSelect, { target: { value: 'mapbox' } });
       expect(useProjectStore.getState().clips['clip-map'].properties.mapStyle).toBe('mapbox');
 
-      const colorInput = screen.getByLabelText(/Track Color/);
+      const colorInput = screen.getByLabelText('Route colour, picker');
       fireEvent.change(colorInput, { target: { value: '#ff0000' } });
       expect(useProjectStore.getState().clips['clip-map'].properties.trackStyle?.color).toBe('#ff0000');
 
-      const widthInput = screen.getByLabelText(/Track Width/);
+      const widthInput = screen.getByRole('slider', { name: 'Route width' });
       fireEvent.change(widthInput, { target: { value: '8' } });
       expect(useProjectStore.getState().clips['clip-map'].properties.trackStyle?.weight).toBe(8);
 
-      const markerColorInput = screen.getByLabelText(/Marker Color/);
+      const markerColorInput = screen.getByLabelText('Marker colour, picker');
       fireEvent.change(markerColorInput, { target: { value: '#00ff00' } });
       expect(useProjectStore.getState().clips['clip-map'].properties.markerStyle?.color).toBe('#00ff00');
   });
@@ -152,7 +156,7 @@ describe('MetadataPanel', () => {
 
     const { rerender } = render(<MetadataPanel assets={[]} selectedAssetId={null} settings={mockSettings} setSettings={mockSetSettings} />);
 
-    const checkbox = screen.getByTestId('show-elevation-checkbox');
+    const checkbox = screen.getByRole('switch', { name: 'Show elevation profile' });
     expect(checkbox).not.toBeChecked();
 
     fireEvent.click(checkbox);
@@ -214,6 +218,8 @@ describe('MetadataPanel', () => {
     ];
 
     beforeEach(() => {
+        // "More routes" starts closed; remember it open, as a person who opened it would have it
+        localStorage.setItem('strata-vid.inspector', JSON.stringify({ 'extra-tracks': true }));
         useProjectStore.setState({
             selectedClipId: 'clip-map',
             clips: { 'clip-map': mapClip },
@@ -224,15 +230,15 @@ describe('MetadataPanel', () => {
     it('renders the extra tracks section and lists existing tracks', () => {
         render(<MetadataPanel assets={gpxAssets} selectedAssetId={null} settings={mockSettings} setSettings={mockSetSettings} />);
 
-        expect(screen.getByText('Extra Tracks')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'More routes' })).toBeInTheDocument();
         expect(screen.getByText('Secondary.gpx')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /Remove/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Remove Secondary.gpx' })).toBeInTheDocument();
     });
 
     it('populates the asset dropdown correctly', () => {
         render(<MetadataPanel assets={gpxAssets} selectedAssetId={null} settings={mockSettings} setSettings={mockSetSettings} />);
 
-        const select = screen.getByLabelText(/select a gpx asset/i);
+        const select = screen.getByLabelText('Add a route');
 
         // Should contain gpx-3 ('Another.gpx')
         expect(within(select).getByText('Another.gpx')).toBeInTheDocument();
@@ -248,7 +254,7 @@ describe('MetadataPanel', () => {
 
         render(<MetadataPanel assets={gpxAssets} selectedAssetId={null} settings={mockSettings} setSettings={mockSetSettings} />);
 
-        const select = screen.getByLabelText(/select a gpx asset/i);
+        const select = screen.getByLabelText('Add a route');
         const addButton = screen.getByTestId('add-extra-track-button');
 
         fireEvent.change(select, { target: { value: 'gpx-3' } });
@@ -263,7 +269,7 @@ describe('MetadataPanel', () => {
 
         render(<MetadataPanel assets={gpxAssets} selectedAssetId={null} settings={mockSettings} setSettings={mockSetSettings} />);
 
-        const removeButton = screen.getByRole('button', { name: /Remove/i });
+        const removeButton = screen.getByRole('button', { name: 'Remove Secondary.gpx' });
         fireEvent.click(removeButton);
 
         expect(removeExtraTrackFromClip).toHaveBeenCalledWith('clip-map', 'gpx-2');
@@ -275,7 +281,7 @@ describe('MetadataPanel', () => {
 
         render(<MetadataPanel assets={gpxAssets} selectedAssetId={null} settings={mockSettings} setSettings={mockSetSettings} />);
 
-        const colorInput = screen.getByLabelText('Color');
+        const colorInput = screen.getByLabelText('Secondary.gpx colour, picker');
         fireEvent.change(colorInput, { target: { value: '#00ff00' } });
 
         expect(updateExtraTrackOnClip).toHaveBeenCalledWith('clip-map', 'gpx-2', {

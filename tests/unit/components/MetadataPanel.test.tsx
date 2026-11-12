@@ -72,23 +72,25 @@ describe('MetadataPanel', () => {
             updateExtraTrackOnClip: mockUpdateExtraTrackOnClip,
         });
         jest.clearAllMocks();
+        // The inspector remembers sections; open the ones these tests reach into.
+        localStorage.setItem('strata-vid.inspector', JSON.stringify({ heatmap: true, 'extra-tracks': true, 'gpx-processing': true }));
     });
 
     it('should render "no asset selected" message', () => {
         render(<MetadataPanel assets={mockAssets} selectedAssetId={null} settings={mockSettings} setSettings={mockSetSettings} />);
-        expect(screen.getByText('Select an asset to view details')).toBeInTheDocument();
+        expect(screen.getByText('Nothing selected')).toBeInTheDocument();
     });
 
     it('should render asset metadata when an asset is selected', () => {
         render(<MetadataPanel assets={mockAssets} selectedAssetId="asset1" settings={mockSettings} setSettings={mockSetSettings} />);
         expect(screen.getByText('Video Asset')).toBeInTheDocument();
-        expect(screen.getByText('1920x1080')).toBeInTheDocument();
+        expect(screen.getByText('Resolution').nextElementSibling).toHaveTextContent('1920×1080');
     });
 
     it('should render GPX asset metadata and reprocess button', () => {
         render(<MetadataPanel assets={mockAssets} selectedAssetId="asset2" settings={mockSettings} setSettings={mockSetSettings} />);
-        expect(screen.getByText('5.00 km')).toBeInTheDocument();
-        const reprocessButton = screen.getByText('Re-process GPX');
+        expect(screen.getByText('Distance').nextElementSibling?.textContent).toMatch(/^5\skm$/);
+        const reprocessButton = screen.getByRole('button', { name: 'Re-process route' });
         fireEvent.click(reprocessButton);
         expect(mockReprocessGpxAsset).toHaveBeenCalledWith('asset2', 0.0001);
     });
@@ -97,10 +99,10 @@ describe('MetadataPanel', () => {
         (useProjectStore as unknown as jest.Mock).mockReturnValue({ ...useProjectStore(), selectedClipId: 'clip1' });
         render(<MetadataPanel assets={mockAssets} selectedAssetId="asset2" settings={mockSettings} setSettings={mockSetSettings} />);
 
-        expect(screen.getByText('Clip Properties')).toBeInTheDocument();
-        expect(screen.getByLabelText('Zoom Level (13)')).toBeInTheDocument();
+        expect(screen.getByText('Map clip')).toBeInTheDocument();
+        const zoomInput = screen.getByRole('slider', { name: 'Zoom level' });
+        expect(zoomInput).toHaveValue('13');
 
-        const zoomInput = screen.getByLabelText('Zoom Level (13)');
         fireEvent.change(zoomInput, { target: { value: 15 } });
         expect(mockUpdateClipProperties).toHaveBeenCalledWith('clip1', { mapZoom: 15 });
     });
@@ -115,7 +117,7 @@ describe('MetadataPanel', () => {
         render(<MetadataPanel assets={mockAssets} selectedAssetId="asset2" settings={mockSettings} setSettings={mockSetSettings} />);
 
         // Test remove
-        const removeButton = screen.getByText('Remove');
+        const removeButton = screen.getByRole('button', { name: /^Remove / });
         fireEvent.click(removeButton);
         expect(mockRemoveExtraTrackFromClip).toHaveBeenCalledWith('clip1', 'asset3');
     });
@@ -124,13 +126,14 @@ describe('MetadataPanel', () => {
         (useProjectStore as unknown as jest.Mock).mockReturnValue({ ...useProjectStore(), selectedClipId: 'clip2' });
         render(<MetadataPanel assets={mockAssets} selectedAssetId="asset2" settings={mockSettings} setSettings={mockSetSettings} />);
 
-        const speedCheckbox = screen.getByLabelText('Show Speed');
+        const speedCheckbox = screen.getByRole('switch', { name: 'Speed' });
         expect(speedCheckbox).toBeChecked();
         fireEvent.click(speedCheckbox);
         expect(mockUpdateClipProperties).toHaveBeenCalledWith('clip2', { dataOverlay: { showSpeed: false, showDistance: false } });
 
-        const fontSizeInput = screen.getByLabelText('Font Size');
+        const fontSizeInput = screen.getByRole('textbox', { name: 'Font size' });
         fireEvent.change(fontSizeInput, { target: { value: '24' } });
+        fireEvent.blur(fontSizeInput);
         expect(mockUpdateClipProperties).toHaveBeenCalledWith('clip2', { textStyle: { fontSize: 24 } });
     });
 
@@ -138,8 +141,8 @@ describe('MetadataPanel', () => {
         (useProjectStore as unknown as jest.Mock).mockReturnValue({ ...useProjectStore(), selectedClipId: 'clip3' });
         render(<MetadataPanel assets={mockAssets} selectedAssetId="asset1" settings={mockSettings} setSettings={mockSetSettings} />);
 
-        const opacitySlider = screen.getByLabelText('Opacity');
-        fireEvent.change(opacitySlider, { target: { value: '0.5' } });
+        const opacitySlider = screen.getByRole('slider', { name: 'Opacity' });
+        fireEvent.change(opacitySlider, { target: { value: '50' } });
         expect(mockUpdateClipProperties).toHaveBeenCalledWith('clip3', { opacity: 0.5 });
     });
 
@@ -149,7 +152,7 @@ describe('MetadataPanel', () => {
         render(<MetadataPanel assets={mockAssets} selectedAssetId="asset2" settings={mockSettings} setSettings={mockSetSettings} />);
 
         // 1. Check and click the "Enable Heatmap" checkbox
-        const heatmapCheckbox = screen.getByLabelText('Enable Heatmap');
+        const heatmapCheckbox = screen.getByRole('switch', { name: 'Colour the route by a reading' });
         expect(heatmapCheckbox).not.toBeChecked();
         fireEvent.click(heatmapCheckbox);
         expect(mockUpdateClipProperties).toHaveBeenCalledWith('clip1', { heatmap: { enabled: true } });
@@ -163,7 +166,7 @@ describe('MetadataPanel', () => {
         render(<MetadataPanel assets={mockAssets} selectedAssetId="asset2" settings={mockSettings} setSettings={mockSetSettings} />);
 
         // 3. Find and change the "Data Source" select
-        const dataSourceSelect = screen.getByLabelText('Data Source');
+        const dataSourceSelect = screen.getByLabelText('Reading');
         fireEvent.change(dataSourceSelect, { target: { value: 'elevation' } });
         expect(mockUpdateClipProperties).toHaveBeenCalledWith('clip1', { heatmap: { enabled: true, dataSource: 'elevation' } });
     });

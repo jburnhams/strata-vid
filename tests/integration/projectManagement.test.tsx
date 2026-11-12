@@ -1,3 +1,4 @@
+import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -46,7 +47,7 @@ describe('Project Management Integration', () => {
     };
     (AssetLoader.loadAsset as jest.Mock).mockResolvedValue(mockAsset);
 
-    const { container } = render(<App />);
+    const { container } = renderWithStrata(<App />);
 
     // 2. Add Asset - Updated selector to match new accessibility structure
     const libraryInput = screen.getByLabelText('Add Asset');

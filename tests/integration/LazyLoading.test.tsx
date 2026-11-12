@@ -1,4 +1,5 @@
 
+import { renderWithStrata } from 'strata-react/testing';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import React from 'react';
 import App from '../../src/App';
@@ -91,7 +92,7 @@ describe('App Integration - Lazy Asset Loading', () => {
     });
 
     it('should add asset immediately and load thumbnail lazily', async () => {
-        render(<App />);
+        renderWithStrata(<App />);
 
         const file = new File([''], 'video.mp4', { type: 'video/mp4' });
         const addAssetInput = screen.getByTestId('add-asset-input');

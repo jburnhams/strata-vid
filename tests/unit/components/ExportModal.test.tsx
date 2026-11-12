@@ -41,114 +41,104 @@ describe('ExportModal', () => {
     jest.clearAllMocks();
   });
 
+  const field = (name: string) => screen.getByRole('textbox', { name });
+
   it('renders correctly with default settings', () => {
     render(<ExportModal onClose={jest.fn()} />);
-    expect(screen.getByText('Export Settings')).toBeInTheDocument();
-    expect(screen.getByText('720p HD')).toBeInTheDocument();
-    expect(screen.getByLabelText('Width')).toHaveValue(1280);
-    expect(screen.getByLabelText('Height')).toHaveValue(720);
+    expect(screen.getByRole('dialog', { name: 'Export video' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: '720p HD' })).toBeChecked();
+    expect(field('Width')).toHaveValue('1,280');
+    expect(field('Height')).toHaveValue('720');
   });
 
-  it('updates settings when preset clicked', () => {
+  it('updates settings when preset chosen', () => {
     render(<ExportModal onClose={jest.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Encoding' }));
 
-    // Toggle Advanced to see Bitrate field
-    fireEvent.click(screen.getByText('Advanced Settings'));
-
-    fireEvent.click(screen.getByText('1080p Full HD'));
-    expect(screen.getByLabelText('Width')).toHaveValue(1920);
-    expect(screen.getByLabelText('Height')).toHaveValue(1080);
-    // Bitrate should update to 8Mbps
-    expect(screen.getByLabelText('Bitrate (Mbps)')).toHaveValue(8);
+    fireEvent.click(screen.getByRole('radio', { name: '1080p Full HD' }));
+    expect(field('Width')).toHaveValue('1,920');
+    expect(field('Height')).toHaveValue('1,080');
+    // Bitrate follows the preset: 8 Mbps
+    expect(field('Video bitrate')).toHaveValue('8');
   });
 
-  it('toggles advanced settings and updates codec defaults', () => {
+  it('opens encoding and updates codec defaults with the container', () => {
     render(<ExportModal onClose={jest.fn()} />);
-    expect(screen.queryByText('Video Encoding')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Video codec')).not.toBeInTheDocument();
 
-    // Toggle Advanced
-    fireEvent.click(screen.getByText('Advanced Settings'));
-    expect(screen.getByText('Video Encoding')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Encoding' }));
+    expect(screen.getByLabelText('Container format')).toHaveValue('mp4');
+    expect(screen.getByLabelText('Video codec')).toHaveValue('avc');
 
-    // Check Defaults (MP4 -> AVC)
-    expect(screen.getByLabelText('Container Format')).toHaveValue('mp4');
-    expect(screen.getByLabelText('Codec', { selector: '#export-video-codec' })).toHaveValue('avc');
-
-    // Change to WebM
-    fireEvent.change(screen.getByLabelText('Container Format'), { target: { value: 'webm' } });
-
-    // Verify updates
-    expect(screen.getByLabelText('Container Format')).toHaveValue('webm');
-    expect(screen.getByLabelText('Codec', { selector: '#export-video-codec' })).toHaveValue('vp9');
-    expect(screen.getByLabelText('Codec', { selector: '#export-audio-codec' })).toHaveValue('opus');
+    fireEvent.change(screen.getByLabelText('Container format'), { target: { value: 'webm' } });
+    expect(screen.getByLabelText('Container format')).toHaveValue('webm');
+    expect(screen.getByLabelText('Video codec')).toHaveValue('vp9');
+    expect(screen.getByLabelText('Audio codec')).toHaveValue('opus');
   });
 
   it('handles input changes', () => {
-      render(<ExportModal onClose={jest.fn()} />);
+    render(<ExportModal onClose={jest.fn()} />);
 
-      const widthInput = screen.getByLabelText('Width');
-      fireEvent.change(widthInput, { target: { value: '100' } });
-      expect(widthInput).toHaveValue(100);
+    const widthInput = field('Width');
+    fireEvent.change(widthInput, { target: { value: '1000' } });
+    fireEvent.blur(widthInput);
+    expect(widthInput).toHaveValue('1,000');
+    expect(screen.getByRole('radio', { name: 'Custom' })).toBeChecked();
 
-      const fpsSelect = screen.getByLabelText('FPS');
-      fireEvent.change(fpsSelect, { target: { value: '60' } });
-      expect(fpsSelect).toHaveValue('60');
+    const fpsSelect = screen.getByLabelText('Frame rate');
+    fireEvent.change(fpsSelect, { target: { value: '60' } });
+    expect(fpsSelect).toHaveValue('60');
   });
 
   it('starts export and shows progress', async () => {
-     render(<ExportModal onClose={jest.fn()} />);
+    render(<ExportModal onClose={jest.fn()} />);
 
-     // Mock progress callback behavior
-     mockExportProject.mockImplementation((proj, settings, onProgress) => {
-         // Simulate async progress
-         setTimeout(() => {
-             act(() => {
-                 onProgress({ status: 'rendering', percentage: 50, currentFrame: 10, totalFrames: 20 });
-             });
-         }, 10);
-         return Promise.resolve(new Blob(['video'], { type: 'video/mp4' }));
-     });
+    mockExportProject.mockImplementation((proj, settings, onProgress) => {
+      setTimeout(() => {
+        act(() => {
+          onProgress({ status: 'rendering', percentage: 50, currentFrame: 10, totalFrames: 20 });
+        });
+      }, 10);
+      return new Promise(() => {});
+    });
 
-     fireEvent.click(screen.getByText('Start Export'));
+    fireEvent.click(screen.getByRole('button', { name: 'Export' }));
 
-     expect(screen.getByText('Exporting Project')).toBeInTheDocument();
-     expect(screen.getByText('Initializing export engine...')).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Exporting video' })).toBeInTheDocument();
+    expect(screen.getByText('Starting the export engine.')).toBeInTheDocument();
 
-     await waitFor(() => {
-         expect(screen.getByText('Rendering...')).toBeInTheDocument();
-     });
-
-     expect(screen.getByText('50%')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Rendering frame 10 of 20.')).toBeInTheDocument();
+    });
+    expect(screen.getByRole('progressbar', { name: 'Video export' })).toHaveAttribute('aria-valuenow', '10');
   });
 
   it('handles export completion', async () => {
-      render(<ExportModal onClose={jest.fn()} />);
+    render(<ExportModal onClose={jest.fn()} />);
 
-      mockExportProject.mockImplementation((proj, settings, onProgress) => {
-          onProgress({ status: 'completed', percentage: 100, currentFrame: 20, totalFrames: 20 });
-          return Promise.resolve(new Blob(['video'], { type: 'video/mp4' }));
-      });
+    mockExportProject.mockImplementation((proj, settings, onProgress) => {
+      onProgress({ status: 'completed', percentage: 100, currentFrame: 20, totalFrames: 20 });
+      return Promise.resolve(new Blob(['video'], { type: 'video/mp4' }));
+    });
 
-      fireEvent.click(screen.getByText('Start Export'));
+    fireEvent.click(screen.getByRole('button', { name: 'Export' }));
 
-      await waitFor(() => {
-          expect(screen.getByText('Export Complete!')).toBeInTheDocument();
-      });
-
-      expect(screen.getByText('Close')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Exported')).toBeInTheDocument();
+    });
+    expect(screen.getAllByRole('button', { name: 'Close' }).length).toBeGreaterThan(0);
   });
 
   it('handles cancellation from UI', async () => {
-      const onClose = jest.fn();
-      render(<ExportModal onClose={onClose} />);
+    const onClose = jest.fn();
+    render(<ExportModal onClose={onClose} />);
 
-      // Enter progress state
-      mockExportProject.mockImplementation(() => new Promise(() => {})); // pending promise
-      fireEvent.click(screen.getByText('Start Export'));
+    mockExportProject.mockImplementation(() => new Promise(() => {}));
+    fireEvent.click(screen.getByRole('button', { name: 'Export' }));
 
-      fireEvent.click(screen.getByText('Cancel'));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 
-      expect(mockCancel).toHaveBeenCalled();
-      expect(onClose).toHaveBeenCalled();
+    expect(mockCancel).toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
   });
 });

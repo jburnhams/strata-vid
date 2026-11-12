@@ -1,4 +1,12 @@
-import React, { useRef } from 'react';
+/**
+ * The File menu: strata-react `Menu` over commands (issue #71), so it opens from the keyboard and
+ * reads as a menu, not a hover-only list. Starting a new project over work is a strata
+ * `AlertDialog`: the work cannot be brought back, so it is the one confirm here.
+ */
+import React, { useRef, useState } from 'react';
+import { AlertDialog, Button, Menu, type Command } from 'strata-react';
+import { FilePlus, FolderOpen, Save } from 'lucide-react';
+import { handleError } from '../utils/errorHandler';
 import { useProjectStore } from '../store/useProjectStore';
 import { serializeProject, deserializeProject } from '../utils/projectSerializer';
 import { AssetLoader } from '../services/AssetLoader';
@@ -7,13 +15,17 @@ export const ProjectMenu: React.FC = () => {
   const store = useProjectStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [confirmNew, setConfirmNew] = useState(false);
+
   const handleNewProject = () => {
     if (Object.keys(store.assets).length > 0 || Object.keys(store.tracks).length > 0) {
-        if (!window.confirm('Are you sure you want to create a new project? Unsaved changes will be lost.')) {
-            return;
-        }
+      setConfirmNew(true);
+      return;
     }
+    startNewProject();
+  };
 
+  const startNewProject = () => {
     // Cleanup assets
     Object.values(store.assets).forEach(asset => AssetLoader.revokeAsset(asset));
 
@@ -53,7 +65,7 @@ export const ProjectMenu: React.FC = () => {
               if (state) {
                   store.loadProject(state);
               } else {
-                  alert('Failed to load project: Invalid file format');
+                  handleError(new Error(`${file.name} is not a Strata Vid project.`), 'Project not loaded');
               }
           }
       };
@@ -63,14 +75,26 @@ export const ProjectMenu: React.FC = () => {
       if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const commands: Command[] = [
+    { id: 'new-project', label: 'New project', icon: FilePlus, run: handleNewProject },
+    { id: 'save-project', label: 'Save project', icon: Save, run: handleSaveProject },
+    { id: 'load-project', label: 'Open project…', icon: FolderOpen, run: () => fileInputRef.current?.click() },
+  ];
+
   return (
-    <div className="relative group z-50">
-      <button className="px-3 py-1 type-body-sm hover:bg-muted rounded-control">File</button>
-      <div className="absolute left-0 top-full mt-1 w-48 bg-card border border-border rounded-control shadow-overlay hidden group-hover:block">
-        <button onClick={handleNewProject} className="w-full text-left px-4 py-2 type-body-sm hover:bg-muted">New Project</button>
-        <button onClick={handleSaveProject} className="w-full text-left px-4 py-2 type-body-sm hover:bg-muted">Save Project</button>
-        <button onClick={() => fileInputRef.current?.click()} className="w-full text-left px-4 py-2 type-body-sm hover:bg-muted">Load Project</button>
-      </div>
+    <>
+      <Menu label="File" items={commands} trigger={<Button variant="ghost">File</Button>} />
+      <AlertDialog
+        open={confirmNew}
+        onOpenChange={setConfirmNew}
+        title="Start a new project?"
+        description="The clips, tracks and files in this project are cleared. Save it first to keep it."
+        confirm="Start new project"
+        onConfirm={() => {
+          startNewProject();
+          setConfirmNew(false);
+        }}
+      />
       <input
         type="file"
         ref={fileInputRef}
@@ -79,6 +103,6 @@ export const ProjectMenu: React.FC = () => {
         className="hidden"
         data-testid="file-input"
       />
-    </div>
+    </>
   );
 };

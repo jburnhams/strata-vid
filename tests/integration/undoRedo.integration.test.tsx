@@ -1,3 +1,4 @@
+import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -46,7 +47,7 @@ describe('Undo/Redo Integration', () => {
     };
     (AssetLoader.loadAsset as jest.Mock).mockResolvedValue(mockAsset);
 
-    render(<App />);
+    renderWithStrata(<App />);
 
     // 2. Add Asset
     const libraryInput = screen.getByTestId('add-asset-input') as HTMLInputElement;
@@ -75,7 +76,7 @@ describe('Undo/Redo Integration', () => {
     await user.click(clipElement);
 
     // 4. Delete Clip
-    fireEvent.keyDown(window, { code: 'Delete' });
+    fireEvent.keyDown(window, { key: 'Delete', code: 'Delete' });
 
     // Verify clip is gone
     await waitFor(() => {

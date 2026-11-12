@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Asset } from '../types';
-import { Tooltip } from './Tooltip';
+import { IconButton, buttonVariants } from 'strata-react';
 import { Trash2, AlertTriangle, FileVideo, Map, PlusCircle } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
@@ -85,10 +85,10 @@ const LibraryAssetItem: React.FC<{
             {asset.name}
             </div>
             {isMissing && (
-                <Tooltip content="File missing. Click to relink." position="top">
                      <label
-                        className="text-warning hover:text-warning cursor-pointer p-1 rounded-control hover:bg-neutral-5/50"
+                        className="text-warning cursor-pointer p-1 rounded-control hover:bg-muted"
                         onClick={(e) => e.stopPropagation()}
+                        aria-label={`File missing. Relink ${asset.name}`}
                      >
                         <AlertTriangle size={14} />
                         <input
@@ -99,7 +99,6 @@ const LibraryAssetItem: React.FC<{
                             data-testid={`relink-input-${asset.id}`}
                         />
                      </label>
-                </Tooltip>
             )}
         </div>
         <div className="type-caption text-muted-foreground mt-0.5">
@@ -111,32 +110,20 @@ const LibraryAssetItem: React.FC<{
 
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute right-2 bg-card/90 rounded-control p-1 shadow-overlay">
         {onAddToTimeline && (
-             <Tooltip content="Add to Shortest Track" position="left">
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onAddToTimeline(asset.id);
-                    }}
-                    className="p-1.5 text-success hover:text-success hover:bg-muted rounded-control transition-state"
-                    aria-label={`Add ${asset.name} to timeline`}
-                >
-                    <PlusCircle size={14} />
-                </button>
-             </Tooltip>
+            <IconButton
+                variant="ghost"
+                icon={PlusCircle}
+                label={`Add ${asset.name} to timeline`}
+                onPress={() => onAddToTimeline(asset.id)}
+            />
         )}
-        <Tooltip content="Remove Asset" position="left">
-            <button
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onRemove(asset.id);
-                }}
-                className="p-1.5 text-muted-foreground hover:text-danger hover:bg-muted rounded-control transition-state"
-                aria-label={`Remove ${asset.name}`}
-                data-testid={`remove-asset-${asset.id}`}
-            >
-                <Trash2 size={14} />
-            </button>
-        </Tooltip>
+        <IconButton
+            variant="ghost"
+            icon={Trash2}
+            label={`Remove ${asset.name}`}
+            data-testid={`remove-asset-${asset.id}`}
+            onPress={() => onRemove(asset.id)}
+        />
       </div>
     </li>
   );
@@ -163,8 +150,8 @@ export const LibraryPanel: React.FC<LibraryPanelProps> = ({
     <div className="flex flex-col h-full" data-testid="library-panel">
       <div className="flex justify-between items-center p-4 border-b border-border bg-card">
         <span className="font-bold type-body-sm text-foreground">Library</span>
-        <Tooltip content="Add video or GPX files" position="bottom">
-            <label className="px-3 py-1 bg-primary hover:bg-primary-10 text-primary-foreground rounded-control type-body-sm font-medium cursor-pointer transition-state flex items-center gap-1" aria-label="Add Asset">
+        {/* A native file input until strata-react's FileButton (issue #75) is released. */}
+            <label className={buttonVariants({ size: 'sm' }) + ' cursor-pointer'} aria-label="Add Asset">
             + Add
             <input
                 data-testid="add-asset-input"
@@ -175,7 +162,6 @@ export const LibraryPanel: React.FC<LibraryPanelProps> = ({
                 onChange={handleFileChange}
             />
             </label>
-        </Tooltip>
       </div>
       <div className="flex-1 overflow-y-auto p-2">
         {assets.length === 0 && (

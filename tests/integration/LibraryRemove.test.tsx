@@ -1,3 +1,4 @@
+import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import App from '../../src/App';
@@ -89,7 +90,7 @@ describe('Library Asset Removal Integration', () => {
 
   test('removing an unused asset should happen immediately without prompt', () => {
     setupStoreWithUnusedAsset();
-    render(<App />);
+    renderWithStrata(<App />);
 
     const removeBtn = screen.getByTestId('remove-asset-asset-unused');
     fireEvent.click(removeBtn);
@@ -104,7 +105,7 @@ describe('Library Asset Removal Integration', () => {
 
   test('removing a used asset should trigger confirmation modal', () => {
     setupStoreWithAssetAndClip();
-    render(<App />);
+    renderWithStrata(<App />);
 
     const removeBtn = screen.getByTestId('remove-asset-asset-1');
     fireEvent.click(removeBtn);
@@ -120,7 +121,7 @@ describe('Library Asset Removal Integration', () => {
 
   test('canceling the modal should preserve the asset and clip', () => {
     setupStoreWithAssetAndClip();
-    render(<App />);
+    renderWithStrata(<App />);
 
     // Click remove
     fireEvent.click(screen.getByTestId('remove-asset-asset-1'));
@@ -139,7 +140,7 @@ describe('Library Asset Removal Integration', () => {
 
   test('confirming the modal should remove asset and all associated clips', () => {
     setupStoreWithAssetAndClip();
-    render(<App />);
+    renderWithStrata(<App />);
 
     // Click remove
     fireEvent.click(screen.getByTestId('remove-asset-asset-1'));

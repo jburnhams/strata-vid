@@ -1,3 +1,4 @@
+import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import App from '../../src/App';
@@ -51,7 +52,7 @@ describe('Section B: Timeline Editing Integration', () => {
     });
 
     it('updates clip duration and tooltip when resizing via handles', () => {
-        render(<App />);
+        renderWithStrata(<App />);
 
         // Find the clip. Using testid instead of text to be robust against dynamic naming.
         const clipElement = screen.getByTestId('clip-item-clip-1');

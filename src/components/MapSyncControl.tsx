@@ -1,3 +1,4 @@
+import { Button } from 'strata-react';
 import React, { useState, useEffect } from 'react';
 import { useProjectStore } from '../store/useProjectStore';
 
@@ -67,7 +68,7 @@ export const MapSyncControl: React.FC<MapSyncControlProps> = ({ clipId, classNam
   };
 
   return (
-    <div className={`flex flex-col gap-4 p-4 bg-card rounded-control border border-border type-body-sm ${className}`}>
+    <div className={`flex flex-col gap-4 type-body-sm ${className}`}>
       <div className="flex flex-col gap-1 border-b border-border pb-2">
         <h3 className="font-bold text-foreground">Synchronization</h3>
         <div className="type-caption text-muted-foreground">
@@ -83,18 +84,13 @@ export const MapSyncControl: React.FC<MapSyncControlProps> = ({ clipId, classNam
 
       {/* Auto Sync */}
       <div className="flex flex-col gap-2">
-         <button
+         <Button
             onClick={handleAutoSync}
             disabled={!referenceAsset?.creationTime}
-            className={`px-3 py-2 rounded-control text-center transition-state ${
-                referenceAsset?.creationTime
-                ? 'bg-primary text-primary-foreground hover:bg-primary-10'
-                : 'bg-muted text-muted-foreground cursor-not-allowed'
-            }`}
             title={referenceAsset ? "Syncs to " + referenceAsset.name + " creation time" : "No video found to sync with"}
          >
             Auto-Sync to Video Metadata
-         </button>
+         </Button>
       </div>
 
       {/* Manual Sync - Offset */}
@@ -108,12 +104,7 @@ export const MapSyncControl: React.FC<MapSyncControlProps> = ({ clipId, classNam
             className="flex-1 px-2 py-1 bg-background border border-border rounded-control text-foreground focus:border-primary outline-none"
             placeholder="Epoch ms at Video 0s"
           />
-          <button
-            onClick={applyOffset}
-            className="px-3 py-1 bg-muted text-foreground rounded-control hover:bg-neutral-5"
-          >
-            Set
-          </button>
+          <Button onClick={applyOffset}>Set</Button>
         </div>
         <p className="type-caption text-muted-foreground">
            Value represents the absolute GPX timestamp (epoch ms) that corresponds to Video Time 00:00.

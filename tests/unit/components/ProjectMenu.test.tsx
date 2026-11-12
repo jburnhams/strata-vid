@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { ProjectMenu } from '../../../src/components/ProjectMenu';
 import { useProjectStore } from '../../../src/store/useProjectStore';
 import { serializeProject } from '../../../src/utils/projectSerializer';
@@ -40,11 +41,13 @@ describe('ProjectMenu', () => {
 
   it('renders correctly', () => {
     render(<ProjectMenu />);
-    expect(screen.getByText('File')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'File' })).toBeInTheDocument();
   });
 
-  it('handles Save Project', () => {
+  it('handles Save Project', async () => {
     render(<ProjectMenu />);
+    await userEvent.click(screen.getByRole('button', { name: 'File' }));
+    const save = screen.getByRole('menuitem', { name: 'Save project' });
 
     // Mock anchor click
     const link = { click: jest.fn(), href: '', download: '' };
@@ -52,7 +55,7 @@ describe('ProjectMenu', () => {
     jest.spyOn(document.body, 'appendChild').mockImplementation(() => link as unknown as HTMLElement);
     jest.spyOn(document.body, 'removeChild').mockImplementation(() => link as unknown as HTMLElement);
 
-    fireEvent.click(screen.getByText('Save Project'));
+    fireEvent.click(save);
 
     expect(serializeProject).toHaveBeenCalledWith(mockStore);
     expect(document.createElement).toHaveBeenCalledWith('a');
@@ -60,15 +63,19 @@ describe('ProjectMenu', () => {
     expect(link.click).toHaveBeenCalled();
   });
 
-  it('handles New Project', () => {
-    // With assets/tracks, it should confirm
+  it('handles New Project', async () => {
+    // With assets/tracks, it asks first: the work cannot be brought back
     mockStore.assets = { '1': {} };
-    window.confirm = jest.fn().mockReturnValue(true);
 
     render(<ProjectMenu />);
-    fireEvent.click(screen.getByText('New Project'));
+    await userEvent.click(screen.getByRole('button', { name: 'File' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'New project' }));
 
-    expect(window.confirm).toHaveBeenCalled();
+    expect(mockStore.removeAsset).not.toHaveBeenCalled();
+    const confirm = await screen.findByRole('alertdialog', { name: 'Start a new project?' });
+    expect(confirm).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Start new project' }));
+
     expect(mockStore.removeAsset).toHaveBeenCalled();
     expect(mockStore.setSettings).toHaveBeenCalled();
   });

@@ -1,3 +1,4 @@
+import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import App from '../../src/App';
@@ -32,7 +33,7 @@ describe('Integration: Help System', () => {
   });
 
   it('opens help modal via button', () => {
-    render(<App />);
+    renderWithStrata(<App />);
 
     // Help button should be in header
     const helpBtn = screen.getByLabelText('Help');
@@ -42,14 +43,14 @@ describe('Integration: Help System', () => {
   });
 
   it('opens help modal via keyboard shortcut (?)', () => {
-    render(<App />);
+    renderWithStrata(<App />);
 
     fireEvent.keyDown(window, { key: '?' });
     expect(screen.getByText('Keyboard Shortcuts')).toBeInTheDocument();
   });
 
   it('closes help modal', () => {
-    render(<App />);
+    renderWithStrata(<App />);
 
     fireEvent.click(screen.getByLabelText('Help'));
     expect(screen.getByText('Keyboard Shortcuts')).toBeInTheDocument();

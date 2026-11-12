@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Track, Clip, Asset } from '../../types';
 import { useDroppable } from '@dnd-kit/core';
+import type { MenuEntry } from 'strata-react';
 import { ClipItem } from './ClipItem';
 
 interface TrackLaneProps {
@@ -12,6 +13,8 @@ interface TrackLaneProps {
   onClipSelect?: (id: string) => void;
   onClipResize?: (id: string, newStart: number, newDuration: number, newOffset: number) => void;
   onContextMenu?: (e: React.MouseEvent, id: string) => void;
+  /** The clip's context menu (strata-react `ContextMenu`): right-click, the menu key or Shift+F10. */
+  clipMenu?: (clipId: string) => readonly MenuEntry[];
 }
 
 export const TrackLane: React.FC<TrackLaneProps> = ({
@@ -22,7 +25,8 @@ export const TrackLane: React.FC<TrackLaneProps> = ({
   selectedClipId,
   onClipSelect,
   onClipResize,
-  onContextMenu
+  onContextMenu,
+  clipMenu
 }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: track.id,
@@ -55,6 +59,7 @@ export const TrackLane: React.FC<TrackLaneProps> = ({
           onSelect={onClipSelect}
           onResize={onClipResize}
           onContextMenu={onContextMenu}
+          menuItems={clipMenu?.(clip.id)}
           viewMode={track.viewMode}
         />
       ))}

@@ -10,14 +10,13 @@ import type { Asset, Track, Clip } from './types';
 import { AssetLoader } from './services/AssetLoader';
 import { ExportModal } from './components/ExportModal';
 import { HelpModal } from './components/HelpModal';
-import { ConfirmModal } from './components/ConfirmModal';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { ToastContainer } from './components/Toast';
 import { LoadingOverlay } from './components/LoadingOverlay';
 import { handleError, showSuccess } from './utils/errorHandler';
-import { Tooltip } from './components/Tooltip';
 import { useAutoSave } from './hooks/useAutoSave';
-import { HelpCircle } from 'lucide-react';
+import { Keyboard } from 'lucide-react';
+import { AlertDialog, Button, ColorSchemeChoice, CommandMenu, IconButton } from 'strata-react';
 import { DndContext, DragOverlay, useSensors, useSensor, PointerSensor, type DragStartEvent, type DragEndEvent, type DragMoveEvent, defaultDropAnimationSideEffects, type DropAnimation, pointerWithin } from '@dnd-kit/core';
 import { ClipItem } from './components/timeline/ClipItem';
 import {
@@ -45,7 +44,7 @@ function App() {
   const timelineScrollRef = React.useRef<HTMLDivElement>(null);
 
   const toggleHelp = () => setShowHelp(prev => !prev);
-  useKeyboardShortcuts(toggleHelp);
+  const commands = useKeyboardShortcuts(toggleHelp);
   useAutoSave();
 
   const {
@@ -437,44 +436,21 @@ function App() {
              }}>
 
           {/* Header */}
-          <div className="[grid-area:header] border-b border-border bg-card flex items-center px-4 gap-4">
-            <span className="font-bold type-heading">Strata Vid</span>
+          <header className="[grid-area:header] border-b border-border bg-card flex items-center px-4 gap-2">
+            <span className="type-label mr-2">Strata Vid</span>
             <ProjectMenu />
             <EditMenu />
 
-            <div className="ml-auto flex items-center gap-4">
-              <Tooltip content="Keyboard Shortcuts (?)">
-                <button
-                  onClick={toggleHelp}
-                  className="text-muted-foreground hover:text-foreground p-1 rounded-control hover:bg-muted"
-                  aria-label="Help"
-                >
-                  <HelpCircle size={20} />
-                </button>
-              </Tooltip>
-
-              <Tooltip content="View Settings">
-                <button
-                  className="px-3 py-1 type-body-sm hover:bg-muted rounded-control"
-                  aria-label="View Settings"
-                >
-                  View
-                </button>
-              </Tooltip>
-
-              <Tooltip content="Export Video">
-                <button
-                  className="px-3 py-1 type-body-sm bg-primary hover:bg-primary-10 rounded-control font-medium"
-                  onClick={() => setShowExport(true)}
-                  aria-label="Export Project"
-                >
-                  Export
-                </button>
-              </Tooltip>
+            <div className="ml-auto flex items-center gap-2">
+              <IconButton variant="ghost" icon={Keyboard} label="Keyboard shortcuts" hint="?" onClick={toggleHelp} />
+              <ColorSchemeChoice compact />
+              <Button variant="default" onClick={() => setShowExport(true)}>
+                Export video
+              </Button>
             </div>
 
-            <div className="type-caption text-muted-foreground border-l border-border pl-4">v0.1.0</div>
-          </div>
+            <div className="type-caption text-muted-foreground border-l border-border pl-4 ml-2">v0.1.0</div>
+          </header>
 
           {/* Library */}
           <div className="[grid-area:library] border-r border-border bg-card flex flex-col overflow-hidden" data-testid="library">
@@ -509,16 +485,16 @@ function App() {
           </div>
 
           {showExport && <ExportModal onClose={() => setShowExport(false)} />}
-          {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
-          {confirmModal.isOpen && (
-            <ConfirmModal
-              title="Remove Asset"
-              message="This asset is currently used in your timeline. Removing it will also remove all associated clips. Are you sure?"
-              confirmLabel="Remove All"
-              onConfirm={confirmAssetRemove}
-              onCancel={() => setConfirmModal({ isOpen: false, assetId: null })}
-            />
-          )}
+          {showHelp && <HelpModal commands={commands} onClose={() => setShowHelp(false)} />}
+          <AlertDialog
+            open={confirmModal.isOpen}
+            onOpenChange={(open) => !open && setConfirmModal({ isOpen: false, assetId: null })}
+            title={`Remove ${confirmModal.assetId ? assetsRecord[confirmModal.assetId]?.name ?? 'this file' : 'this file'}?`}
+            description="It is used on the timeline. Its clips are removed with it."
+            confirm="Remove file and clips"
+            onConfirm={confirmAssetRemove}
+          />
+          <CommandMenu commands={commands} />
           <ToastContainer />
           <LoadingOverlay />
 

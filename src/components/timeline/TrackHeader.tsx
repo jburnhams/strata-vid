@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Track, TrackViewMode } from '../../types';
-import { Volume2, VolumeX, Lock, Unlock, Trash2, Film, AudioWaveform, Layers } from 'lucide-react';
+import { VolumeX, Lock, Trash2, Film, AudioWaveform, Layers } from 'lucide-react';
+import { IconButton, NumberField, Toggle, Toolbar } from 'strata-react';
 
 interface TrackHeaderProps {
   track: Track;
@@ -19,17 +20,8 @@ export const TrackHeader: React.FC<TrackHeaderProps> = ({
   onUpdateVolume,
   onToggleViewMode
 }) => {
-  const getViewModeIcon = (mode?: TrackViewMode) => {
-    switch (mode) {
-      case 'waveform':
-        return <AudioWaveform size={14} />;
-      case 'both':
-        return <Layers size={14} />;
-      case 'frames':
-      default:
-        return <Film size={14} />;
-    }
-  };
+  const viewModeIcon = (mode?: TrackViewMode) =>
+    mode === 'waveform' ? AudioWaveform : mode === 'both' ? Layers : Film;
 
   const getViewModeTooltip = (mode?: TrackViewMode) => {
     switch (mode) {
@@ -49,54 +41,31 @@ export const TrackHeader: React.FC<TrackHeaderProps> = ({
         <div className="flex-1 truncate type-body-sm font-medium text-foreground mr-2">
           {track.label || `Track ${track.id}`}
         </div>
-        <div className="flex gap-1">
+        <Toolbar label={`${track.label || `Track ${track.id}`} controls`} className="flex gap-0.5">
           {track.type === 'video' && (
-             <button
-              className="p-1 hover:bg-muted rounded-control text-muted-foreground hover:text-foreground"
-              onClick={() => onToggleViewMode?.(track.id)}
-              title={getViewModeTooltip(track.viewMode)}
-            >
-              {getViewModeIcon(track.viewMode)}
-            </button>
+            <IconButton
+              variant="ghost"
+              icon={viewModeIcon(track.viewMode)}
+              label={getViewModeTooltip(track.viewMode)}
+              onPress={() => onToggleViewMode?.(track.id)}
+            />
           )}
-          <button
-            className="p-1 hover:bg-muted rounded-control text-muted-foreground hover:text-foreground"
-            onClick={() => onToggleMute?.(track.id)}
-            title={track.isMuted ? "Unmute" : "Mute"}
-          >
-            {track.isMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
-          </button>
-          <button
-            className="p-1 hover:bg-muted rounded-control text-muted-foreground hover:text-foreground"
-            onClick={() => onToggleLock?.(track.id)}
-            title={track.isLocked ? "Unlock" : "Lock"}
-          >
-            {track.isLocked ? <Lock size={14} /> : <Unlock size={14} />}
-          </button>
-          <button
-            className="p-1 hover:bg-muted rounded-control text-danger hover:text-danger"
-            onClick={() => onRemove(track.id)}
-            title="Delete Track"
-          >
-            <Trash2 size={14} />
-          </button>
-        </div>
+          <Toggle size="sm" iconOnly icon={VolumeX} label="Mute" pressed={!!track.isMuted} onChange={() => onToggleMute?.(track.id)} />
+          <Toggle size="sm" iconOnly icon={Lock} label="Lock" pressed={!!track.isLocked} onChange={() => onToggleLock?.(track.id)} />
+          <IconButton variant="ghost" icon={Trash2} label="Delete track" onPress={() => onRemove(track.id)} />
+        </Toolbar>
       </div>
 
-      <div className="flex items-center gap-2">
-         <span className="type-caption text-muted-foreground">Vol:</span>
-         <input
-            type="number"
-            min="0"
-            max="500"
-            step="1"
-            value={Math.round((track.volume ?? 1.0) * 100)}
-            onChange={(e) => onUpdateVolume?.(track.id, parseFloat(e.target.value) / 100)}
-            className="w-12 bg-background border border-border rounded-control px-1 py-0.5 type-caption text-right text-foreground focus:outline-none focus:border-primary"
-            title="Volume %"
-          />
-          <span className="type-caption text-muted-foreground">%</span>
-      </div>
+      <NumberField
+        aria-label="Track volume"
+        className="w-28"
+        min={0}
+        max={500}
+        step={1}
+        unit="%"
+        value={Math.round((track.volume ?? 1.0) * 100)}
+        onChange={(v) => v !== null && onUpdateVolume?.(track.id, v / 100)}
+      />
     </div>
   );
 };

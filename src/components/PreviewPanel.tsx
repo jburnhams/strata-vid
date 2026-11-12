@@ -1,3 +1,4 @@
+import { Toggle, ToggleGroup, Toolbar, ToolbarSeparator } from 'strata-react';
 import React, { useState, useEffect } from 'react';
 import { useProjectStore } from '../store/useProjectStore';
 import { VideoPlayer } from './preview/VideoPlayer';
@@ -62,33 +63,22 @@ export const PreviewPanel: React.FC = () => {
       <div className="relative flex-1 bg-footage flex items-center justify-center overflow-hidden">
 
         {/* Preview Toolbar */}
-        <div className="absolute top-4 right-4 z-50 flex gap-2 bg-card/80 p-2 rounded-control backdrop-blur-sm">
-           <button
-             onClick={() => setShowSafeAreas(!showSafeAreas)}
-             className={`px-2 py-1 type-caption rounded-control transition-state ${showSafeAreas ? 'bg-primary text-primary-foreground' : 'bg-muted text-primary-foreground hover:bg-neutral-5'}`}
-             title="Toggle Safe Areas"
-           >
-             Safe Areas
-           </button>
-           <button
-             onClick={() => setShowGrid(!showGrid)}
-             className={`px-2 py-1 type-caption rounded-control transition-state ${showGrid ? 'bg-primary text-primary-foreground' : 'bg-muted text-primary-foreground hover:bg-neutral-5'}`}
-             title="Toggle Grid"
-           >
-             Grid
-           </button>
-           <div className="w-px bg-neutral-5 mx-1"></div>
-           <select
-             value={settings.previewQuality}
-             onChange={(e) => setSettings({ previewQuality: e.target.value as ProjectSettings['previewQuality'] })}
-             className="bg-muted text-foreground type-caption rounded-control px-2 py-1 border-none outline-none cursor-pointer hover:bg-neutral-5"
-             title="Preview Quality"
-           >
-             <option value="low">Low (50%)</option>
-             <option value="medium">Medium (75%)</option>
-             <option value="high">High (100%)</option>
-           </select>
-        </div>
+        <Toolbar label="Preview options" className="absolute top-4 right-4 z-50 flex items-center gap-2 bg-card/80 p-2 rounded-control backdrop-blur-sm">
+          <Toggle size="sm" label="Safe areas" pressed={showSafeAreas} onChange={setShowSafeAreas} />
+          <Toggle size="sm" label="Grid" pressed={showGrid} onChange={setShowGrid} />
+          <ToolbarSeparator />
+          <ToggleGroup
+            size="sm"
+            label="Preview quality"
+            value={settings.previewQuality}
+            onChange={(value) => setSettings({ previewQuality: value as ProjectSettings['previewQuality'] })}
+            options={[
+              { value: 'low', label: '50%' },
+              { value: 'medium', label: '75%' },
+              { value: 'high', label: '100%' },
+            ]}
+          />
+        </Toolbar>
 
         {/* Aspect Ratio Container */}
         <div

@@ -1,3 +1,4 @@
+import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import App from '../../src/App';
@@ -65,7 +66,7 @@ describe('Playback Integration', () => {
         });
     });
 
-    render(<App />);
+    renderWithStrata(<App />);
 
     // 1. Check Initial State
     // Using accessible queries now
@@ -105,7 +106,7 @@ describe('Playback Integration', () => {
     const timeBeforeScrub = useProjectStore.getState().currentTime;
 
     await act(async () => {
-        window.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowRight' }));
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', code: 'ArrowRight' }));
     });
 
     const timeAfterScrub = useProjectStore.getState().currentTime;

@@ -27,7 +27,7 @@ How the editor is built, as of the move onto strata-react (2026-11). What it doe
 | Media | mediabunny | Metadata, thumbnails and decoding on load; encoding on export |
 | Maps | Leaflet + react-leaflet | Preview map; export draws OSM tiles itself onto the canvas |
 | GPX | `@we-gold/gpxjs` | Parsed to points, stats and GeoJSON in `AssetLoader`; simplified by `settings.simplificationTolerance` |
-| Drag and drop | `@dnd-kit` | Library to timeline and clip moves; due to be replaced by strata-react's drag and drop |
+| Drag and drop | `@dnd-kit` | Library to timeline and clip moves; removed by PR #138 (in review), which moves the timeline, transport, stage and elevation chart onto strata-react. This page describes `main` before it |
 | Icons | lucide-react | |
 | Tests | Jest 30 + Testing Library, jsdom | Babel transform (no ts-jest); `@napi-rs/canvas` for canvas code; see [AGENTS.md](../AGENTS.md) |
 

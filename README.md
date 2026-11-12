@@ -69,8 +69,8 @@ development the store is on `window.useProjectStore`.
 React 19, TypeScript 7, Vite 8 and Tailwind v4, with **strata-react** for components, theme roles,
 commands, overlays and toasts (plus its required peers React Router and TanStack Query). Zustand with
 Immer holds the project. mediabunny does decoding and encoding, Leaflet and react-leaflet draw maps,
-`@we-gold/gpxjs` parses GPX, `@dnd-kit` handles timeline drag and drop until strata-react's
-replacement is adopted, lucide-react supplies icons. Details and reasons: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+`@we-gold/gpxjs` parses GPX, `@dnd-kit` handles timeline drag and drop (removed by PR #138, in
+review), lucide-react supplies icons. Details and reasons: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 The theme is the app's own: `src/theme.generated.css` (strata-react's palette script, seeded from
 Ordnance Survey contour orange) and `src/theme.css` (status roles and faces, each with its reason).

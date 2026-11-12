@@ -21,15 +21,23 @@ menus, context menus, the command menu and chorded shortcuts from one command li
 `JobStatus` for export (#72), `NumberField` and `Slider` with units (#73), `Inspector` and `PropertyList`
 in the metadata panel (#74).
 
-## Released, not yet swapped in
+## In review: PR #138
+
+[PR #138](https://github.com/jburnhams/strata-vid/pull/138) swaps in the parts released in strata-react
+1.0.10 and 1.0.11. Until it merges, the code on `main` is still the app's own.
 
 | strata-react issue | Replaces here |
 |---|---|
-| [#75](https://github.com/jburnhams/strata-react/issues/75) File intake | The library's file input, drop handling and relink |
-| [#76](https://github.com/jburnhams/strata-react/issues/76) Drag and drop | `@dnd-kit` in `App.tsx`, `LibraryPanel`, `TrackLane`, `ClipItem` (removing `@dnd-kit` is a dependency change, so Jonathan's call) |
-| [#77](https://github.com/jburnhams/strata-react/issues/77) Timeline | `src/components/timeline/` (lanes, ruler, playhead, markers, zoom) |
-| [#78](https://github.com/jburnhams/strata-react/issues/78) Media playback | `TransportControls`, the preview stage |
-| [#79](https://github.com/jburnhams/strata-react/issues/79) LineChart | `ElevationProfile` |
+| [#75](https://github.com/jburnhams/strata-react/issues/75) File intake | The library's file input, drop handling and relink (`FileButton`, `FileDropZone`, `FileOutcomes`, `MissingFile`) |
+| [#76](https://github.com/jburnhams/strata-react/issues/76) Drag and drop | `@dnd-kit` is removed; files go on the timeline with "Add to timeline" until strata-react #121 adds drops from outside (Jonathan's call) |
+| [#77](https://github.com/jburnhams/strata-react/issues/77) Timeline | `src/components/timeline/` (lanes, ruler, playhead, markers, zoom) becomes strata-react's `Timeline` |
+| [#78](https://github.com/jburnhams/strata-react/issues/78) Media playback | `TransportControls` and the preview stage (`Transport`, `SeekBar`, `MediaStage`, `StageGuides`); `SafeAreaGuides` is deleted |
+| [#79](https://github.com/jburnhams/strata-react/issues/79) LineChart | `ElevationProfile` becomes a `LineChart` over distance |
+
+Behaviour that changes with it: a clip move that would overlap or touch a locked track is refused with
+a reason instead of landing at the nearest free spot; track volume and "Clips show" move into a
+per-track settings popover; the time readout shows milliseconds. `recharts` is no longer imported, and
+removing it from `package.json` is Jonathan's call.
 
 ## Waiting on strata-react
 

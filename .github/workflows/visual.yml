@@ -1,0 +1,33 @@
+# Visual tests: the editor's states (strata-visual.config.ts) screenshotted light and dark in the
+# Chromium the pinned playwright installs, against tests/visual/baselines. Changed shots are uploaded
+# as the visual-diffs artifact.
+name: Visual Tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  visual:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+      - name: Use Node.js 26.x
+        uses: actions/setup-node@v7
+        with:
+          node-version: 26.x
+          cache: 'npm'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Run visual tests
+        run: npm run test:visual
+      - name: Upload changed screenshots
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-diffs
+          path: tests/visual/output/

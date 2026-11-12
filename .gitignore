@@ -28,3 +28,6 @@ coverage
 *.njsproj
 *.sln
 *.sw?
+
+# Visual test diffs (CI uploads them)
+tests/visual/output

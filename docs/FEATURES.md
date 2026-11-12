@@ -59,7 +59,7 @@ features as rows (new IDs continue the letter, or start N).
 
 | ID | Feature | Status | Notes |
 |---|---|---|---|
-| E1–E3 | WebCodecs export of video, image and text layers | Done | In a worker (J3) |
+| E1–E3 | WebCodecs export of video, image and text layers | Partial | In a worker (J3). The code is there, but on 2026-11-12 an export in Playwright's Chromium never got past "Starting the export engine." ([PORT.md](PORT.md#app-bugs-noted)); not retried in Chrome |
 | E4 | Maps in export (tiles, route, marker) | Done | OSM tiles drawn by `WorkerCompositor` |
 | E5 | Progress and cancel | Done | strata-react `JobStatus` |
 | E6 | Settings (resolution, fps, format, quality) | Done | MP4 or WebM |
@@ -109,7 +109,7 @@ Section I was replaced by M; I's open items (waveforms, volume, export) were don
 | M3–M5 | Web Audio graph: clip, track and master gain | Done | `AudioEngine` |
 | M6 | Volume controls | Done | Track volume in the track settings popover since #138 |
 | M7 | Waveforms on the timeline | Done | Shown as a strip until strata-react #121 (lane height) |
-| M8 | Audio in export | Done | `AudioCompositor` |
+| M8 | Audio in export | Partial | `AudioCompositor` renders with `OfflineAudioContext`, which the export worker does not have, so exports have no sound ([PORT.md](PORT.md#app-bugs-noted)) |
 | M9 | Equaliser, compressor, reverb | Not started | Marked "future" |
 
 ## J. Performance

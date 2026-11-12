@@ -10,6 +10,46 @@ a factual error. Work before 2026-11-12 is in the git history only.
 
 ## 2026-11-12
 
+**Visual tests of the editor's interactive flows** (branch `claude/project-thread-7f6m6w`, PR #140). Jonathan asked
+for visual testing "using common-react", covering interactive flows, with realistic generated test clips
+checked by eye. No repository or package of his is called common-react, so this uses strata-react's
+`strata-visual`, the runner strata-react tests itself with. Jonathan approved the new dev dependencies
+(`playwright` pinned at 1.63.0, the two Overpass font packages); `msw` is not needed.
+- `strata-visual.config.ts`: **new**. 15 states of the editor reached by doing what a person does (drop
+  files, refuse a photo, add to the timeline, drag a clip, a refused move with its reason, trim, the clip
+  menu, play and step frames, inspector edits, the map and its style and profile, export settings, removing
+  a used file), each light and dark at 1440×900: 30 shots, about 40 s. Steps also check what a picture
+  cannot (playback moved, a clip's new span).
+- `tests/visual/flows.ts`, `tests/visual/tiles.mjs`, `tests/visual/README.md`: **new**. The shared steps;
+  map tiles drawn from the fixtures' valley in the app's three styles so no shot touches a tile server;
+  how it all stays deterministic (files dropped with fixed times, one at a time; no frozen clock, which
+  would stop playback and Leaflet's tile fade; light shots pick Light, as the app's ThemeProvider
+  defaults to dark and owns the class).
+- `tests/visual/baselines/`: **new**, 30 PNGs, each looked at before committing.
+- `scripts/fixtures/` (`terrain.mjs`, `route.mjs`, `scene.mjs`, `sound.mjs`, `make-media.mjs`): **new**. Generates the
+  media from code: an invented valley, a 6.4 km GPX run over it with Garmin heart rate and cadence, three
+  GoPro-style H.264/AAC clips of chest-camera footage filmed along it (bob at the runner's cadence,
+  footfalls on the same beat, wind, birds), a music bed and a phone photo. Needs ffmpeg; nothing from npm.
+- `tests/fixtures/media/`: **new**, the generated files (2.4 MB, committed rather than generated per run,
+  which takes about four minutes) and a README.
+- `src/theme.css`, `src/main.tsx`: the app's faces are now Overpass and Overpass Mono, bundled, so text is
+  the same on every machine (the runner fails text drawn in a machine font).
+- `src/index.css`, `src/components/MapPanel.tsx`: two app changes the tests needed: the map uses the app's
+  face instead of Leaflet's Helvetica stack, and the elevation-profile toggle is a lucide icon instead of
+  the 🏔️ emoji (an emoji is drawn by the machine's emoji font).
+- `package.json`, `package-lock.json`: `test:visual` script; dev dependencies `playwright` (exact),
+  `@fontsource-variable/overpass`, `@fontsource-variable/overpass-mono`.
+- `.github/workflows/visual.yml`: **new**, runs the suite on Node 26 and uploads changed shots as
+  `visual-diffs`. `.gitignore`: `tests/visual/output`.
+- `docs/PORT.md`: an "App bugs noted" section with eleven bugs the tests turned up, noted not fixed. The
+  largest: export stays at "Starting the export engine." and never renders a frame, and export audio
+  is always dropped (the worker has no `OfflineAudioContext`).
+- `docs/FEATURES.md`: **corrections**: E1–E3 (export) and M8 (audio in export) were marked Done; both are
+  now Partial, with the reason.
+- `README.md`: the `test:visual` command.
+- Not covered yet: running an export (blocked by the bug above) and the keyboard shortcuts sheet (its ← and
+  → are outside the bundled faces' character set, so they fall back to a machine font).
+
 **Docs slimmed to what is true now** (branch `claude/project-thread-snbsl3`, PR #139). Jonathan asked for a
 review of the project's docs and chose to slim and rewrite them: the README still called the app early
 development and listed export, audio and save/load as planned; the roadmap contradicted its own section

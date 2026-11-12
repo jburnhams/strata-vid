@@ -43,10 +43,38 @@ no longer imported; removing it from `package.json` is Jonathan's call.
 | [#121](https://github.com/jburnhams/strata-react/issues/121) Timeline for editors | Drops from outside, lane height, kind colours, header width |
 | [#122](https://github.com/jburnhams/strata-react/issues/122) Media and files in narrow panes | MissingFile layout, LineChart x label, frame timecode |
 
+## App bugs noted
+
+Found while writing the visual tests (2026-11-12), with the media in `tests/fixtures/media`. Noted, not
+fixed, per the order above.
+
+- **Export never starts rendering.** With one 8 s clip on the timeline, MP4 or WebM, the dialog stays at
+  "Starting the export engine." for minutes and reports no failure; the worker sends no progress after
+  its first message. Seen in Playwright's Chromium, which encodes H.264 and VP9 (checked with
+  `VideoEncoder.isConfigSupported`).
+- **Export drops the sound every time.** The worker renders audio with `OfflineAudioContext`, which
+  workers do not have ("OfflineAudioContext not supported", then "proceeding with video only").
+- **MP4 metadata is mostly not read.** For a GoPro-style H.264/AAC MP4 that ffprobe reads in full, the
+  inspector shows Container, Frame rate and Bitrate as "–" and takes the date from the file's modified
+  time ("Date from: file") although the file has `creation_time`, so map sync starts from the wrong time.
+- **A GPX file shows no Created date** although its points have times (the sync panel shows the GPX start).
+- **Files added together are listed in a race order**: the library lists them as they finish loading.
+- **"Add to timeline" also selects the file** (the click reaches the row), and it puts audio and GPX on
+  the video track, end to end after the clips.
+- **Library rows are buttons containing buttons**: a row's accessible name includes its "Add … to
+  timeline" and "Remove …" buttons, so each of those names matches two elements.
+- **Sync panel**: the sync offset input has no label (only a placeholder, "Epoch ms at Video 0s"), and its
+  dates are written `03/05/2026, 07:41:08` where the inspector writes `3 May 2026, 07:43`.
+- **Elevation profile disagrees with itself**: with the playhead on the route clip it marks 2.6 km (373 m)
+  with a line and labels the route's end "216 m now", while the map's marker is at the start. Its height
+  axis runs from 0 m for a route between 215 m and 429 m.
+- **The empty stage shows "0.00s"** in monospace in its middle.
+- **In the light scheme the audio clip's waveform is invisible** (it shows in dark).
+
 ## After the port
 
 The app's own work starts once the table above is empty: the open rows in
-[FEATURES.md](FEATURES.md), the bug above, and anything the port turned up.
+[FEATURES.md](FEATURES.md), the bugs above, and anything the port turned up.
 
 ## Testing notes
 

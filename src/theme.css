@@ -43,6 +43,17 @@
      are the generated categorical chart colours (solved for colour-blind separation and >= 3:1 on
      the ground), so the four kinds stay apart for everyone. Clips draw them as a border over a
      25% tint with the page's own ink, which reads in both schemes. */
+/* Faces: Overpass, an open face drawn from the US highway sign alphabet (Highway Gothic), for a
+   tool about roads and routes; it stays legible small and at a distance, which suits dense panels.
+   Overpass Mono is its sibling for timecodes and readouts, so numbers keep the same shapes as the
+   labels around them. Both are bundled (@fontsource-variable), so text is the same on every machine
+   and the visual tests can compare it. */
+@theme {
+  --font-sans: "Overpass Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Overpass Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Overpass Mono Variable", ui-monospace, monospace;
+}
+
 @theme inline {
   --color-footage: oklch(0% 0 0);
   --color-on-footage: oklch(100% 0 0);

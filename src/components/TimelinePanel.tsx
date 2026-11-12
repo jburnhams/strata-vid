@@ -94,8 +94,10 @@ export const TimelinePanel: React.FC = () => {
       const track = tracks[laneId];
       if (track?.isLocked) return `${trackName(track)} is locked.`;
     }
-    // A trim at the start moves the in-point; it cannot go before the file's first frame
-    if (next.start + next.length === clip.start + clip.duration && next.start < clip.start && clip.offset - (clip.start - next.start) < 0) {
+    // A trim at the start moves the in-point of a video or audio file; it cannot go before the
+    // file's first frame. Maps, text and images have no first frame, so they extend freely.
+    const fromFile = clip.type === 'video' || clip.type === 'audio';
+    if (fromFile && next.start + next.length === clip.start + clip.duration && next.start < clip.start && clip.offset - (clip.start - next.start) < 0) {
       return 'The clip already starts at the beginning of its file.';
     }
     return settings.allowOverlaps ? null : overlap(id, next);

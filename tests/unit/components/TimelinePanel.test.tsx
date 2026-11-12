@@ -74,6 +74,30 @@ describe('TimelinePanel', () => {
     expect(a.offset).toBe(2);
   });
 
+  it('refuses to extend a video clip back past the first frame of its file', () => {
+    render(<TimelinePanel />);
+    fireEvent.keyDown(item(/^finish\.mp4/), { key: 'ArrowLeft', altKey: true, shiftKey: true });
+    const b = useProjectStore.getState().clips.b;
+    expect(b.start).toBe(20);
+    expect(b.duration).toBe(5);
+  });
+
+  it('extends a map clip back from its start, since a map has no first frame', () => {
+    useProjectStore.setState({
+      clips: { a: clip('a', 't1', 0, 10, 2), b: { ...clip('b', 't1', 20, 5), type: 'map' } },
+      assets: {
+        a: { id: 'a', name: 'run.mp4', type: 'video', src: '' },
+        b: { id: 'b', name: 'route.gpx', type: 'gpx', src: '' },
+      },
+    });
+    render(<TimelinePanel />);
+    fireEvent.keyDown(item(/^route\.gpx/), { key: 'ArrowLeft', altKey: true, shiftKey: true });
+    const b = useProjectStore.getState().clips.b;
+    expect(b.start).toBeCloseTo(19.9);
+    expect(b.duration).toBeCloseTo(5.1);
+    expect(b.offset).toBe(0);
+  });
+
   it('refuses a move onto another clip unless overlaps are allowed', () => {
     useProjectStore.setState({ clips: { a: clip('a', 't1', 0, 10), b: clip('b', 't1', 10, 5) } });
     render(<TimelinePanel />);

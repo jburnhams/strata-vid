@@ -36,28 +36,29 @@ describe('Integration: Help System', () => {
     renderWithStrata(<App />);
 
     // Help button should be in header
-    const helpBtn = screen.getByLabelText('Help');
+    const helpBtn = screen.getByRole('button', { name: 'Keyboard shortcuts' });
     fireEvent.click(helpBtn);
 
-    expect(screen.getByText('Keyboard Shortcuts')).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeInTheDocument();
   });
 
   it('opens help modal via keyboard shortcut (?)', () => {
     renderWithStrata(<App />);
 
     fireEvent.keyDown(window, { key: '?' });
-    expect(screen.getByText('Keyboard Shortcuts')).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeInTheDocument();
   });
 
   it('closes help modal', () => {
     renderWithStrata(<App />);
 
-    fireEvent.click(screen.getByLabelText('Help'));
-    expect(screen.getByText('Keyboard Shortcuts')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Keyboard shortcuts' }));
+    expect(screen.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeInTheDocument();
 
-    const closeBtn = screen.getByLabelText('Close Help');
+    const closeBtns = screen.getAllByRole('button', { name: 'Close' });
+    const closeBtn = closeBtns[closeBtns.length - 1];
     fireEvent.click(closeBtn);
 
-    expect(screen.queryByText('Keyboard Shortcuts')).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Keyboard shortcuts' })).not.toBeInTheDocument();
   });
 });

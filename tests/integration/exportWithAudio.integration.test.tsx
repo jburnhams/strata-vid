@@ -106,11 +106,11 @@ describe('Export with Audio Integration', () => {
         render(<ExportModal onClose={onClose} />);
 
         // Wait for rendering
-        expect(screen.getByText('Start Export')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Export' })).toBeInTheDocument();
 
         // Click Export
         await act(async () => {
-            fireEvent.click(screen.getByText('Start Export'));
+            fireEvent.click(screen.getByRole('button', { name: 'Export' }));
         });
 
         // Verify AudioCompositor was NOT used in Main Thread
@@ -133,7 +133,7 @@ describe('Export with Audio Integration', () => {
 
         // Wait for completion
         await waitFor(() => {
-             expect(screen.getByText('Export Complete!')).toBeInTheDocument();
+             expect(screen.getByText('Exported')).toBeInTheDocument();
         });
     });
 });

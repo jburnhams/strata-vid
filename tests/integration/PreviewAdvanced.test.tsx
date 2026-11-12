@@ -146,7 +146,7 @@ describe('PreviewAdvanced Integration', () => {
           expect(screen.queryByTestId('guide-action-safe')).not.toBeInTheDocument();
 
           // Click Toggle Button
-          const toggleBtn = screen.getByTitle('Toggle Safe Areas');
+          const toggleBtn = screen.getByRole('button', { name: 'Safe areas' });
           fireEvent.click(toggleBtn);
 
           // Now visible
@@ -165,7 +165,7 @@ describe('PreviewAdvanced Integration', () => {
           expect(screen.queryByTestId('guide-grid-v1')).not.toBeInTheDocument();
 
           // Click Grid Button
-          const gridBtn = screen.getByTitle('Toggle Grid');
+          const gridBtn = screen.getByRole('button', { name: 'Grid' });
           fireEvent.click(gridBtn);
 
           // Now visible

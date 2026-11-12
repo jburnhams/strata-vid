@@ -109,7 +109,7 @@ describe('Track View Mode Integration', () => {
     // Check for waveform overlay (should be absent)
     expect(screen.queryByTestId('waveform-overlay')).not.toBeInTheDocument();
 
-    const toggleButton = screen.getByTitle('Show Video Frames Only');
+    const toggleButton = screen.getByRole('button', { name: 'Show Video Frames Only' });
     expect(toggleButton).toBeInTheDocument();
 
     // Click to toggle -> 'waveform'
@@ -117,7 +117,7 @@ describe('Track View Mode Integration', () => {
 
     expect(useProjectStore.getState().tracks['track-1'].viewMode).toBe('waveform');
 
-    const toggleButtonWaveform = screen.getByTitle('Show Waveform Only');
+    const toggleButtonWaveform = screen.getByRole('button', { name: 'Show Waveform Only' });
     expect(toggleButtonWaveform).toBeInTheDocument();
 
     expect(screen.queryByTestId('clip-thumbnail')).not.toBeInTheDocument();
@@ -129,7 +129,7 @@ describe('Track View Mode Integration', () => {
 
     expect(useProjectStore.getState().tracks['track-1'].viewMode).toBe('both');
 
-    const toggleButtonBoth = screen.getByTitle('Show Both Video and Waveform');
+    const toggleButtonBoth = screen.getByRole('button', { name: 'Show Both Video and Waveform' });
     expect(toggleButtonBoth).toBeInTheDocument();
 
     expect(screen.getAllByTestId('clip-thumbnail').length).toBeGreaterThan(0);
@@ -140,7 +140,7 @@ describe('Track View Mode Integration', () => {
 
     expect(useProjectStore.getState().tracks['track-1'].viewMode).toBe('frames');
 
-    expect(screen.getByTitle('Show Video Frames Only')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Show Video Frames Only' })).toBeInTheDocument();
     expect(screen.getAllByTestId('clip-thumbnail').length).toBeGreaterThan(0);
     expect(screen.queryByTestId('waveform-overlay')).not.toBeInTheDocument();
   });
@@ -196,6 +196,6 @@ describe('Track View Mode Integration', () => {
     expect(overlays.length).toBeGreaterThan(0);
 
     // Should NOT show toggle button in header
-    expect(screen.queryByTitle('Show Video Frames Only')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Show Video Frames Only' })).not.toBeInTheDocument();
   });
 });

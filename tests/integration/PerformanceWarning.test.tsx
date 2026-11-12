@@ -1,3 +1,4 @@
+import { StrataToastRegion } from 'strata-react';
 import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, act } from '@testing-library/react';
@@ -37,7 +38,7 @@ describe('Performance Warning Integration', () => {
     });
 
     it('shows a warning toast when playback lags', async () => {
-        renderWithStrata(<App />);
+        renderWithStrata(<><App /><StrataToastRegion /></>);
 
         // Mock performance.now before starting playback so start time is consistent
         const perfSpy = jest.spyOn(performance, 'now');
@@ -58,11 +59,6 @@ describe('Performance Warning Integration', () => {
                  jest.advanceTimersByTime(20);
              }
         });
-
-        // Check store state directly first to confirm logic works
-        const toasts = useProjectStore.getState().toasts;
-        expect(toasts.length).toBeGreaterThan(0);
-        expect(toasts[0].message).toMatch(/Low performance/i);
 
         // Check for toast in UI
         const toast = await screen.findByText(/Low performance detected/i);

@@ -73,7 +73,7 @@ describe('Data Overlay Integration', () => {
     expect(within(overlay).getByText(/Speed/)).toBeInTheDocument();
 
     // Simulate user changing speed unit in MetadataPanel
-    const speedUnitSelector = screen.getByLabelText('Speed Unit');
+    const speedUnitSelector = screen.getByLabelText('Speed unit');
     await act(async () => {
         fireEvent.change(speedUnitSelector, { target: { value: 'mph' } });
     });
@@ -83,7 +83,7 @@ describe('Data Overlay Integration', () => {
     expect(updatedClip.properties.dataOverlay?.speedUnit).toBe('mph');
 
     // Simulate hiding the speed field
-    const showSpeedCheckbox = screen.getByLabelText('Show Speed');
+    const showSpeedCheckbox = screen.getByRole('switch', { name: 'Speed' });
      await act(async () => {
         fireEvent.click(showSpeedCheckbox);
     });

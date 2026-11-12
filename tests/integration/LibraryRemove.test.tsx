@@ -100,7 +100,7 @@ describe('Library Asset Removal Integration', () => {
     expect(state.assets['asset-unused']).toBeUndefined();
 
     // Verify no modal
-    expect(screen.queryByTestId('confirm-modal')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
   test('removing a used asset should trigger confirmation modal', () => {
@@ -111,8 +111,8 @@ describe('Library Asset Removal Integration', () => {
     fireEvent.click(removeBtn);
 
     // Modal should appear
-    expect(screen.getByTestId('confirm-modal')).toBeInTheDocument();
-    expect(screen.getByText(/This asset is currently used in your timeline/)).toBeInTheDocument();
+    expect(screen.getByRole('alertdialog', { name: 'Remove video.mp4?' })).toBeInTheDocument();
+    expect(screen.getByText(/It is used on the timeline/)).toBeInTheDocument();
 
     // Asset should still be there
     const state = useProjectStore.getState();
@@ -130,7 +130,7 @@ describe('Library Asset Removal Integration', () => {
     fireEvent.click(screen.getByText('Cancel'));
 
     // Modal gone
-    expect(screen.queryByTestId('confirm-modal')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
 
     // Asset and clip still exist
     const state = useProjectStore.getState();
@@ -146,10 +146,10 @@ describe('Library Asset Removal Integration', () => {
     fireEvent.click(screen.getByTestId('remove-asset-asset-1'));
 
     // Click confirm
-    fireEvent.click(screen.getByTestId('confirm-modal-confirm-btn'));
+    fireEvent.click(screen.getByRole('button', { name: 'Remove file and clips' }));
 
     // Modal gone
-    expect(screen.queryByTestId('confirm-modal')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
 
     // Verify store state
     const state = useProjectStore.getState();

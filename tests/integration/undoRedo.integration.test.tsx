@@ -86,8 +86,8 @@ describe('Undo/Redo Integration', () => {
 
     // 5. Undo via Menu
     // Hover Edit menu
-    await user.hover(screen.getByText('Edit'));
-    await user.click(screen.getByText('Undo'));
+    await user.click(screen.getByRole('button', { name: 'Edit' }));
+    await user.click(screen.getByRole('menuitem', { name: /Undo/ }));
 
     // Verify clip is back
     await waitFor(() => {
@@ -96,8 +96,8 @@ describe('Undo/Redo Integration', () => {
     });
 
     // 6. Redo via Menu
-    await user.hover(screen.getByText('Edit'));
-    await user.click(screen.getByText('Redo'));
+    await user.click(screen.getByRole('button', { name: 'Edit' }));
+    await user.click(screen.getByRole('menuitem', { name: /Redo/ }));
 
     // Verify clip is gone again
     await waitFor(() => {

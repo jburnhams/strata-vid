@@ -140,7 +140,7 @@ describe('Map Sync Integration', () => {
         // Change Map Style to 'Satellite'
 
         // Find the select by label text since we added htmlFor
-        const styleSelect = screen.getByLabelText('Map Style');
+        const styleSelect = screen.getByLabelText('Map style');
         expect(styleSelect).toBeInTheDocument();
 
         // 10. Update Styling via UI

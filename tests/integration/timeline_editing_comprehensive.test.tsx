@@ -127,7 +127,7 @@ describe('Comprehensive Timeline Editing Integration', () => {
         });
 
         // 2. Toggle Snapping OFF
-        const snapCheckbox = screen.getByLabelText('Snap');
+        const snapCheckbox = screen.getByRole('button', { name: 'Snap' });
         fireEvent.click(snapCheckbox);
 
         // Move clip to 0.5s again
@@ -185,7 +185,7 @@ describe('Comprehensive Timeline Editing Integration', () => {
         });
 
         // 2. Toggle Overlap ON
-        const overlapCheckbox = screen.getByLabelText('Overlap');
+        const overlapCheckbox = screen.getByRole('button', { name: 'Allow overlaps' });
         fireEvent.click(overlapCheckbox);
 
         // Move to 27s again

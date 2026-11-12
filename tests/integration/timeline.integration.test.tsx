@@ -118,7 +118,7 @@ describe('Timeline Integration', () => {
 
     // Check if the clip is rendered in the timeline
     await waitFor(() => {
-        const clips = document.querySelectorAll('.border-blue-500');
+        const clips = document.querySelectorAll('[data-testid^="clip-item-"]');
         expect(clips.length).toBeGreaterThan(0);
     });
 

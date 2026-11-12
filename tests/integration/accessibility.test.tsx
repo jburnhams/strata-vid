@@ -30,8 +30,8 @@ describe('Integration: Accessibility', () => {
   it('header buttons have accessible labels', () => {
     renderWithStrata(<App />);
 
-    expect(screen.getByLabelText('Help')).toBeInTheDocument();
-    expect(screen.getByLabelText('View Settings')).toBeInTheDocument();
-    expect(screen.getByLabelText('Export Project')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Keyboard shortcuts' })).toBeInTheDocument();
+    expect(screen.getByRole('radiogroup', { name: 'Appearance' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Export video' })).toBeInTheDocument();
   });
 });

@@ -78,8 +78,8 @@ describe('Project Management Integration', () => {
     jest.spyOn(link, 'click').mockImplementation(() => {});
 
     // Hover File menu to show options
-    await user.hover(screen.getByText('File'));
-    await user.click(screen.getByText('Save Project'));
+    await user.click(screen.getByRole('button', { name: 'File' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Save project' }));
 
     expect(window.URL.createObjectURL).toHaveBeenCalled();
     expect(savedBlob).not.toBeNull();
@@ -94,8 +94,9 @@ describe('Project Management Integration', () => {
     expect(savedJson.assets['asset-1'].fileName).toBe('video.mp4');
 
     // 4. New Project (Clear)
-    await user.hover(screen.getByText('File'));
-    await user.click(screen.getByText('New Project'));
+    await user.click(screen.getByRole('button', { name: 'File' }));
+    await user.click(screen.getByRole('menuitem', { name: 'New project' }));
+    await user.click(await screen.findByRole('button', { name: 'Start new project' }));
 
     // Verify cleared
     await waitFor(() => {

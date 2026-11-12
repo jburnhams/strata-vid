@@ -121,7 +121,7 @@ describe('Section H: Advanced Timeline Features', () => {
         const clipEl = screen.getByTestId('clip-item-c1');
         fireEvent.contextMenu(clipEl);
 
-        const duplicateOption = screen.getByText('Duplicate Clip');
+        const duplicateOption = screen.getByRole('menuitem', { name: 'Duplicate clip' });
         await act(async () => {
             fireEvent.click(duplicateOption);
         });
@@ -147,7 +147,7 @@ describe('Section H: Advanced Timeline Features', () => {
         const clipEl = screen.getByTestId('clip-item-c1');
         fireEvent.contextMenu(clipEl);
 
-        const splitOption = screen.getByText('Split Clip');
+        const splitOption = screen.getByRole('menuitem', { name: 'Split clip' });
         // Option should be enabled
         expect(splitOption).not.toBeDisabled();
 
@@ -185,7 +185,7 @@ describe('Section H: Advanced Timeline Features', () => {
         const clip1El = screen.getByTestId('clip-item-c1');
         fireEvent.contextMenu(clip1El);
 
-        const rippleDeleteOption = screen.getByText('Ripple Delete');
+        const rippleDeleteOption = screen.getByRole('menuitem', { name: 'Ripple delete' });
         await act(async () => {
             fireEvent.click(rippleDeleteOption);
         });
@@ -214,7 +214,7 @@ describe('Section H: Advanced Timeline Features', () => {
         const clip2El = screen.getByTestId('clip-item-c2');
         fireEvent.contextMenu(clip2El);
 
-        const fadeOption = screen.getByText('Add Crossfade (1s)');
+        const fadeOption = screen.getByRole('menuitem', { name: 'Add crossfade (1s)' });
         await act(async () => {
             fireEvent.click(fadeOption);
         });

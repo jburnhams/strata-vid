@@ -74,7 +74,7 @@ describe('Audio Control Integration', () => {
         });
 
         // 2. Render TimelinePanel
-        const { getByTitle } = render(<TimelinePanel />);
+        const { getByRole } = render(<TimelinePanel />);
 
         // 3. Verify Initial State in Engine
         // Master Gain (0) -> Track Gain (1)
@@ -83,10 +83,11 @@ describe('Audio Control Integration', () => {
         expect(trackGain.gain.value).toBe(1.0);
 
         // 4. Change Volume in UI (Input is in %, e.g. 100)
-        const volumeInput = getByTitle('Volume %');
+        const volumeInput = getByRole('textbox', { name: 'Track volume' });
 
         await act(async () => {
             fireEvent.change(volumeInput, { target: { value: '50' } });
+            fireEvent.blur(volumeInput);
         });
 
         // 5. Verify Store Update
@@ -112,14 +113,14 @@ describe('Audio Control Integration', () => {
         });
 
         // 2. Render TimelinePanel
-        const { getByTitle } = render(<TimelinePanel />);
+        const { getByRole } = render(<TimelinePanel />);
 
         // 3. Verify Initial State in Engine
         const trackGain = mockCreateGain.mock.results[1].value;
         expect(trackGain.gain.value).toBe(1.0);
 
         // 4. Click Mute
-        const muteButton = getByTitle('Mute');
+        const muteButton = getByRole('button', { name: 'Mute' });
         await act(async () => {
             fireEvent.click(muteButton);
         });
@@ -131,7 +132,8 @@ describe('Audio Control Integration', () => {
         expect(trackGain.gain.value).toBe(0);
 
         // 7. Unmute
-        const unmuteButton = getByTitle('Unmute');
+        const unmuteButton = getByRole('button', { name: 'Mute' });
+        expect(unmuteButton).toHaveAttribute('aria-pressed', 'true');
         await act(async () => {
             fireEvent.click(unmuteButton);
         });

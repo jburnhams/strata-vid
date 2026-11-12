@@ -17,16 +17,19 @@ port stands and what it is waiting on: [docs/PORT.md](docs/PORT.md). What change
 
 ## What it does
 
-- **Library**: pick or drop video, GPX, image and audio files. Each one gets a thumbnail (first frame
-  for video), metadata (codec, frame rate, creation time) and, for audio, a waveform. Removing an
-  asset in use asks first.
-- **Timeline**: tracks for video, audio and overlays; drag clips in from the library, move and trim
-  them, snap to edges and the playhead, zoom, mute and lock tracks, markers, crossfade transitions,
+- **Library**: pick or drop video, GPX, image and audio files; each file's outcome (adding, added, or
+  failed with its reason and Try again) shows beside it. Each one gets a thumbnail (first frame for
+  video), metadata (codec, frame rate, creation time) and, for audio, a waveform. A missing file is
+  relinked in place. Removing an asset in use asks first.
+- **Timeline** (strata-react's `Timeline`): tracks for video, audio and overlays; files go on with
+  "Add to timeline"; move, trim and change lane with the pointer or the keyboard, snapping on or off;
+  a move that would overlap another clip or touch a locked track is refused with its reason; zoom,
+  mute and lock, per-track volume and view in a settings popover, markers, crossfade transitions,
   split, playback rate, and keyframes for a clip's properties.
 - **Preview**: the clips under the playhead composed live: video, images, text, a Leaflet map of the
   GPX track with a moving marker (several tracks, a speed or elevation heatmap, an elevation profile),
-  and a data overlay (speed, distance, elevation in chosen units). Safe-area guides and a preview
-  quality setting.
+  and a data overlay (speed, distance, elevation in chosen units). Transport, seek bar, volume and
+  speed below; stage guides and a preview quality setting.
 - **GPX sync**: a map clip's offset is set from the video's creation time or by hand.
 - **Audio**: per-clip and per-track volume through Web Audio, mixed into the export.
 - **Project**: undo and redo (50 steps), save to and open from a `.svp` file, auto-save to
@@ -36,7 +39,7 @@ port stands and what it is waiting on: [docs/PORT.md](docs/PORT.md). What change
 - **Commands**: every action has a shortcut and appears in the command menu and the Edit menu; the
   shortcuts dialog (the keyboard button) lists them.
 
-Known gaps carried over from the old task lists: HTML clips have a type but are not rendered; no ripple
+Known gaps: library files cannot be dragged onto the timeline (waiting on strata-react #121); HTML clips have a type but are not rendered; no ripple
 editing, track reordering or multi-select on the timeline; no layout for narrow screens; nothing
 shared or cloud-stored (out of scope). Export was verified by its tests, not by a recorded run in a
 browser.
@@ -66,11 +69,10 @@ development the store is on `window.useProjectStore`.
 
 ## Stack
 
-React 19, TypeScript 7, Vite 8 and Tailwind v4, with **strata-react** for components, theme roles,
-commands, overlays and toasts (plus its required peers React Router and TanStack Query). Zustand with
+React 19, TypeScript 7, Vite 8 and Tailwind v4, with **strata-react** for components (including the
+timeline, transport, file intake and charts), theme roles, commands, overlays and toasts (plus its required peers React Router and TanStack Query). Zustand with
 Immer holds the project. mediabunny does decoding and encoding, Leaflet and react-leaflet draw maps,
-`@we-gold/gpxjs` parses GPX, `@dnd-kit` handles timeline drag and drop (removed by PR #138, in
-review), lucide-react supplies icons. Details and reasons: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+`@we-gold/gpxjs` parses GPX, lucide-react supplies icons. Details and reasons: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 The theme is the app's own: `src/theme.generated.css` (strata-react's palette script, seeded from
 Ordnance Survey contour orange) and `src/theme.css` (status roles and faces, each with its reason).

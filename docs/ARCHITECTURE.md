@@ -27,8 +27,8 @@ How the editor is built, as of the move onto strata-react (2026-11). What it doe
 | Media | mediabunny | Metadata, thumbnails and decoding on load; encoding on export |
 | Maps | Leaflet + react-leaflet | Preview map; export draws OSM tiles itself onto the canvas |
 | GPX | `@we-gold/gpxjs` | Parsed to points, stats and GeoJSON in `AssetLoader`; simplified by `settings.simplificationTolerance` |
-| Drag and drop | `@dnd-kit` | Library to timeline and clip moves; removed by PR #138 (in review), which moves the timeline, transport, stage and elevation chart onto strata-react. This page describes `main` before it |
 | Icons | lucide-react | |
+| Charts | strata-react `LineChart` | The elevation profile. `recharts` is still a devDependency but nothing imports it; removing it is Jonathan's call |
 | Tests | Jest 30 + Testing Library, jsdom | Babel transform (no ts-jest); `@napi-rs/canvas` for canvas code; see [AGENTS.md](../AGENTS.md) |
 
 ## Data model
@@ -75,12 +75,19 @@ their own `syncOffset`.
 
 ## Rendering
 
-**Preview** (`src/components/PreviewPanel.tsx`, `src/components/preview/`). `usePlaybackLoop` advances
+**Preview** (`src/components/PreviewPanel.tsx`, `src/components/preview/`), inside strata-react's
+`MediaStage` with `StageGuides`; `TransportControls` is strata-react's transport. `usePlaybackLoop` advances
 `currentTime` on `requestAnimationFrame`. The clips under the playhead are drawn bottom to top by
 `OverlayRenderer`: `VideoPlayer` keeps a `<video>` seeked to `t − start + offset`, images and text are
 positioned elements, map clips are `MapPanel` (Leaflet) with `HeatmapOverlay` and `ElevationProfile`,
 data clips are `DataOverlay`. `AudioPlayer` and `AudioEngine` route each media element through a clip
 gain, a track gain and a master gain (Web Audio), so mute and volume are heard in preview.
+
+**Timeline** (`src/components/TimelinePanel.tsx`). strata-react's `Timeline` draws lanes, clips, the
+ruler, playhead and markers and reports every move, trim, selection and seek; the panel applies them to
+the store, so the store's rules (overlaps, locked tracks, how far a trim may go back into the source)
+live in one place and nothing keeps a second copy of the clips. A refused move shows its reason while
+dragging.
 
 **Export** (`src/services/ExportManager.ts` → `src/workers/exportWorker.ts`). The manager starts a
 worker and relays progress and cancel. In the worker, `WorkerCompositor` draws each frame on an
@@ -111,10 +118,10 @@ src/
   components/             panels (Library, Preview, Metadata, Timeline, Map), menus (Project, Edit),
                           dialogs (Export, Help), MapSyncControl, KeyframeList, TransportControls
     preview/              VideoPlayer, AudioPlayer, OverlayRenderer, MapPanel parts, DataOverlay,
-                          HeatmapOverlay, ElevationProfile, SafeAreaGuides
-    timeline/             TimelineContainer, TrackHeader, TrackLane, ClipItem, Ruler, Playhead,
-                          Marker, WaveformOverlay, ZoomControls
-  hooks/                  usePlaybackLoop, useKeyboardShortcuts (the command list), useAutoSave, useDebounce
+                          HeatmapOverlay, ElevationProfile (a LineChart)
+    timeline/             TrackHeader (each lane's header slot), WaveformOverlay; the timeline itself is
+                          strata-react's Timeline, driven by TimelinePanel
+  hooks/                  usePlaybackLoop, useKeyboardShortcuts (`useEditorCommands`, the command list), useAutoSave, useDebounce
   services/               AssetLoader, AudioEngine, AudioCompositor, ExportManager, WorkerCompositor, Compositor
   store/                  useProjectStore, slices/, middleware/historyMiddleware
   utils/                  gpxParser, mapUtils, timelineUtils, timeUtils, animationUtils, audioUtils,

@@ -21,8 +21,8 @@ files and its links were broken.
   adds the worker export (`WorkerCompositor`, `exportWorker`), the audio graph, saving, and the current
   layout. **Corrections**: `Clip.syncOffset` is the absolute GPX time (epoch ms) at the clip's start, not
   an offset in seconds; `Compositor.ts` is used only by its tests.
-- `docs/PORT.md`: **new**. Where the move onto strata-react stands: what is in use, what PR #138
-  swaps in (#75–#79), and what waits on strata-react (#68, #80, #81, #116, #117, #121, #122).
+- `docs/PORT.md`: **new**. Where the move onto strata-react stands: what is in use (including what
+  PR #138 swapped in, #75–#79), and what waits on strata-react (#68, #80, #81, #116, #117, #121, #122).
 - `CHANGELOG.md`: **new**, seeded with PR #137 below.
 - `AGENTS.md`: adds the changelog, dependency and port rules.
 - Removed: `docs/IMPLEMENTATION.md`, `docs/QUICKSTART.md`, `docs/complete/` and `docs/sections/` (the
@@ -30,9 +30,11 @@ files and its links were broken.
   `QUICK_START.md`, `TEMPLATE_CUSTOMIZATION.md` and `.env.example` (the app reads no environment variables).
   All are in git history.
 - `.node-version`: 20 → 26, to match `.nvmrc` and `engines`.
+- Brought up to date with PR #138 once it merged: README, ARCHITECTURE and PORT describe the
+  strata-react timeline, transport, stage, file intake and chart, and no longer mention `@dnd-kit`.
 
 **Swap in strata-react's file intake, transport, chart and timeline** (branch
-`claude/project-thread-nyofjj`, PR #138, in review when this entry was written). The second port step:
+`claude/project-thread-nyofjj`, PR #138). The second port step:
 the components released in strata-react 1.0.10 and 1.0.11 (#75, #77, #78, #79) replace the app's own,
 and `@dnd-kit` is removed (#76). Details and behaviour changes are in the PR and `docs/PORT.md`; gaps
 found were filed as strata-react #121 and #122.

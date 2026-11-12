@@ -10,7 +10,7 @@ a factual error. Work before 2026-11-12 is in the git history only.
 
 ## 2026-11-12
 
-**Visual tests of the editor's interactive flows** (branch `claude/project-thread-7f6m6w`). Jonathan asked
+**Visual tests of the editor's interactive flows** (branch `claude/project-thread-7f6m6w`, PR #140). Jonathan asked
 for visual testing "using common-react", covering interactive flows, with realistic generated test clips
 checked by eye. No repository or package of his is called common-react, so this uses strata-react's
 `strata-visual`, the runner strata-react tests itself with. Jonathan approved the new dev dependencies

@@ -139,41 +139,32 @@ describe('PreviewAdvanced Integration', () => {
   });
 
   describe('Safe Area Guides', () => {
+      // strata-react's StageGuides draws one SVG: the safe areas as two rectangles (90% and 80%)
+      // and the grid as four rule-of-thirds lines, each stroked twice so it reads on any picture
+      const guides = () => screen.getByRole('group', { name: 'Preview' }).querySelector('svg');
+
       it('toggles safe area guides on button click', () => {
           render(<PreviewPanel />);
+          expect(guides()).toBeNull();
 
-          // Initially hidden
-          expect(screen.queryByTestId('guide-action-safe')).not.toBeInTheDocument();
-
-          // Click Toggle Button
           const toggleBtn = screen.getByRole('button', { name: 'Safe areas' });
           fireEvent.click(toggleBtn);
+          expect(guides()!.querySelectorAll('rect')).toHaveLength(4);
 
-          // Now visible
-          expect(screen.getByTestId('guide-action-safe')).toBeInTheDocument();
-          expect(screen.getByTestId('guide-title-safe')).toBeInTheDocument();
-
-          // Click again to hide
           fireEvent.click(toggleBtn);
-          expect(screen.queryByTestId('guide-action-safe')).not.toBeInTheDocument();
+          expect(guides()).toBeNull();
       });
 
       it('toggles grid on button click', () => {
           render(<PreviewPanel />);
+          expect(guides()).toBeNull();
 
-          // Initially hidden
-          expect(screen.queryByTestId('guide-grid-v1')).not.toBeInTheDocument();
-
-          // Click Grid Button
           const gridBtn = screen.getByRole('button', { name: 'Grid' });
           fireEvent.click(gridBtn);
+          expect(guides()!.querySelectorAll('line')).toHaveLength(8);
 
-          // Now visible
-          expect(screen.getByTestId('guide-grid-v1')).toBeInTheDocument();
-
-          // Click again to hide
           fireEvent.click(gridBtn);
-          expect(screen.queryByTestId('guide-grid-v1')).not.toBeInTheDocument();
+          expect(guides()).toBeNull();
       });
   });
 

@@ -46,9 +46,8 @@ describe('Browser Integration Tests', () => {
       // Check panels
       expect(screen.getByText('Library')).toBeInTheDocument();
       expect(screen.getByText('Nothing selected')).toBeInTheDocument();
-      // Timeline panel now has a static "Timeline" header
-      expect(screen.getByText('TIMELINE')).toBeInTheDocument();
-      expect(screen.getByRole('slider', { name: 'Zoom' })).toHaveValue('10');
+      expect(screen.getByRole('group', { name: 'Timeline' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /zoom in/i })).toBeInTheDocument();
     });
 
     it('allows adding a video file to the library', async () => {

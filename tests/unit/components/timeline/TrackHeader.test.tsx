@@ -6,7 +6,7 @@ import type { Track } from '../../../../src/types';
 const mockTrack: Track = {
   id: 'track-1',
   type: 'video',
-  label: 'Video Track',
+  label: 'Footage',
   isMuted: false,
   isLocked: false,
   clips: [],
@@ -15,61 +15,46 @@ const mockTrack: Track = {
 };
 
 describe('TrackHeader', () => {
-  const defaultProps = {
+  const props = () => ({
     track: mockTrack,
     onRemove: jest.fn(),
     onToggleMute: jest.fn(),
     onToggleLock: jest.fn(),
     onUpdateVolume: jest.fn(),
-    onToggleViewMode: jest.fn(),
-  };
-
-  it('renders track label', () => {
-    render(<TrackHeader {...defaultProps} />);
-    expect(screen.getByText('Video Track')).toBeInTheDocument();
+    onSetViewMode: jest.fn(),
   });
 
-  it('calls onRemove when delete button clicked', () => {
-    render(<TrackHeader {...defaultProps} />);
-    const deleteBtn = screen.getByRole('button', { name: 'Delete track' });
-    fireEvent.click(deleteBtn);
-    expect(defaultProps.onRemove).toHaveBeenCalledWith('track-1');
+  it('names mute and lock for the track and shows their state', () => {
+    const p = props();
+    render(<TrackHeader {...p} track={{ ...mockTrack, isMuted: true }} />);
+    expect(screen.getByRole('button', { name: 'Mute Footage' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(screen.getByRole('button', { name: 'Lock Footage' }));
+    expect(p.onToggleLock).toHaveBeenCalledWith('track-1');
   });
 
-  it('calls onToggleMute when mute button clicked', () => {
-    render(<TrackHeader {...defaultProps} />);
-    const muteBtn = screen.getByRole('button', { name: 'Mute' });
-    fireEvent.click(muteBtn);
-    expect(defaultProps.onToggleMute).toHaveBeenCalledWith('track-1');
+  it('keeps volume, what clips show and delete in the track settings', async () => {
+    const p = props();
+    render(<TrackHeader {...p} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Footage settings' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Footage settings' });
+    expect(dialog).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Waveform' }));
+    expect(p.onSetViewMode).toHaveBeenCalledWith('track-1', 'waveform');
+
+    const volume = screen.getByRole('textbox', { name: 'Track volume' });
+    fireEvent.change(volume, { target: { value: '150' } });
+    fireEvent.blur(volume);
+    expect(p.onUpdateVolume).toHaveBeenCalledWith('track-1', 1.5);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete track' }));
+    expect(p.onRemove).toHaveBeenCalledWith('track-1');
   });
 
-  it('calls onToggleLock when lock button clicked', () => {
-    render(<TrackHeader {...defaultProps} />);
-    const lockBtn = screen.getByRole('button', { name: 'Lock' });
-    fireEvent.click(lockBtn);
-    expect(defaultProps.onToggleLock).toHaveBeenCalledWith('track-1');
-  });
-
-  it('calls onUpdateVolume when volume input changes', () => {
-    render(<TrackHeader {...defaultProps} />);
-    const volumeInput = screen.getByRole('textbox', { name: 'Track volume' });
-    fireEvent.change(volumeInput, { target: { value: '50' } });
-    fireEvent.blur(volumeInput);
-    expect(defaultProps.onUpdateVolume).toHaveBeenCalledWith('track-1', 0.5);
-  });
-
-  it('toggles view mode and renders correct icons', () => {
-      const { rerender } = render(<TrackHeader {...defaultProps} />);
-
-      const viewModeBtn = screen.getByRole('button', { name: 'Show Video Frames Only' });
-      fireEvent.click(viewModeBtn);
-      expect(defaultProps.onToggleViewMode).toHaveBeenCalledWith('track-1');
-
-      // Test other modes for coverage
-      rerender(<TrackHeader {...defaultProps} track={{...mockTrack, viewMode: 'waveform'}} />);
-      expect(screen.getByRole('button', { name: 'Show Waveform Only' })).toBeInTheDocument();
-
-      rerender(<TrackHeader {...defaultProps} track={{...mockTrack, viewMode: 'both'}} />);
-      expect(screen.getByRole('button', { name: 'Show Both Video and Waveform' })).toBeInTheDocument();
+  it('offers no view choice on an audio track', async () => {
+    render(<TrackHeader {...props()} track={{ ...mockTrack, type: 'audio' }} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Footage settings' }));
+    await screen.findByRole('dialog', { name: 'Footage settings' });
+    expect(screen.queryByRole('radiogroup', { name: 'Clips show' })).not.toBeInTheDocument();
   });
 });

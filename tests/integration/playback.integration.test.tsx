@@ -112,41 +112,16 @@ describe('Playback Integration', () => {
     const timeAfterScrub = useProjectStore.getState().currentTime;
     expect(timeAfterScrub).toBeGreaterThan(timeBeforeScrub);
 
-    // 6. Scrub via Playhead Drag (simulated)
-    // We can't easily simulate drag in JSDOM/DndKit without complex setup,
-    // but we can trigger pointer events on the Playhead manually.
-    const playhead = screen.getByTestId('playhead');
-
-    // Mock setPointerCapture
-    playhead.setPointerCapture = jest.fn();
-    playhead.releasePointerCapture = jest.fn();
-    // Mock offsetParent for position calculation
-    Object.defineProperty(playhead, 'offsetParent', {
-        get: () => ({
-            getBoundingClientRect: () => ({ left: 0, top: 0, width: 1000, height: 100 })
-        })
-    });
-
-    // Start Drag
+    // 6. Scrub with the timeline's current-time slider (the ruler's marker), by keyboard
+    const scrubber = screen.getByRole('slider', { name: 'Current time' });
     await act(async () => {
-        fireEvent.pointerDown(playhead, { clientX: 100, pointerId: 1, bubbles: true });
+        fireEvent.keyDown(scrubber, { key: 'Home' });
     });
-
-    // Move Drag (Move to 200px)
-    // Zoom level is default 10. 200px / 10 = 20s.
+    expect(useProjectStore.getState().currentTime).toBe(0);
     await act(async () => {
-        // We must ensure the event has clientX
-        const event = new MouseEvent('pointermove', { clientX: 200, bubbles: true });
-        Object.defineProperty(event, 'pointerId', { value: 1 });
-        fireEvent(playhead, event);
+        fireEvent.keyDown(scrubber, { key: 'PageUp' });
     });
-
-    expect(useProjectStore.getState().currentTime).toBeCloseTo(20, 0.1);
-
-    // End Drag
-    await act(async () => {
-        fireEvent.pointerUp(playhead, { pointerId: 1, bubbles: true });
-    });
+    expect(useProjectStore.getState().currentTime).toBeGreaterThan(0);
 
     // 7. Stop Button
     // Advance time a bit to make sure we are not at 0
@@ -155,7 +130,7 @@ describe('Playback Integration', () => {
     });
 
     await act(async () => {
-        fireEvent.click(screen.getByLabelText('Stop'));
+        fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
     });
 
     expect(useProjectStore.getState().isPlaying).toBe(false);

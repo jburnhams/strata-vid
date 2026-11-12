@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { LibraryPanel } from '../../../../src/components/LibraryPanel';
 import type { Asset } from '../../../../src/types';
+import { chooseFiles } from '../../../utils/files';
 
 describe('LibraryPanel - Relink and Remove', () => {
   const mockOnAssetAdd = jest.fn();
@@ -40,7 +41,7 @@ describe('LibraryPanel - Relink and Remove', () => {
       <LibraryPanel
         assets={assets}
         selectedAssetId={null}
-        onAssetAdd={mockOnAssetAdd}
+        onAddFile={mockOnAssetAdd}
         onAssetSelect={mockOnAssetSelect}
         onAssetRemove={mockOnAssetRemove}
         onAssetUpdate={mockOnAssetUpdate}
@@ -56,7 +57,7 @@ describe('LibraryPanel - Relink and Remove', () => {
       <LibraryPanel
         assets={assets}
         selectedAssetId={null}
-        onAssetAdd={mockOnAssetAdd}
+        onAddFile={mockOnAssetAdd}
         onAssetSelect={mockOnAssetSelect}
         onAssetRemove={mockOnAssetRemove}
         onAssetUpdate={mockOnAssetUpdate}
@@ -74,25 +75,20 @@ describe('LibraryPanel - Relink and Remove', () => {
       <LibraryPanel
         assets={assets}
         selectedAssetId={null}
-        onAssetAdd={mockOnAssetAdd}
+        onAddFile={mockOnAssetAdd}
         onAssetSelect={mockOnAssetSelect}
         onAssetRemove={mockOnAssetRemove}
         onAssetUpdate={mockOnAssetUpdate}
       />
     );
 
-    // Relink icon should be visible for missing asset
-    // We look for the input inside the label which is the visual "button"
-    const relinkInput = screen.getByTestId('relink-input-2');
-    expect(relinkInput).toBeInTheDocument();
+    // The missing file says so in words and offers a relink; the normal one does not
+    expect(screen.getByText('File missing')).toBeInTheDocument();
+    const relink = screen.getByRole('button', { name: 'Relink missing.mp4' });
+    expect(screen.queryByRole('button', { name: 'Relink video.mp4' })).not.toBeInTheDocument();
 
-    // Should NOT show for normal asset
-    const normalAssetInput = screen.queryByTestId('relink-input-1');
-    expect(normalAssetInput).not.toBeInTheDocument();
-
-    // Simulate file upload
     const file = new File(['content'], 'restored.mp4', { type: 'video/mp4' });
-    fireEvent.change(relinkInput, { target: { files: [file] } });
+    chooseFiles(relink, [file]);
 
     expect(mockOnAssetUpdate).toHaveBeenCalledWith('2', file);
   });

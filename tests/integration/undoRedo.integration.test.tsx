@@ -1,6 +1,7 @@
 import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { chooseFiles } from '../utils/files';
 import userEvent from '@testing-library/user-event';
 import App from '../../src/App';
 import { AssetLoader } from '../../src/services/AssetLoader';
@@ -50,10 +51,8 @@ describe('Undo/Redo Integration', () => {
     renderWithStrata(<App />);
 
     // 2. Add Asset
-    const libraryInput = screen.getByTestId('add-asset-input') as HTMLInputElement;
     const file = new File(['dummy'], 'video.mp4', { type: 'video/mp4' });
-    Object.defineProperty(libraryInput, 'files', { value: [file] });
-    fireEvent.change(libraryInput);
+    chooseFiles(screen.getByRole('button', { name: 'Add files' }), [file]);
 
     // Wait for asset to appear in library
     await waitFor(() => {

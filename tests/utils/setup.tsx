@@ -255,12 +255,26 @@ if (isJSDOM) {
       cleanup();
     });
 
-    // Mock ResizeObserver
-    global.ResizeObserver = jest.fn().mockImplementation(() => ({
-      observe: jest.fn(),
-      unobserve: jest.fn(),
-      disconnect: jest.fn(),
-    }));
+    // jest-environment-jsdom has no PointerEvent, so a fired pointer event loses its coordinates;
+    // strata-react's Timeline and sliders read clientX from pointer events
+    if (typeof window.PointerEvent === 'undefined') {
+      class PointerEventShim extends MouseEvent {
+        pointerId: number;
+        pointerType: string;
+        constructor(type: string, init: PointerEventInit = {}) {
+          super(type, init);
+          this.pointerId = init.pointerId ?? 1;
+          this.pointerType = init.pointerType ?? 'mouse';
+        }
+      }
+      (window as unknown as { PointerEvent: unknown }).PointerEvent = PointerEventShim;
+    }
+
+    // strata-react's measuring components (Timeline, MediaStage, LineChart) get a fixed layout box,
+    // so they draw what they would on a screen; this also gives jsdom a ResizeObserver
+    // Required here, not imported: react-router (through strata-react/testing) needs the TextEncoder polyfill above
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require('strata-react/testing').installLayoutShims({ width: 1200, height: 400 });
 
     // Mock scrollTo
     Element.prototype.scrollTo = jest.fn();

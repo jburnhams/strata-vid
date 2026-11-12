@@ -8,9 +8,7 @@
  * - Errors stay here as inline `Alert`s, announced, until dismissed. strata's toast has no danger
  *   tone on purpose: a failure a person must act on should not leave by itself.
  *
- * Gap: most errors here are files that would not load. They belong beside the file, with a retry,
- * in strata-react's file intake (`useFileIntake`, `FileOutcomes`, issue #75), which is merged but
- * not in the 1.0.6 release; until it is, they show here.
+ * Files that would not load are not here: the library shows each beside its file, with a retry.
  */
 import React, { useEffect } from 'react';
 import { Alert, Button, toast } from 'strata-react';

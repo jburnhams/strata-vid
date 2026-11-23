@@ -10,6 +10,22 @@ a factual error. Work before 2026-11-12 is in the git history only.
 
 ## 2026-11-23
 
+**Library rows drag onto the timeline from the keyboard** (branch `claude/project-thread-3drc3w`).
+This finishes Jonathan's choice to build the drag source in strata-react (#286, released in 1.3.1) instead of
+adding `react-aria` here.
+- `package.json`, `package-lock.json`: `strata-react` ^1.3.1.
+- `src/components/LibraryPanel.tsx`: each row's select button is inside a `DragSource` with the file's id and
+  name. The pointer still drags the whole row. From the keyboard, the grip "Drag <file>" picks the file up with
+  Enter, Tab reaches a lane, and Enter drops it at the playhead. This replaces the native `draggable`, which had
+  no keyboard path.
+- `tests/integration/timelineDrop.test.tsx`: a complete keyboard drag from the library onto a lane.
+- Found on the way, and filed as strata-react#291: `FileDropZone` accepts any drag, so the library's own drop
+  zone is the first stop in a keyboard drag, and it says "Drop to add…" under a pointer drag of a row.
+- Baselines: 30 of 32 re-recorded after looking at the diffs. Each row of the library now starts with its grip,
+  and the name and kind move right by the grip's width. The other two do not show the library.
+- `docs/PORT.md`, `docs/FEATURES.md`: updated.
+
+
 **Preview map on strata-react's RouteMap** (branch `claude/project-thread-3drc3w`).
 Jonathan asked what strata-react had gained since 1.0.20 that this app could use. The map (#80) was the one
 swap left waiting, on strata-react#161, which has landed; this is that swap, with strata-react moved to 1.2.0.

@@ -53,11 +53,16 @@ was removed from `package.json` on 2026-11-12 (Jonathan's yes).
   `colourScale` and key; the elevation profile's toggle is a `Toggle` in the map's `topEnd` slot.
   `react-leaflet`, `HeatmapOverlay` and Leaflet's stylesheet import are gone (RouteMap brings its own).
 
+## Swapped on 2026-11-23, later
+
+- [#286](https://github.com/jburnhams/strata-react/issues/286) Drag source: each library row is a `DragSource`
+  (strata-react 1.3.1), so a file drags onto a lane from the keyboard too (the grip "Drag <file>", Enter, Tab to
+  a lane, Enter), not only by pointer.
+
 ## Waiting on strata-react again
 
-- [#286](https://github.com/jburnhams/strata-react/issues/286) A drag source: library rows drag onto a lane
-  by pointer only (native drag); from the keyboard the way is still "Add to timeline". Jonathan chose on
-  2026-11-23 to build the drag source in strata-react rather than import `react-aria` here.
+- [#291](https://github.com/jburnhams/strata-react/issues/291) `FileDropZone` takes any drag, so a library row
+  dragged from the keyboard stops first on the library's own file drop zone (Tab moves on to the lanes).
 
 ## Closed in strata-react, to swap here
 

@@ -2,7 +2,7 @@ import React from 'react';
 import type { Asset } from '../types';
 import { useProjectStore } from '../store/useProjectStore';
 import { ASSET_DRAG_TYPE } from '../utils/timelinePlacement';
-import { FileButton, FileDropZone, FileOutcomes, IconButton, MissingFile, Button, useFileIntake } from 'strata-react';
+import { DragSource, FileButton, FileDropZone, FileOutcomes, IconButton, MissingFile, Button, useFileIntake } from 'strata-react';
 import { Trash2, FileAudio, FileImage, FileVideo, Map, Plus, PlusCircle } from 'lucide-react';
 
 interface LibraryPanelProps {
@@ -53,6 +53,31 @@ const LibraryAssetItem: React.FC<{
     </div>
   );
 
+  const selectButton = (
+    <button
+      type="button"
+      className="w-full min-w-0 p-2 flex gap-3 items-center text-left cursor-pointer rounded-control"
+      aria-current={selected ? 'true' : undefined}
+      onClick={() => onSelect(asset.id)}
+    >
+      {asset.thumbnail ? (
+        <div className="w-16 h-10 bg-footage rounded-control overflow-hidden flex-shrink-0 relative">
+          <img src={asset.thumbnail} alt={`Thumbnail for ${asset.name}`} className="w-full h-full object-cover" />
+        </div>
+      ) : (
+        <div className="w-16 h-10 bg-background rounded-control flex items-center justify-center flex-shrink-0 text-muted-foreground">
+          <KindIcon size={20} aria-hidden />
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <div className="font-medium type-body-sm text-foreground truncate" title={asset.name}>
+          {asset.name}
+        </div>
+        {details}
+      </div>
+    </button>
+  );
+
   return (
     <li
       className={`rounded-control flex items-center transition-state group relative border-l-4 ${kindBorder} ${
@@ -67,38 +92,22 @@ const LibraryAssetItem: React.FC<{
           {details}
         </div>
       ) : (
-        <button
-          type="button"
-          className="flex-1 min-w-0 p-2 flex gap-3 items-center text-left cursor-pointer rounded-control"
-          aria-current={selected ? 'true' : undefined}
-          onClick={() => onSelect(asset.id)}
-          // Dragged onto a timeline lane, the file lands where it is dropped (TimelinePanel). The
-          // keyboard's way is the row's "Add … to timeline".
-          draggable={Boolean(onAddToTimeline)}
-          onDragStart={(e) => {
-            e.dataTransfer.setData(ASSET_DRAG_TYPE, asset.id);
-            e.dataTransfer.setData('text/plain', asset.name);
-            e.dataTransfer.effectAllowed = 'copy';
-            useProjectStore.getState().setDraggedAsset(asset.id);
-          }}
-          onDragEnd={() => useProjectStore.getState().setDraggedAsset(null)}
-        >
-          {asset.thumbnail ? (
-            <div className="w-16 h-10 bg-footage rounded-control overflow-hidden flex-shrink-0 relative">
-              <img src={asset.thumbnail} alt={`Thumbnail for ${asset.name}`} className="w-full h-full object-cover" />
-            </div>
-          ) : (
-            <div className="w-16 h-10 bg-background rounded-control flex items-center justify-center flex-shrink-0 text-muted-foreground">
-              <KindIcon size={20} aria-hidden />
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <div className="font-medium type-body-sm text-foreground truncate" title={asset.name}>
-              {asset.name}
-            </div>
-            {details}
-          </div>
-        </button>
+        // Dragged onto a timeline lane, the file lands where it is dropped (TimelinePanel): by pointer
+        // from anywhere on the row, or from the keyboard with the grip ("Drag <file>", Enter, Tab to a
+        // lane, Enter). strata-react's DragSource (#286); until 2026-11-23 a native drag, pointer only.
+        onAddToTimeline ? (
+          <DragSource
+            label={asset.name}
+            items={() => [{ [ASSET_DRAG_TYPE]: asset.id, 'text/plain': asset.name }]}
+            onDragStart={() => useProjectStore.getState().setDraggedAsset(asset.id)}
+            onDragEnd={() => useProjectStore.getState().setDraggedAsset(null)}
+            className="flex-1 min-w-0 ps-1"
+          >
+            {selectButton}
+          </DragSource>
+        ) : (
+          <div className="flex-1 min-w-0">{selectButton}</div>
+        )
       )}
 
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity absolute right-2 bg-card/90 rounded-control p-1 shadow-overlay">

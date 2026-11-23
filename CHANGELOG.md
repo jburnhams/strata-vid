@@ -37,6 +37,16 @@ swap left waiting, on strata-react#161, which has landed; this is that swap, wit
 - `docs/PORT.md`, `docs/FEATURES.md`, `docs/ARCHITECTURE.md`, `README.md`: updated. Two known gaps remain
   between preview and export: export draws OSM tiles whatever the style, and draws no heatmap.
 
+**Remove the loading overlay nothing showed** (branch `claude/project-thread-3drc3w`).
+Found while checking whether strata-react's `useClientWork` and `JobStatus` should replace it: nothing ever
+called `setLoading`, so the overlay was never drawn. Each file's loading is shown in its library row.
+- `src/components/LoadingOverlay.tsx` and `tests/unit/components/LoadingOverlay.test.tsx`: removed.
+- `src/store/slices/uiSlice.ts`, `src/store/types.ts`, `src/App.tsx`: `isLoading`, `loadingMessage` and
+  `setLoading` are removed, along with the overlay's mount point.
+- Tests that set those fields: updated.
+- Not swapped, and why: strata-react's `Waveform` is a seek control with its own playhead, zoom and keys, not
+  a drawing for inside a timeline clip, so the clip waveforms stay `WaveformOverlay`.
+
 ## 2026-11-12
 
 **Reorder tracks** (branch `claude/project-thread-3drc3w`).

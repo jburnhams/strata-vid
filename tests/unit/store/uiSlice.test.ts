@@ -17,14 +17,7 @@ describe('uiSlice', () => {
 
   it('should have initial state', () => {
     const state = store.getState();
-    expect(state.isLoading).toBe(false);
     expect(state.toasts).toEqual([]);
-  });
-
-  it('should set loading state', () => {
-    store.getState().setLoading(true, 'Loading...');
-    expect(store.getState().isLoading).toBe(true);
-    expect(store.getState().loadingMessage).toBe('Loading...');
   });
 
   it('should add a toast', () => {

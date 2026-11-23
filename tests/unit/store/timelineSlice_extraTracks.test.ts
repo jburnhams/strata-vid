@@ -23,8 +23,6 @@ const resetStore = () => {
       playbackRate: 1,
     },
     ui: {
-      isLoading: false,
-      loadingMessage: null,
       toasts: [],
     },
   };

@@ -1,5 +1,7 @@
 import React from 'react';
-import { render, act } from '@testing-library/react';
+import { act, waitFor } from '@testing-library/react';
+import { renderWithStrata as render } from 'strata-react/testing';
+import { mapText, showsTileOf } from '../utils/mapProbe';
 import { PreviewPanel } from '../../src/components/PreviewPanel';
 import { useProjectStore } from '../../src/store/useProjectStore';
 import '@testing-library/jest-dom';
@@ -9,8 +11,6 @@ import type { Asset, Clip, Track } from '../../src/types';
 jest.mock('../../src/hooks/usePlaybackLoop', () => ({
   usePlaybackLoop: jest.fn()
 }));
-
-// react-leaflet is mocked in setup.tsx
 
 describe('Map Multi-Track Integration', () => {
     beforeEach(() => {
@@ -101,20 +101,11 @@ describe('Map Multi-Track Integration', () => {
              });
         });
 
-        const { findAllByTestId } = render(<PreviewPanel />);
+        render(<PreviewPanel />);
 
-        // We expect markers for both tracks
-        // At t=0 (video) -> t=gpxStartTime (gpx)
-        // Asset 1: (10, 10)
-        // Asset 2: (20, 20)
-
-        const markers = await findAllByTestId('marker');
-        expect(markers).toHaveLength(2);
-
-        const pos1 = markers.some(m => m.getAttribute('data-position') === JSON.stringify([10, 10]));
-        const pos2 = markers.some(m => m.getAttribute('data-position') === JSON.stringify([20, 20]));
-
-        expect(pos1).toBe(true);
-        expect(pos2).toBe(true);
+        // A runner on each route, named in the map's text; the view holds the first one, as the export does.
+        await waitFor(() => expect(mapText()).toMatch(/track1\.gpx: 0\sm along/));
+        expect(mapText()).toMatch(/track2\.gpx: 0\sm along/);
+        expect(showsTileOf(10, 10)).toBe(true);
     });
 });

@@ -1,6 +1,7 @@
 import React from 'react';
-import { render, act, waitFor, screen, fireEvent } from '@testing-library/react';
-import { installLayoutShims } from 'strata-react/testing';
+import { act, waitFor, screen, fireEvent } from '@testing-library/react';
+import { installLayoutShims, renderWithStrata as render } from 'strata-react/testing';
+import { mapText, showsTileOf, tileUrls } from '../utils/mapProbe';
 import { PreviewPanel } from '../../src/components/PreviewPanel';
 import { useProjectStore } from '../../src/store/useProjectStore';
 import '@testing-library/jest-dom';
@@ -11,7 +12,6 @@ jest.mock('../../src/hooks/usePlaybackLoop', () => ({
   usePlaybackLoop: jest.fn()
 }));
 
-// Mock react-leaflet - implicit from setup.tsx but ensuring global mocks are active
 
 describe('MapPreview Integration', () => {
     beforeEach(() => {
@@ -94,29 +94,26 @@ describe('MapPreview Integration', () => {
              });
         });
 
-        const { findByTestId } = render(<PreviewPanel />);
+        render(<PreviewPanel />);
 
-        // 1. Check initial position (Time 0 -> Lat 10, Lon 10)
-        let marker = await findByTestId('marker');
-        // MapPanel converts {lat, lon} to [lat, lon] for Leaflet
-        expect(marker).toHaveAttribute('data-position', JSON.stringify([10, 10]));
+        // The view is held on the runner at the clip's zoom (13), as the export draws it, so the
+        // tile under the runner is on the map and the text says how far along it is.
+        // 1. Time 0: the start (10, 10)
+        await waitFor(() => expect(showsTileOf(10, 10)).toBe(true));
+        expect(mapText()).toMatch(/test\.gpx: 0\sm along/);
 
-        // 2. Advance time to 5s
+        // 2. 5 s: halfway along the first leg (15, 15)
         act(() => {
             useProjectStore.setState({ currentTime: 5 });
         });
+        await waitFor(() => expect(showsTileOf(15, 15)).toBe(true));
+        expect(showsTileOf(10, 10)).toBe(false);
 
-        // Should be at Lat 15, Lon 15 (Interpolated)
-        marker = await findByTestId('marker');
-        expect(marker).toHaveAttribute('data-position', JSON.stringify([15, 15]));
-
-        // 3. Advance time to 10s
+        // 3. 10 s: the second point (20, 20)
         act(() => {
             useProjectStore.setState({ currentTime: 10 });
         });
-
-        marker = await findByTestId('marker');
-        expect(marker).toHaveAttribute('data-position', JSON.stringify([20, 20]));
+        await waitFor(() => expect(showsTileOf(20, 20)).toBe(true));
     });
 
     it('toggles elevation profile and seeks timeline on click', async () => {
@@ -170,13 +167,13 @@ describe('MapPreview Integration', () => {
         });
 
         const restore = installLayoutShims({ width: 400, height: 120 });
-        const { findByTitle, queryByRole } = render(<PreviewPanel />);
+        const { queryByRole } = render(<PreviewPanel />);
 
         // Profile should be hidden initially
         expect(queryByRole('heading', { name: 'Elevation profile' })).not.toBeInTheDocument();
 
         // Toggle profile on
-        const toggleButton = await findByTitle('Toggle Elevation Profile');
+        const toggleButton = await screen.findByRole('button', { name: 'Elevation profile' });
         act(() => {
             toggleButton.click();
         });
@@ -193,7 +190,11 @@ describe('MapPreview Integration', () => {
     });
 
     it('updates map style when clip properties change', async () => {
-        const asset: Asset = { id: 'asset-gpx', name: 'test.gpx', type: 'gpx', src: 'blob:gpx', geoJson: { type: 'FeatureCollection', features: [] } };
+        const asset: Asset = {
+            id: 'asset-gpx', name: 'test.gpx', type: 'gpx', src: 'blob:gpx',
+            gpxPoints: [{ time: 0, lat: 51.5, lon: -0.1 }, { time: 10_000, lat: 51.51, lon: -0.1 }],
+            geoJson: { type: 'FeatureCollection', features: [] },
+        };
         const clip: Clip = {
             id: 'clip-map',
             trackId: 'track-1',
@@ -215,36 +216,29 @@ describe('MapPreview Integration', () => {
             });
         });
 
-        const { findByTestId } = render(<PreviewPanel />);
+        render(<PreviewPanel />);
 
         // 1. Check initial style (OSM)
-        let tileLayer = await findByTestId('tile-layer');
-        expect(tileLayer).toHaveAttribute('data-url', expect.stringContaining('openstreetmap'));
+        await waitFor(() => expect(tileUrls()[0]).toContain('openstreetmap'));
 
         // 2. Change style to Satellite
         act(() => {
             useProjectStore.getState().updateClipProperties('clip-map', { mapStyle: 'satellite' });
         });
-
-        tileLayer = await findByTestId('tile-layer');
-        expect(tileLayer).toHaveAttribute('data-url', expect.stringContaining('arcgisonline'));
+        await waitFor(() => expect(tileUrls()[0]).toContain('arcgisonline'));
 
         // 3. Change style to Dark
         act(() => {
             useProjectStore.getState().updateClipProperties('clip-map', { mapStyle: 'dark' });
         });
-
-        tileLayer = await findByTestId('tile-layer');
-        expect(tileLayer).toHaveAttribute('data-url', expect.stringContaining('cartocdn'));
+        await waitFor(() => expect(tileUrls()[0]).toContain('cartocdn'));
 
         // 4. Change to Custom URL
         const customUrl = 'https://my-tiles.com/{z}/{x}/{y}';
         act(() => {
             useProjectStore.getState().updateClipProperties('clip-map', { mapStyle: 'custom', customMapStyleUrl: customUrl });
         });
-
-        tileLayer = await findByTestId('tile-layer');
-        expect(tileLayer).toHaveAttribute('data-url', customUrl);
+        await waitFor(() => expect(tileUrls()[0]).toMatch(/^https:\/\/my-tiles\.com\/\d+\/\d+\/\d+$/));
     });
 
 });

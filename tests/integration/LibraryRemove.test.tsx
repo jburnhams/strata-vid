@@ -7,12 +7,6 @@ import type { Asset, Clip, Track } from '../../src/types';
 
 // Mock dependencies
 jest.mock('../../src/services/AssetLoader');
-jest.mock('react-leaflet', () => ({
-  MapContainer: ({ children }: any) => <div>{children}</div>,
-  TileLayer: () => <div>TileLayer</div>,
-  useMap: () => ({ fitBounds: jest.fn() }),
-}));
-
 // Mock PreviewPanel to avoid complex rendering
 jest.mock('../../src/components/PreviewPanel', () => ({
   PreviewPanel: () => <div data-testid="preview-panel">Preview Panel</div>

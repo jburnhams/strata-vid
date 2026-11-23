@@ -57,16 +57,10 @@ export async function restPointer(page: Page) {
 }
 
 /**
- * The route's map is an inset on the stage over the footage whenever the playhead is on it. Waits
- * until it has settled: Leaflet's zoom to the route's bounds has ended (a dark shot, which skips the
- * scheme switch, was taken mid-zoom on CI), only one zoom level's tiles are left, and each tile has
- * loaded and finished its fade-in. All of these run on real time.
- */
-/**
  * The header's save sign (strata-react `SaveStatus`) prints the wall-clock time of the last auto-save,
  * and says "Unsaved changes" for a second and a half after an edit. Waits for the save to settle, then
- * prints a fixed time, as a frozen clock would; the editor cannot run on one (playback and Leaflet's
- * tile fade need real time). Run last in every state, after the shot's own steps.
+ * prints a fixed time, as a frozen clock would; the editor cannot run on one (playback and the map's
+ * tile loading need real time). Run last in every state, after the shot's own steps.
  */
 export async function settleSave(page: Page) {
   await page.waitForFunction(() => {
@@ -83,6 +77,13 @@ export async function settleSave(page: Page) {
   });
 }
 
+/**
+ * The route's map is an inset on the stage over the footage whenever the playhead is on it. Waits
+ * until it has settled: only one zoom level's tiles are left and each tile has loaded. Since
+ * 2026-11-23 the map is strata-react's RouteMap, held on the runner at the clip's zoom with no
+ * animation or fade, so this is quick; before, Leaflet zoomed to the route's bounds and faded tiles in
+ * (a dark shot was once taken mid-zoom on CI).
+ */
 export async function waitForMapTiles(page: Page) {
   const settled = () =>
     page.evaluate(() =>

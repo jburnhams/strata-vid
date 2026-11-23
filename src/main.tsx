@@ -5,7 +5,6 @@ import { StrataQueryProvider, StrataToastRegion, ThemeProvider } from 'strata-re
 import App from './App';
 import '@fontsource-variable/overpass';
 import '@fontsource-variable/overpass-mono';
-import 'leaflet/dist/leaflet.css';
 import './index.css';
 import { useProjectStore } from './store/useProjectStore';
 

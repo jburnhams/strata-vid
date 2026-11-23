@@ -8,6 +8,35 @@ changed the plan, then bullets naming each file or folder touched and what chang
 files and call out corrections to earlier claims. Plain prose. Do not rewrite older entries except to fix
 a factual error. Work before 2026-11-12 is in the git history only.
 
+## 2026-11-23
+
+**Preview map on strata-react's RouteMap** (branch `claude/project-thread-3drc3w`).
+Jonathan asked what strata-react had gained since 1.0.20 that this app could use. The map (#80) was the one
+swap left waiting, on strata-react#161, which has landed; this is that swap, with strata-react moved to 1.2.0.
+- `package.json`, `package-lock.json`: `strata-react` ^1.2.0; `react-leaflet` removed (part of the agreed port
+  swap). `leaflet` stays as `strata-react/map`'s peer.
+- `src/components/MapPanel.tsx`: rewritten on `RouteMap`. It is held on the first route's runner at the clip's
+  zoom, with no animation, one marker per route in its marker colour, and no chevrons or end marks, because
+  that is what the export draws. **Corrects** the preview, which fitted the whole route and ignored the
+  clip's zoom (see 2026-11-12). The map style's tiles are used in both schemes, because the map is part of the
+  picture. The heatmap is four colour steps with a key, where it used to be a continuous gradient on a
+  hand-made canvas layer, and the elevation profile toggle is a `Toggle`.
+- `src/components/preview/OverlayRenderer.tsx`: passes each track with an id and a label.
+- `src/components/preview/HeatmapOverlay.tsx`, `src/utils/color.ts`: removed. `src/main.tsx`, `src/index.css`:
+  the Leaflet stylesheet import and its font rule are removed, because RouteMap brings its own.
+- `src/components/ExportModal.tsx`, `src/components/MetadataPanel.tsx`, `src/components/timeline/TrackHeader.tsx`:
+  `NumberField`'s `onChange` may now return a promise (strata-react 1.0.39), so the handlers have bodies.
+- Tests: `jest.base.config.js` maps a stylesheet imported `?inline` to an empty one. **New**
+  `tests/utils/inlineStyleMock.js` and `tests/utils/mapProbe.ts`, which read the real map's text and tiles. The
+  react-leaflet mocks are removed from `tests/utils/setup.tsx` and every test that had one. The map tests
+  (`MapPanel`, `mapIntegration`, `MapPreview`, `MapMultiTrack`, `MapSync`, `Heatmap`) are rewritten against the
+  real RouteMap. `MapPanelMultiTrack`, `HeatmapOverlay`, `HeatmapOverlay_Extension` and `color` tests are removed.
+- `tests/visual/flows.ts`: comments on `waitForMapTiles` now describe the new map.
+- Baselines: the 22 that show the map inset were re-recorded after looking at the diffs. Each changed only
+  inside the inset, which is now centred on the runner at zoom 13 with zoom and reset buttons.
+- `docs/PORT.md`, `docs/FEATURES.md`, `docs/ARCHITECTURE.md`, `README.md`: updated. Two known gaps remain
+  between preview and export: export draws OSM tiles whatever the style, and draws no heatmap.
+
 ## 2026-11-12
 
 **Reorder tracks** (branch `claude/project-thread-3drc3w`).

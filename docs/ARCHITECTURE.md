@@ -25,7 +25,7 @@ How the editor is built, as of the move onto strata-react (2026-11). What it doe
 | Components and styles | strata-react, Tailwind v4 | Theme roles only; `src/theme.generated.css` and `src/theme.css` are the app's palette and status roles. React Router and TanStack Query are present as strata-react's required peers; there is one screen and no remote data yet |
 | State | Zustand 5 + Immer | Slices in `src/store/slices/`, undo in `src/store/middleware/historyMiddleware.ts` |
 | Media | mediabunny | Metadata, thumbnails and decoding on load; encoding on export |
-| Maps | Leaflet + react-leaflet | Preview map; export draws OSM tiles itself onto the canvas |
+| Maps | strata-react `RouteMap` (Leaflet) | Preview map, held on the runner at the clip's zoom; export draws OSM tiles itself onto the canvas the same way |
 | GPX | `@we-gold/gpxjs` | Parsed to points, stats and GeoJSON in `AssetLoader`; simplified by `settings.simplificationTolerance` |
 | Icons | lucide-react | |
 | Charts | strata-react `LineChart` | The elevation profile |
@@ -79,7 +79,7 @@ their own `syncOffset`.
 `MediaStage` with `StageGuides`; `TransportControls` is strata-react's transport. `usePlaybackLoop` advances
 `currentTime` on `requestAnimationFrame`. The clips under the playhead are drawn bottom to top by
 `OverlayRenderer`: `VideoPlayer` keeps a `<video>` seeked to `t − start + offset`, images and text are
-positioned elements, map clips are `MapPanel` (Leaflet) with `HeatmapOverlay` and `ElevationProfile`,
+positioned elements, map clips are `MapPanel` (strata-react `RouteMap`) with `ElevationProfile`,
 data clips are `DataOverlay`. `AudioPlayer` and `AudioEngine` route each media element through a clip
 gain, a track gain and a master gain (Web Audio), so mute and volume are heard in preview.
 
@@ -124,7 +124,7 @@ src/
   components/             panels (Library, Preview, Metadata, Timeline, Map), menus (Project, Edit),
                           dialogs (Export, Help), MapSyncControl, KeyframeList, TransportControls
     preview/              VideoPlayer, AudioPlayer, OverlayRenderer, MapPanel parts, DataOverlay,
-                          HeatmapOverlay, ElevationProfile (a LineChart)
+                          ElevationProfile (a LineChart)
     timeline/             TrackHeader (each lane's header slot), WaveformOverlay; the timeline itself is
                           strata-react's Timeline, driven by TimelinePanel
   hooks/                  usePlaybackLoop, useKeyboardShortcuts (`useEditorCommands`, the command list), useAutoSave, useDebounce

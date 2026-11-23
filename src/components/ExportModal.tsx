@@ -141,10 +141,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({ onClose }) => {
               </NativeSelect>
             </Field>
             <Field label="Width" id="export-width">
-              <NumberField min={16} max={7680} unit="px" value={settings.width} onChange={v => v !== null && setSettings({ ...settings, width: v })} />
+              <NumberField min={16} max={7680} unit="px" value={settings.width} onChange={v => { if (v !== null) setSettings({ ...settings, width: v }); }} />
             </Field>
             <Field label="Height" id="export-height">
-              <NumberField min={16} max={4320} unit="px" value={settings.height} onChange={v => v !== null && setSettings({ ...settings, height: v })} />
+              <NumberField min={16} max={4320} unit="px" value={settings.height} onChange={v => { if (v !== null) setSettings({ ...settings, height: v }); }} />
             </Field>
           </div>
 
@@ -159,7 +159,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ onClose }) => {
                 </NativeSelect>
               </Field>
               <Field label="Video bitrate" id="export-video-bitrate">
-                <NumberField min={1} max={200} unit="Mbps" value={Math.round((settings.videoBitrate || 6_000_000) / 1_000_000)} onChange={v => v !== null && setSettings({ ...settings, videoBitrate: v * 1_000_000 })} />
+                <NumberField min={1} max={200} unit="Mbps" value={Math.round((settings.videoBitrate || 6_000_000) / 1_000_000)} onChange={v => { if (v !== null) setSettings({ ...settings, videoBitrate: v * 1_000_000 }); }} />
               </Field>
               <Field label="Audio codec" id="export-audio-codec">
                 <NativeSelect value={settings.audioCodec} onChange={e => setSettings({ ...settings, audioCodec: e.target.value as ExportSettings['audioCodec'] })}>
@@ -168,7 +168,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ onClose }) => {
                 </NativeSelect>
               </Field>
               <Field label="Audio bitrate" id="export-audio-bitrate">
-                <NumberField min={32} max={512} unit="kbps" value={(settings.audioBitrate || 128_000) / 1000} onChange={v => v !== null && setSettings({ ...settings, audioBitrate: v * 1000 })} />
+                <NumberField min={32} max={512} unit="kbps" value={(settings.audioBitrate || 128_000) / 1000} onChange={v => { if (v !== null) setSettings({ ...settings, audioBitrate: v * 1000 }); }} />
               </Field>
             </div>
           </Disclosure>

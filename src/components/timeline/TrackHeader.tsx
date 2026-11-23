@@ -57,7 +57,7 @@ export const TrackHeader: React.FC<TrackHeaderProps> = ({
               step={1}
               unit="%"
               value={Math.round((track.volume ?? 1.0) * 100)}
-              onChange={(v) => v !== null && onUpdateVolume?.(track.id, v / 100)}
+              onChange={(v) => { if (v !== null) onUpdateVolume?.(track.id, v / 100); }}
             />
           </PropertyRow>
           {track.type === 'video' && (

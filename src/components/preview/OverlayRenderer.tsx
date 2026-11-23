@@ -113,32 +113,30 @@ export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, c
   }
 
   if (clip.type === 'map' && asset && asset.geoJson) {
-      const tracks: MapTrackData[] = [];
-
-      // Primary track
-      tracks.push({
-          geoJson: asset.geoJson,
-          gpxPoints: asset.gpxPoints,
-          syncOffset: clip.syncOffset,
-          trackStyle: clip.properties.trackStyle,
-          markerStyle: clip.properties.markerStyle
-      });
-
-      // Extra tracks
-      if (clip.extraTrackAssets && allAssets) {
-          clip.extraTrackAssets.forEach(extra => {
-              const extraAsset = allAssets[extra.assetId];
-              if (extraAsset && extraAsset.geoJson) {
-                  tracks.push({
-                      geoJson: extraAsset.geoJson,
-                      gpxPoints: extraAsset.gpxPoints,
-                      syncOffset: extra.syncOffset,
-                      trackStyle: extra.trackStyle,
-                      markerStyle: extra.markerStyle
-                  });
-              }
-          });
-      }
+      const tracks: MapTrackData[] = [
+          {
+              id: asset.id,
+              label: asset.name,
+              geoJson: asset.geoJson,
+              gpxPoints: asset.gpxPoints,
+              syncOffset: clip.syncOffset,
+              trackStyle: clip.properties.trackStyle,
+              markerStyle: clip.properties.markerStyle,
+          },
+          ...(clip.extraTrackAssets ?? []).flatMap((extra) => {
+              const extraAsset = allAssets?.[extra.assetId];
+              if (!extraAsset?.geoJson) return [];
+              return [{
+                  id: extraAsset.id,
+                  label: extraAsset.name,
+                  geoJson: extraAsset.geoJson,
+                  gpxPoints: extraAsset.gpxPoints,
+                  syncOffset: extra.syncOffset,
+                  trackStyle: extra.trackStyle,
+                  markerStyle: extra.markerStyle,
+              }];
+          }),
+      ];
 
       return (
           <div style={{...style, pointerEvents: 'auto', position: 'relative'}}>
@@ -149,8 +147,7 @@ export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, c
                 mapStyle={clip.properties.mapStyle}
                 customMapStyleUrl={clip.properties.customMapStyleUrl}
                 zoom={mapZoom}
-                heatmapPoints={clip.properties.heatmap?.enabled ? asset.gpxPoints : undefined}
-                heatmapDataSource={clip.properties.heatmap?.dataSource}
+                heatmap={clip.properties.heatmap?.enabled ? clip.properties.heatmap.dataSource : undefined}
                 showElevationProfile={clip.properties.showElevationProfile}
                 onToggleElevationProfile={onToggleElevationProfile}
                 onSeek={onSeek}

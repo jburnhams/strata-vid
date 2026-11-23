@@ -1,27 +1,32 @@
-import React, { useEffect, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, GeoJSON as LeafletGeoJSON, useMap } from 'react-leaflet';
-import { type LatLngExpression, GeoJSON as LGeoJSON } from 'leaflet';
-import L from 'leaflet';
+/**
+ * The map clip in the preview: its routes, a marker on each runner and, when asked, the elevation
+ * profile beneath. Drawn by strata-react's `RouteMap` (issue #80, then #161 for picture content).
+ *
+ * The preview draws what the export draws (WorkerCompositor.drawMap). The view is held centred on the
+ * first route's runner at the clip's zoom (`follow="centre"`, `zoom`), not fitted to the route. Each
+ * route has its own marker in its marker colour, and there are no direction chevrons or start and finish
+ * marks, because the export draws none. Until 2026-11-23 a react-leaflet panel fitted the whole route
+ * and ignored the zoom, so preview and export showed different pictures. The tiles are the clip's map
+ * style in both schemes (`dark` is the same set), because the map is part of the picture, not the app.
+ *
+ * The heatmap (preview only, as before) is the first route coloured by speed or elevation in four
+ * steps through `values` and `colourScale`, with RouteMap's key naming them. It used to be a hand-made
+ * canvas layer under a continuous gradient.
+ */
+import React, { useMemo } from 'react';
 import { Mountain } from 'lucide-react';
+import { Toggle } from 'strata-react';
+import { RouteMap, type MapPosition, type MapRoute, type TileSource } from 'strata-react/map';
 import ElevationProfile from './preview/ElevationProfile';
-import HeatmapOverlay from './preview/HeatmapOverlay';
 import type { FeatureCollection, Geometry, GeoJsonProperties } from 'geojson';
 import type { GpxPoint, TrackStyle, MarkerStyle, Asset, ExtraTrack } from '../types';
-import { getCoordinateAtTime } from '../utils/gpxParser';
-
-// Fix for default marker icon
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-
-const DefaultIcon = L.icon({
-    iconUrl: icon,
-    shadowUrl: iconShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41]
-});
-L.Marker.prototype.options.icon = DefaultIcon;
+import { getCoordinateAtTime, haversineDistance } from '../utils/gpxParser';
 
 export interface MapTrackData {
+  /** Stable id for the route and its marker (the asset's id). */
+  id: string;
+  /** Its name, in the map's text alternative. */
+  label: string;
   geoJson?: FeatureCollection<Geometry, GeoJsonProperties>;
   gpxPoints?: GpxPoint[];
   syncOffset?: number;
@@ -29,153 +34,92 @@ export interface MapTrackData {
   markerStyle?: MarkerStyle;
 }
 
+export type MapStyle = 'osm' | 'mapbox' | 'satellite' | 'dark' | 'custom';
+
 interface MapPanelProps {
-  center?: LatLngExpression;
-  zoom?: number;
   className?: string;
-  currentTime?: number; // Current video time in seconds
-
-  // Multiple tracks support
-  tracks?: MapTrackData[];
-
-  // Legacy/Single track props (mapped to first track if 'tracks' not provided)
-  geoJson?: FeatureCollection<Geometry, GeoJsonProperties>;
-  gpxPoints?: GpxPoint[];
-  syncOffset?: number; // Offset in ms between video time 0 and GPX time
-
-  // Styling
-  mapStyle?: 'osm' | 'mapbox' | 'satellite' | 'dark' | 'custom';
+  /** Seconds of the route since the clip's sync point (routeClock). */
+  currentTime?: number;
+  tracks: MapTrackData[];
+  /** The clip's zoom; the export's default is 13. */
+  zoom?: number;
+  mapStyle?: MapStyle;
   customMapStyleUrl?: string;
-  trackStyle?: TrackStyle;
-  markerStyle?: MarkerStyle;
-
-// Heatmap
-  heatmapPoints?: GpxPoint[];
-  heatmapDataSource?: 'speed' | 'elevation';
-
-  // Elevation Profile
+  /** Colour the first route by this reading. */
+  heatmap?: 'speed' | 'elevation';
   showElevationProfile?: boolean;
   onToggleElevationProfile?: () => void;
   onSeek?: (time: number) => void;
-
-  // Data for ElevationProfile
   gpxAssets?: (Asset | undefined)[];
   mainAssetId?: string;
   extraTracks?: ExtraTrack[];
 }
 
-const TILE_PROVIDERS = {
-    osm: {
-        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    },
-    mapbox: {
-        // Fallback to OSM as we don't have a token, but structure is here
-        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    },
-    satellite: {
-        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-    },
-    dark: {
-        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-    },
-    custom: {
-        url: '', // This will be replaced by the customMapStyleUrl prop
-        attribution: 'Custom Tile Layer'
-    }
+const OSM: TileSource = {
+  url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
 };
 
-const FitBounds = ({ geoJson }: { geoJson: FeatureCollection<Geometry, GeoJsonProperties> | undefined }) => {
-  const map = useMap();
-
-  useEffect(() => {
-    if (geoJson) {
-      // Cast to any because Leaflet's GeoJSON type definitions are slightly different from standard GeoJSON
-      const leafletGeoJson = new LGeoJSON(geoJson as any);
-      const bounds = leafletGeoJson.getBounds();
-      if (bounds.isValid()) {
-        map.fitBounds(bounds);
-      }
-    }
-  }, [geoJson, map]);
-
-  return null;
+export const TILE_PROVIDERS: Record<Exclude<MapStyle, 'custom'>, TileSource> = {
+  osm: OSM,
+  // No Mapbox token: OSM stands in, as it always has.
+  mapbox: OSM,
+  satellite: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+  },
+  dark: {
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  },
 };
 
-const CurrentPositionMarker = ({
-  gpxPoints,
-  currentTime,
-  syncOffset = 0,
-  markerStyle
-}: {
-  gpxPoints: GpxPoint[],
-  currentTime: number,
-  syncOffset: number,
-  markerStyle?: MarkerStyle
-}) => {
+export function tilesFor(mapStyle: MapStyle = 'osm', customUrl?: string): TileSource {
+  if (mapStyle === 'custom') return customUrl ? { url: customUrl, attribution: 'Custom tiles' } : OSM;
+  return TILE_PROVIDERS[mapStyle] ?? OSM;
+}
 
-  const position = useMemo(() => {
-    if (!gpxPoints || gpxPoints.length === 0) return null;
+const DEFAULT_ROUTE_COLOUR = '#007acc';
+const DEFAULT_MARKER_COLOUR = 'red';
+const HEAT_COLOURS = ['#0000ff', '#00ff00', '#ffff00', '#ff0000'];
 
-    // syncOffset is the GPX timestamp (ms) that corresponds to Video Time 0.
-    // If not provided, we default to the first point's time (essentially starting at the beginning).
-    const baseTime = syncOffset || (gpxPoints[0].time);
-    const targetTime = baseTime + (currentTime * 1000);
+function pointsOf(track: MapTrackData): [number, number][] {
+  if (track.gpxPoints?.length) return track.gpxPoints.map((p) => [p.lat, p.lon]);
+  const line = track.geoJson?.features.find((f) => f.geometry.type === 'LineString')?.geometry;
+  if (line?.type !== 'LineString') return [];
+  return line.coordinates.map(([lon, lat]) => [lat, lon]);
+}
 
-    return getCoordinateAtTime(gpxPoints, targetTime);
-  }, [gpxPoints, currentTime, syncOffset]);
+/** One reading per point: speed in m/s over the leg into it (the first point takes the first leg's), or elevation in metres. */
+export function heatValues(points: GpxPoint[], reading: 'speed' | 'elevation'): number[] {
+  if (reading === 'elevation') return points.map((p) => p.ele ?? 0);
+  const speeds = points.map((p, i) => {
+    if (i === 0) return 0;
+    const prev = points[i - 1];
+    const seconds = (p.time - prev.time) / 1000;
+    return seconds > 0 ? haversineDistance(prev.lat, prev.lon, p.lat, p.lon) / seconds : 0;
+  });
+  if (speeds.length > 1) speeds[0] = speeds[1];
+  return speeds;
+}
 
-  const customIcon = useMemo(() => {
-      const color = markerStyle?.color || 'red';
-      const type = markerStyle?.type || 'dot';
-
-      if (type === 'dot') {
-          return L.divIcon({
-            className: 'current-position-marker',
-            html: `<div style="width: 12px; height: 12px; background-color: ${color}; border: 2px solid white; border-radius: 50%;"></div>`,
-            iconSize: [16, 16],
-            iconAnchor: [8, 8],
-          });
-      } else {
-          // Default pin, maybe colorized filter?
-          return DefaultIcon;
-      }
-  }, [markerStyle]);
-
-  if (!position) return null;
-
-  return (
-    <Marker position={[position.lat, position.lon]} icon={customIcon} zIndexOffset={1000}>
-      <Popup>
-        Current Position
-      </Popup>
-    </Marker>
-  );
-};
+/** Four equal steps from the lowest reading to the highest, blue to red; one step when every reading is the same. */
+export function heatScale(values: readonly number[]): { at: number; colour: string }[] {
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  if (max === min) return [{ at: min, colour: HEAT_COLOURS[HEAT_COLOURS.length - 1] }];
+  const step = (max - min) / HEAT_COLOURS.length;
+  return HEAT_COLOURS.map((colour, i) => ({ at: min + step * i, colour }));
+}
 
 export const MapPanel: React.FC<MapPanelProps> = ({
-  center = [51.505, -0.09],
-  zoom = 13,
   className,
   currentTime = 0,
+  tracks,
+  zoom = 13,
   mapStyle = 'osm',
   customMapStyleUrl,
-
-  tracks,
-
-// Legacy props
-  geoJson,
-  gpxPoints,
-  syncOffset = 0,
-  trackStyle,
-  markerStyle,
-  heatmapPoints,
-  heatmapDataSource,
-
-  // Elevation Profile props
+  heatmap,
   showElevationProfile,
   onToggleElevationProfile,
   onSeek,
@@ -183,101 +127,80 @@ export const MapPanel: React.FC<MapPanelProps> = ({
   mainAssetId = '',
   extraTracks = [],
 }) => {
-  const tileProvider = useMemo(() => {
-    const provider = TILE_PROVIDERS[mapStyle] || TILE_PROVIDERS.osm;
-    if (mapStyle === 'custom' && customMapStyleUrl) {
-      return { ...provider, url: customMapStyleUrl };
-    }
-    return provider;
+  const tiles = useMemo(() => {
+    const source = tilesFor(mapStyle, customMapStyleUrl);
+    return { light: source, dark: source };
   }, [mapStyle, customMapStyleUrl]);
 
-  // normalize tracks
-  const effectiveTracks = useMemo(() => {
-      if (tracks && tracks.length > 0) return tracks;
+  const heat = useMemo(() => {
+    const first = tracks[0]?.gpxPoints;
+    if (!heatmap || !first || first.length < 2) return null;
+    const values = heatValues(first, heatmap);
+    return { values, scale: heatScale(values) };
+  }, [tracks, heatmap]);
 
-      // Fallback to legacy props if valid
-      if (geoJson || gpxPoints) {
-          return [{
-              geoJson,
-              gpxPoints,
-              syncOffset,
-              trackStyle,
-              markerStyle
-          }];
-      }
-      return [];
-  }, [tracks, geoJson, gpxPoints, syncOffset, trackStyle, markerStyle]);
+  // Rebuilt only when the tracks or their styles change, never as the runner moves.
+  const routes = useMemo<MapRoute[]>(
+    () =>
+      tracks.map((track, i) => ({
+        id: track.id,
+        label: track.label,
+        points: pointsOf(track),
+        colour: track.trackStyle?.color || DEFAULT_ROUTE_COLOUR,
+        weight: track.trackStyle?.weight || 4,
+        arrows: false,
+        ends: false,
+        ...(i === 0 && heat ? { values: heat.values } : {}),
+      })),
+    [tracks, heat],
+  );
 
-  // Determine primary track for bounds fitting (use first one)
-  const primaryTrack = effectiveTracks.length > 0 ? effectiveTracks[0] : null;
+  const positions = useMemo<MapPosition[]>(
+    () =>
+      tracks.map((track) => {
+        const points = track.gpxPoints;
+        const base = track.syncOffset || points?.[0]?.time || 0;
+        const at = points?.length ? getCoordinateAtTime(points, base + currentTime * 1000) : null;
+        return {
+          id: track.id,
+          label: track.label,
+          routeId: track.id,
+          colour: track.markerStyle?.color || DEFAULT_MARKER_COLOUR,
+          at: at ? ([at.lat, at.lon] as const) : null,
+        };
+      }),
+    [tracks, currentTime],
+  );
+
+  if (routes.length === 0) return null;
 
   return (
-    <div className={`${className} flex flex-col`} style={{ height: '100%', width: '100%' }}>
-      <MapContainer
-        center={center}
+    <div className={`${className ?? ''} flex flex-col`} style={{ height: '100%', width: '100%' }}>
+      <RouteMap
+        label="Map clip"
+        className="min-h-0 flex-1 aspect-auto rounded-none border-0"
+        routes={routes}
+        tiles={tiles}
+        positions={positions}
+        followId={tracks[0]?.id}
+        follow="centre"
         zoom={zoom}
-          style={{ height: '100%', width: '100%' }}
-          zoomControl={false}
-        >
-          <TileLayer
-            attribution={tileProvider.attribution}
-            url={tileProvider.url}
-          />
-
-          {effectiveTracks.length === 0 && (
-            <Marker position={center}>
-              <Popup>
-                Default Marker
-              </Popup>
-            </Marker>
-          )}
-
-          {effectiveTracks.map((track, index) => (
-              <React.Fragment key={index}>
-                  {track.geoJson && (
-                      <LeafletGeoJSON
-                          data={track.geoJson as any}
-                          style={{
-                              color: track.trackStyle?.color || '#007acc',
-                              weight: track.trackStyle?.weight || 4,
-                              opacity: track.trackStyle?.opacity || 1
-                          }}
-                      />
-                  )}
-                  {track.gpxPoints && (
-                    <CurrentPositionMarker
-                      gpxPoints={track.gpxPoints}
-                      currentTime={currentTime}
-                      syncOffset={track.syncOffset || 0}
-                      markerStyle={track.markerStyle}
-                    />
-                  )}
-              </React.Fragment>
-          ))}
-
-          {primaryTrack && primaryTrack.geoJson && (
-              <FitBounds geoJson={primaryTrack.geoJson} />
-          )}
-
-          {heatmapPoints && <HeatmapOverlay points={heatmapPoints} dataSource={heatmapDataSource} />}
-
-          {onToggleElevationProfile && (
-            <div className="leaflet-top leaflet-right">
-              <div className="leaflet-control leaflet-bar">
-                <a
-                  className={`elevation-toggle ${showElevationProfile ? 'active' : ''}`}
-                  href="#"
-                  title="Toggle Elevation Profile"
-                  aria-label="Toggle Elevation Profile"
-                  onClick={(e) => { e.preventDefault(); onToggleElevationProfile(); }}
-                >
-                  {/* An icon, not the emoji it was: an emoji is drawn by whatever font the machine has */}
-                  <Mountain size={16} aria-hidden className="inline-block align-middle" />
-                </a>
-              </div>
-            </div>
-          )}
-        </MapContainer>
+        colourScale={heat?.scale}
+        colourScaleLabel={heatmap === 'elevation' ? 'Elevation' : 'Speed'}
+        formatValue={(v) => (heatmap === 'elevation' ? `${Math.round(v)} m` : `${Math.round(v * 3.6)} km/h`)}
+        topEnd={
+          onToggleElevationProfile ? (
+            <Toggle
+              label="Elevation profile"
+              icon={Mountain}
+              iconOnly
+              size="sm"
+              pressed={Boolean(showElevationProfile)}
+              onChange={() => onToggleElevationProfile()}
+            />
+          ) : undefined
+        }
+      />
       {showElevationProfile && onSeek && (
         <div style={{ flex: '0 0 auto', height: '120px' }}>
           <ElevationProfile
@@ -286,7 +209,7 @@ export const MapPanel: React.FC<MapPanelProps> = ({
             extraTracks={extraTracks}
             onSeek={onSeek}
             currentTime={currentTime}
-            syncOffset={effectiveTracks[0]?.syncOffset}
+            syncOffset={tracks[0]?.syncOffset}
           />
         </div>
       )}

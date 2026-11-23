@@ -27,7 +27,7 @@ port stands and what it is waiting on: [docs/PORT.md](docs/PORT.md). What change
   mute and lock, per-track volume, view and order in a settings popover, markers, crossfade transitions,
   split, duplicate, ripple delete, keyframes for a clip's properties, a clip's speed, and its
   brightness, contrast and saturation.
-- **Preview**: the clips under the playhead composed live: video, images, text, a Leaflet map of the
+- **Preview**: the clips under the playhead composed live: video, images, text, a map (strata-react `RouteMap`) of the
   GPX track with a moving marker (several tracks, a speed or elevation heatmap, an elevation profile),
   and a data overlay (speed, distance, elevation in chosen units). Transport, seek bar, volume and
   speed below; stage guides and a preview quality setting.

@@ -10,8 +10,3 @@ html, body, #root {
   overflow: hidden;
 }
 
-/* Leaflet sets its own font stack on the map (Helvetica Neue, Arial); the map's attribution and
-   controls use the app's face like everything else. */
-.leaflet-container {
-  font-family: var(--font-sans);
-}

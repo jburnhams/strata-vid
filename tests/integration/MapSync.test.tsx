@@ -3,6 +3,7 @@ import { renderWithStrata } from 'strata-react/testing';
 import React from 'react';
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import App from '../../src/App';
+import { tileUrls } from '../utils/mapProbe';
 import { AssetLoader } from '../../src/services/AssetLoader';
 import { useProjectStore } from '../../src/store/useProjectStore';
 
@@ -148,7 +149,6 @@ describe('Map Sync Integration', () => {
 
         // Verify MapPanel (in Preview) received the prop.
         // The PreviewPanel renders MapPanel.
-        const tileLayer = screen.getByTestId('tile-layer');
-        expect(tileLayer).toHaveAttribute('data-url', expect.stringContaining('arcgisonline'));
+        await waitFor(() => expect(tileUrls()[0]).toContain('arcgisonline'));
     });
 });

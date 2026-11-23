@@ -204,53 +204,6 @@ if (isJSDOM) {
       installMatchMedia();
     });
 
-    // Mock react-leaflet for component tests
-    // Enhanced mock to allow inspecting props via data attributes
-    jest.mock('react-leaflet', () => ({
-      MapContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="map-container">{children}</div>,
-      TileLayer: ({ url }: { url: string }) => <div data-testid="tile-layer" data-url={url} />,
-      Marker: ({ position }: { position: any }) => <div data-testid="marker" data-position={JSON.stringify(position)} />,
-      Popup: ({ children }: { children: React.ReactNode }) => <div data-testid="popup">{children}</div>,
-      GeoJSON: ({ data, style }: { data: any, style: any }) => <div data-testid="geojson" data-style={JSON.stringify(style)} />,
-      useMap: jest.fn(() => {
-        // Create a singleton instance of the map mock to be shared across all calls in a test.
-        const panes = {
-          overlayPane: {
-            appendChild: jest.fn((el) => {
-              // Add a parentNode property to the appended element
-              Object.defineProperty(el, 'parentNode', {
-                value: panes.overlayPane,
-                configurable: true,
-              });
-            }),
-            removeChild: jest.fn(),
-          },
-        };
-        const mapMock: any = {};
-        Object.assign(mapMock, {
-          setView: jest.fn(),
-          flyTo: jest.fn(),
-          fitBounds: jest.fn(),
-          addLayer: jest.fn((layer: any) => { if (layer.onAdd) layer.onAdd(mapMock); }),
-          removeLayer: jest.fn((layer: any) => { if (layer.onRemove) layer.onRemove(mapMock); }),
-          getPanes: () => panes,
-          on: jest.fn(),
-          off: jest.fn(),
-          getBounds: () => ({ getNorthWest: () => ({ lat: 0, lng: 0 }) }),
-          latLngToLayerPoint: () => ({ x: 0, y: 0 }),
-          containerPointToLayerPoint: () => ({ x: 0, y: 0 }),
-          latLngToContainerPoint: () => ({ x: 0, y: 0 }),
-          getSize: () => ({ x: 100, y: 100 }),
-          options: { zoomAnimation: true },
-          // Add these to satisfy HeatmapOverlay usage
-          getZoom: () => 10,
-          getZoomScale: () => 1,
-          _latLngToNewLayerPoint: () => ({ x: 0, y: 0 }),
-        });
-        return mapMock;
-      }),
-    }));
-
     afterEach(() => {
       cleanup();
     });

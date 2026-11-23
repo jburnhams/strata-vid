@@ -52,7 +52,7 @@ features as rows (new IDs continue the letter, or start N).
 | ID | Feature | Status | Notes |
 |---|---|---|---|
 | D1 | Position at a time (binary search, interpolation) | Done | `getGpxPositionAtTime` |
-| D2 | Map clip with track and moving marker | Done | Leaflet; moves to strata-react `RouteMap` once #161 lands. Preview fits the route and ignores the clip's zoom, which export uses |
+| D2 | Map clip with track and moving marker | Done | strata-react `RouteMap` since 2026-11-23: preview holds the runner at the clip's zoom, as export does. Export still draws OSM tiles whatever the clip's map style |
 | D3 | Manual sync | Done | `MapSyncControl`; the number is an absolute GPX time in epoch ms |
 | D4 | Auto-sync from the video's creation time | Done | |
 | D5 | Map styles, track and marker styling | Done | |
@@ -134,7 +134,7 @@ Section I was replaced by M; I's open items (waveforms, volume, export) were don
 | K3 | Data overlay (speed, distance, elevation) | Done | |
 | K4 | Custom map styles | Done | |
 | K5 | Track simplification | Done | |
-| K6 | Speed or elevation heatmap | Done | |
+| K6 | Speed or elevation heatmap | Done | Preview only: the route in four colour steps with a key (RouteMap `values`); export draws the plain route |
 
 ## L. Sharing and cloud
 

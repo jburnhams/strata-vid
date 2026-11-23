@@ -1,130 +1,107 @@
-
 import React from 'react';
-import { render, screen } from '@testing-library/react';
-import { MapPanel } from '../../../src/components/MapPanel';
+import { screen } from '@testing-library/react';
+import { renderWithStrata as render } from 'strata-react/testing';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
+import { MapPanel, heatScale, heatValues, routeLines, tilesFor, type MapTrackData } from '../../../src/components/MapPanel';
 import type { GpxPoint } from '../../../src/types';
 
-// Mock react-leaflet
-jest.mock('react-leaflet', () => ({
-  MapContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="map-container">{children}</div>,
-  TileLayer: ({ url }: { url: string }) => <div data-testid="tile-layer" data-url={url} />,
-  Marker: ({ position }: { position: any }) => <div data-testid="marker" data-position={JSON.stringify(position)} />,
-  Popup: ({ children }: { children: React.ReactNode }) => <div data-testid="popup">{children}</div>,
-  GeoJSON: ({ data, style }: { data: any, style: any }) => <div data-testid="geojson" data-style={JSON.stringify(style)} />,
-  useMap: () => ({
-    fitBounds: jest.fn(),
-  }),
-}));
+// RouteMap itself (strata-react/map) is drawn for real: Leaflet runs in jsdom. These tests check what
+// the clip hands it: one route and one runner per track, held at the clip's zoom, in the clip's tiles.
 
-// Mock getCoordinateAtTime
-jest.mock('../../../src/utils/gpxParser', () => ({
-  getCoordinateAtTime: jest.fn((points, time) => {
-    if (time === 1000) return { lat: 10, lon: 10, ele: 5 };
-    if (time === 2000) return { lat: 20, lon: 20, ele: 15 };
-    return { lat: 15, lon: 15, ele: 10 }; // Interpolated
-  }),
-}));
+const T0 = Date.UTC(2026, 0, 1, 9);
+const run: GpxPoint[] = [
+  { time: T0, lat: 51.5, lon: -0.1, ele: 10 },
+  { time: T0 + 10_000, lat: 51.501, lon: -0.1, ele: 20 },
+  { time: T0 + 20_000, lat: 51.502, lon: -0.1, ele: 30 },
+];
+const ride: GpxPoint[] = run.map((p) => ({ ...p, lon: p.lon + 0.001 }));
+
+const track = (id: string, points: GpxPoint[], extra: Partial<MapTrackData> = {}): MapTrackData => ({
+  id, label: id, gpxPoints: points, ...extra,
+});
+
+const mapOf = () => screen.getByLabelText('Map clip');
+const mapText = () => document.getElementById(mapOf().getAttribute('aria-describedby') ?? '')?.textContent ?? '';
 
 describe('MapPanel', () => {
-  it('renders map container', () => {
-    render(<MapPanel />);
-    expect(screen.getByTestId('map-container')).toBeInTheDocument();
+  it('draws nothing without a track', () => {
+    const { container } = render(<MapPanel tracks={[]} />);
+    expect(container).toBeEmptyDOMElement();
   });
 
-  it('renders default marker when no geoJson provided', () => {
-    render(<MapPanel />);
-    expect(screen.getByTestId('marker')).toBeInTheDocument();
+  it('names each route and says how far along each runner is', () => {
+    render(<MapPanel tracks={[track('Morning run', run), track('Bike', ride)]} currentTime={10} />);
+    const map = mapOf();
+    expect(map).toHaveAccessibleDescription(/Morning run/);
+    expect(map).toHaveAccessibleDescription(/Bike/);
   });
 
-  it('renders GeoJSON when provided', () => {
-    const mockGeoJson = {
-      type: 'FeatureCollection',
-      features: [],
-    };
-    render(<MapPanel geoJson={mockGeoJson as any} />);
-    expect(screen.getByTestId('geojson')).toBeInTheDocument();
-    // Default marker should not be present
-    expect(screen.queryByText('Default Marker')).not.toBeInTheDocument();
+  it('draws one marker per runner', () => {
+    const { container } = render(<MapPanel tracks={[track('a', run), track('b', ride)]} currentTime={5} />);
+    expect(container.querySelectorAll('path.leaflet-interactive, path').length).toBeGreaterThanOrEqual(4);
   });
 
-  it('renders current position marker when gpxPoints are provided', () => {
-    const points: GpxPoint[] = [
-      { time: 1000, lat: 10, lon: 10 },
-      { time: 2000, lat: 20, lon: 20 },
-    ];
-    // currentTime 0, syncOffset 1000 => targetTime 1000 => lat 10, lon 10
-    render(<MapPanel gpxPoints={points} currentTime={0} syncOffset={1000} />);
-
-    const markers = screen.getAllByTestId('marker');
-    expect(markers.length).toBeGreaterThanOrEqual(1);
-
-    const currentPosMarker = markers.find(m => m.getAttribute('data-position') === JSON.stringify([10, 10]));
-    expect(currentPosMarker).toBeInTheDocument();
+  it('turns the elevation profile on and off from the map', async () => {
+    const toggle = jest.fn();
+    render(<MapPanel tracks={[track('a', run)]} onToggleElevationProfile={toggle} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Elevation profile' }));
+    expect(toggle).toHaveBeenCalledTimes(1);
   });
 
-  it('applies styling properties', () => {
-      const mockGeoJson = { type: 'FeatureCollection', features: [] };
-      render(<MapPanel
-          geoJson={mockGeoJson as any}
-          mapStyle="satellite"
-          trackStyle={{ color: 'red', weight: 10, opacity: 0.5 }}
-      />);
+  it('keys the heatmap by speed', () => {
+    render(<MapPanel tracks={[track('a', run)]} heatmap="speed" />);
+    expect(screen.getByText('Speed')).toBeInTheDocument();
+  });
+});
 
-      const tileLayer = screen.getByTestId('tile-layer');
-      expect(tileLayer).toHaveAttribute('data-url', expect.stringContaining('arcgisonline'));
+describe('tilesFor', () => {
+  it('uses the clip style, and OSM for a custom style with no address', () => {
+    expect(tilesFor('satellite').url).toContain('arcgisonline');
+    expect(tilesFor('custom', 'https://t.example/{z}/{x}/{y}.png').url).toBe('https://t.example/{z}/{x}/{y}.png');
+    expect(tilesFor('custom').url).toContain('openstreetmap');
+  });
+});
 
-      const geoJson = screen.getByTestId('geojson');
-      const style = JSON.parse(geoJson.getAttribute('data-style') || '{}');
-      expect(style).toEqual({ color: 'red', weight: 10, opacity: 0.5 });
+describe('heat readings', () => {
+  it('reads speed over the leg into each point, the first taking the first leg', () => {
+    const speeds = heatValues(run, 'speed');
+    expect(speeds).toHaveLength(3);
+    expect(speeds[1]).toBeCloseTo(11.1, 0);
+    expect(speeds[0]).toBe(speeds[1]);
   });
 
-  it('falls back to OSM if mapStyle is invalid', () => {
-      render(<MapPanel mapStyle={'invalid' as any} />);
-      const tileLayer = screen.getByTestId('tile-layer');
-      expect(tileLayer).toHaveAttribute('data-url', expect.stringContaining('openstreetmap'));
+  it('reads elevation as it is', () => {
+    expect(heatValues(run, 'elevation')).toEqual([10, 20, 30]);
   });
 
-  it('renders elevation profile toggle and handles click', () => {
-    const onToggle = jest.fn();
-    render(<MapPanel onToggleElevationProfile={onToggle} />);
-
-    const toggleButton = screen.getByTitle('Toggle Elevation Profile');
-    expect(toggleButton).toBeInTheDocument();
-
-    toggleButton.click();
-    expect(onToggle).toHaveBeenCalledTimes(1);
+  it('steps four colours from the lowest reading to the highest', () => {
+    expect(heatScale([0, 40]).map((s) => s.at)).toEqual([0, 10, 20, 30]);
   });
 
-  it('uses custom map style URL when provided', () => {
-    const customUrl = 'https://my-custom-tile.server/{z}/{x}/{y}.png';
-    render(<MapPanel mapStyle="custom" customMapStyleUrl={customUrl} />);
+  it('has one step when every reading is the same', () => {
+    expect(heatScale([5, 5])).toHaveLength(1);
+  });
+});
 
-    const tileLayer = screen.getByTestId('tile-layer');
-    expect(tileLayer).toHaveAttribute('data-url', customUrl);
+describe('routeLines', () => {
+  const line = (lon: number) => ({ type: 'Feature' as const, properties: {}, geometry: { type: 'LineString' as const, coordinates: [[lon, 51], [lon, 52]] } });
+  const twoTracks = { type: 'FeatureCollection' as const, features: [line(0), line(1)] };
+
+  it('keeps every track in a file, the timed one first', () => {
+    const lines = routeLines({ id: 'a', label: 'a', gpxPoints: run, geoJson: twoTracks });
+    expect(lines).toHaveLength(2);
+    expect(lines[0][0]).toEqual([run[0].lat, run[0].lon]);
+    expect(lines[1]).toEqual([[51, 1], [52, 1]]);
   });
 
-  it('uses dark map style URL', () => {
-    render(<MapPanel mapStyle="dark" />);
-
-    const tileLayer = screen.getByTestId('tile-layer');
-    expect(tileLayer).toHaveAttribute('data-url', expect.stringContaining('cartocdn'));
+  it('draws the file\'s lines when it has no timed points', () => {
+    const multi = { type: 'FeatureCollection' as const, features: [{ type: 'Feature' as const, properties: {}, geometry: { type: 'MultiLineString' as const, coordinates: [[[0, 51], [0, 52]], [[2, 51], [2, 52]]] } }] };
+    expect(routeLines({ id: 'a', label: 'a', geoJson: multi })).toHaveLength(2);
   });
 
-  it('renders multiple GeoJSON layers for multiple tracks', () => {
-    const tracks = [
-      { geoJson: { type: 'FeatureCollection', features: [] }, trackStyle: { color: 'red', weight: 4 } },
-      { geoJson: { type: 'FeatureCollection', features: [] }, trackStyle: { color: 'blue', weight: 2 } },
-      { geoJson: { type: 'FeatureCollection', features: [] }, trackStyle: { color: 'green', weight: 5 } },
-    ];
-    render(<MapPanel tracks={tracks} />);
-
-    const geoJsonElements = screen.getAllByTestId('geojson');
-    expect(geoJsonElements).toHaveLength(3);
-
-    const styles = geoJsonElements.map(el => JSON.parse(el.getAttribute('data-style') || '{}'));
-    expect(styles).toContainEqual({ color: 'red', weight: 4, opacity: 1 });
-    expect(styles).toContainEqual({ color: 'blue', weight: 2, opacity: 1 });
-    expect(styles).toContainEqual({ color: 'green', weight: 5, opacity: 1 });
+  it('names a second track of one file as a part of it', () => {
+    render(<MapPanel tracks={[{ id: 'a', label: 'Ridge', gpxPoints: run, geoJson: twoTracks }]} />);
+    expect(mapText()).toMatch(/Ridge, part 2/);
   });
 });

@@ -15,32 +15,6 @@ global.URL.revokeObjectURL = jest.fn();
 // Mock AssetLoader without factory
 jest.mock('../../src/services/AssetLoader');
 
-// Mock HeatmapOverlay to prevent it from being loaded
-jest.mock('../../src/components/preview/HeatmapOverlay', () => () => <div data-testid="heatmap-overlay-mock" />);
-
-// Mock leaflet completely to avoid JSDOM issues
-jest.mock('leaflet', () => ({
-    icon: jest.fn(),
-    divIcon: jest.fn(),
-    Marker: {
-        prototype: {
-            options: {}
-        }
-    },
-    Map: jest.fn(),
-    TileLayer: jest.fn(),
-}));
-
-// Mock react-leaflet
-jest.mock('react-leaflet', () => ({
-    MapContainer: ({ children }: any) => <div>{children}</div>,
-    TileLayer: () => <div>TileLayer</div>,
-    Marker: () => <div>Marker</div>,
-    Popup: () => <div>Popup</div>,
-    GeoJSON: () => <div>GeoJSON</div>,
-    useMap: () => ({ fitBounds: jest.fn() }),
-}));
-
 describe('Timeline Integration', () => {
   beforeEach(() => {
     jest.clearAllMocks();

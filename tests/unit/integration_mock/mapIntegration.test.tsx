@@ -1,6 +1,8 @@
 
 import React from 'react';
-import { render, screen, act } from '@testing-library/react';
+import { screen, act } from '@testing-library/react';
+import { renderWithStrata as render } from 'strata-react/testing';
+import { showsTileOf } from '../../utils/mapProbe';
 import { MapPanel } from '../../../src/components/MapPanel';
 import { MapSyncControl } from '../../../src/components/MapSyncControl';
 import { useProjectStore } from '../../../src/store/useProjectStore';
@@ -9,18 +11,6 @@ import '@testing-library/jest-dom';
 
 // Import fireEvent for the test
 import { fireEvent } from '@testing-library/react';
-
-// Mock react-leaflet to avoid canvas issues in JSDOM
-jest.mock('react-leaflet', () => ({
-  MapContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="map-container">{children}</div>,
-  TileLayer: () => <div data-testid="tile-layer" />,
-  Marker: ({ position }: { position: any }) => <div data-testid="marker" data-position={JSON.stringify(position)} />,
-  Popup: ({ children }: { children: React.ReactNode }) => <div data-testid="popup">{children}</div>,
-  GeoJSON: ({ data }: { data: any }) => <div data-testid="geojson" />,
-  useMap: () => ({
-    fitBounds: jest.fn(),
-  }),
-}));
 
 // Real store is used, but we need to mock gpxParser because we can't parse real files easily in JSDOM
 // However, we are testing the integration of components with data, so we can just construct data manually.
@@ -79,35 +69,24 @@ describe('Map Integration', () => {
     // Point at 1000ms is (10, 10).
 
     const { rerender } = render(
-      <MapPanel
-        gpxPoints={asset.gpxPoints}
-        currentTime={0}
-        syncOffset={0}
-      />
+      <MapPanel tracks={[{ id: 'asset-1', label: 'test.gpx', gpxPoints: asset.gpxPoints, syncOffset: 0 }]} currentTime={0} />
     );
 
-    let markers = screen.getAllByTestId('marker');
-    // Find the marker with correct position
-    let marker = markers.find(m => m.getAttribute('data-position') === JSON.stringify([10, 10]));
-    expect(marker).toBeInTheDocument();
+    expect(showsTileOf(10, 10)).toBe(true);
 
     // Move time to 1s (Video Time).
     // TargetTime = 1000ms (Base) + 1000ms (Video) = 2000ms.
     // Point at 2000ms is (20, 20).
-    rerender(<MapPanel gpxPoints={asset.gpxPoints} currentTime={1} syncOffset={0} />);
+    rerender(<MapPanel tracks={[{ id: 'asset-1', label: 'test.gpx', gpxPoints: asset.gpxPoints, syncOffset: 0 }]} currentTime={1} />);
 
-    markers = screen.getAllByTestId('marker');
-    marker = markers.find(m => m.getAttribute('data-position') === JSON.stringify([20, 20]));
-    expect(marker).toBeInTheDocument();
+    expect(showsTileOf(20, 20)).toBe(true);
 
     // Move time to 2s.
     // TargetTime = 1000ms (Base) + 2000ms (Video) = 3000ms.
     // Point at 3000ms is (30, 30).
-    rerender(<MapPanel gpxPoints={asset.gpxPoints} currentTime={2} syncOffset={0} />);
+    rerender(<MapPanel tracks={[{ id: 'asset-1', label: 'test.gpx', gpxPoints: asset.gpxPoints, syncOffset: 0 }]} currentTime={2} />);
 
-    markers = screen.getAllByTestId('marker');
-    marker = markers.find(m => m.getAttribute('data-position') === JSON.stringify([30, 30]));
-    expect(marker).toBeInTheDocument();
+    expect(showsTileOf(30, 30)).toBe(true);
 
     // Now, let's change the Sync Offset using the Control.
     render(<MapSyncControl clipId="clip-1" />);
@@ -130,14 +109,8 @@ describe('Map Integration', () => {
     // BaseTime = 2000ms.
     // TargetTime = 2000ms + 1000ms = 3000ms.
     // Point at 3000ms is (30, 30).
-    rerender(<MapPanel gpxPoints={asset.gpxPoints} currentTime={1} syncOffset={newOffset} />);
+    rerender(<MapPanel tracks={[{ id: 'asset-1', label: 'test.gpx', gpxPoints: asset.gpxPoints, syncOffset: newOffset }]} currentTime={1} />);
 
-    markers = screen.getAllByTestId('marker');
-    marker = markers.find(m => m.getAttribute('data-position') === JSON.stringify([30, 30]));
-
-    if (!marker) {
-       console.log('Markers found:', markers.map(m => m.getAttribute('data-position')));
-    }
-    expect(marker).toBeInTheDocument();
+    expect(showsTileOf(30, 30)).toBe(true);
   });
 });

@@ -13,7 +13,6 @@ import { ExportModal } from './components/ExportModal';
 import { HelpModal } from './components/HelpModal';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { ToastContainer } from './components/Toast';
-import { LoadingOverlay } from './components/LoadingOverlay';
 import { handleError, showSuccess } from './utils/errorHandler';
 import { useAutoSave } from './hooks/useAutoSave';
 import { useDocumentHistory } from './hooks/useDocumentHistory';
@@ -218,7 +217,6 @@ function App() {
           />
           <CommandMenu commands={commands} />
           <ToastContainer />
-          <LoadingOverlay />
 
         </div>
   );

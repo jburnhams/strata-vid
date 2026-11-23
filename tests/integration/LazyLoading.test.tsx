@@ -54,16 +54,6 @@ jest.mock('worker-timers', () => ({
 }));
 
 
-// Mock react-leaflet
-jest.mock('react-leaflet', () => ({
-    MapContainer: ({ children }: any) => <div>{children}</div>,
-    TileLayer: () => <div>TileLayer</div>,
-    Marker: () => <div>Marker</div>,
-    Popup: () => <div>Popup</div>,
-    GeoJSON: () => <div>GeoJSON</div>,
-    useMap: () => ({ fitBounds: jest.fn(), removeLayer: jest.fn() }),
-}));
-
 describe('App Integration - Lazy Asset Loading', () => {
     beforeEach(() => {
         jest.clearAllMocks();

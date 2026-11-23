@@ -35,8 +35,6 @@ const resetStore = () => {
             previewQuality: 'medium', snapToGrid: true, allowOverlaps: false
         },
         toasts: [],
-        isLoading: false,
-        loadingMessage: null
     });
 };
 

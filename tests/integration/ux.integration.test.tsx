@@ -31,13 +31,11 @@ describe('UX Integration Flow', () => {
             trackOrder: [],
             selectedAssetId: null,
             toasts: [],
-            isLoading: false,
             currentTime: 0,
             isPlaying: false,
             playbackRate: 1,
             settings: { width: 1920, height: 1080, fps: 30, duration: 60 },
             id: 'test-project',
-            loadingMessage: null
         });
     });
 

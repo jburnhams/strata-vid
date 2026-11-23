@@ -44,14 +44,20 @@ was removed from `package.json` on 2026-11-12 (Jonathan's yes).
   a lane (a native drag from the row; the keyboard keeps "Add to timeline"), refused with a reason over a
   lane that cannot take them; lanes are two rows high; each kind's stripe is the library's media colour.
 
+## Swapped on 2026-11-23
+
+- [#80](https://github.com/jburnhams/strata-react/issues/80) and [#161](https://github.com/jburnhams/strata-react/issues/161)
+  Map: the map clip is `RouteMap` from `strata-react/map` (1.2.0). It is held centred on the first route's
+  runner at the clip's zoom (`follow="centre"`, `zoom`), with one marker per route in its marker colour
+  (`positions`), so preview and export draw the same view. The heatmap is the route's `values` with a
+  `colourScale` and key; the elevation profile's toggle is a `Toggle` in the map's `topEnd` slot.
+  `react-leaflet`, `HeatmapOverlay` and Leaflet's stylesheet import are gone (RouteMap brings its own).
+
 ## Waiting on strata-react again
 
-- [#80](https://github.com/jburnhams/strata-react/issues/80) Map is closed, but `RouteMap` cannot yet draw
-  the map clip as the export does: it fits the route instead of holding the clip's zoom on the runner, and
-  has one position, where a clip with extra tracks shows one marker per track in its colour. Filed as
-  [strata-react #161](https://github.com/jburnhams/strata-react/issues/161); the preview keeps its Leaflet
-  panel until then. Found on the way: preview and export already disagree here (preview fits the route
-  and ignores the zoom; export centres on the runner at the zoom), which the swap will end.
+- [#286](https://github.com/jburnhams/strata-react/issues/286) A drag source: library rows drag onto a lane
+  by pointer only (native drag); from the keyboard the way is still "Add to timeline". Jonathan chose on
+  2026-11-23 to build the drag source in strata-react rather than import `react-aria` here.
 
 ## Closed in strata-react, to swap here
 

@@ -80,12 +80,9 @@ describe('projectSerializer', () => {
     loadProject: jest.fn(),
     updateClipProperties: jest.fn(),
     selectClip: jest.fn(),
-    setLoading: jest.fn(),
     addToast: jest.fn(),
     removeToast: jest.fn(),
     toasts: [],
-    isLoading: false,
-    loadingMessage: null,
   };
 
   describe('serializeProject', () => {

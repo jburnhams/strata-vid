@@ -8,14 +8,6 @@ import { AssetLoader } from '../../src/services/AssetLoader';
 import type { Asset } from '../../src/types';
 
 jest.mock('../../src/services/AssetLoader');
-jest.mock('react-leaflet', () => ({
-  MapContainer: ({ children }: any) => <div>MapContainer{children}</div>,
-  TileLayer: () => <div>TileLayer</div>,
-  Marker: () => <div>Marker</div>,
-  Popup: () => <div>Popup</div>,
-  useMap: () => ({ setView: jest.fn(), fitBounds: jest.fn() }),
-}));
-
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
   observe() {}

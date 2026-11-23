@@ -100,7 +100,7 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
                 onReset={() => updateClip(activeClip.id, { volume: 1 })}
               >
                 <NumberField min={0} max={500} unit="%" value={Math.round((activeClip.volume ?? 1.0) * 100)}
-                  onChange={(v) => v !== null && updateClip(activeClip.id, { volume: v / 100 })} />
+                  onChange={(v) => { if (v !== null) updateClip(activeClip.id, { volume: v / 100 }); }} />
               </PropertyRow>
             </InspectorSection>
           )}
@@ -251,7 +251,7 @@ export const MetadataPanel: React.FC<MetadataPanelProps> = ({ assets, selectedAs
               <InspectorSection id="text-style" title="Text style">
                 <PropertyRow label="Font size">
                   <NumberField min={6} max={200} unit="px" value={activeClip.textStyle?.fontSize || 16}
-                    onChange={(v) => v !== null && updateClipProperties(activeClip.id, { textStyle: { ...activeClip.textStyle, fontSize: v } })} />
+                    onChange={(v) => { if (v !== null) updateClipProperties(activeClip.id, { textStyle: { ...activeClip.textStyle, fontSize: v } }); }} />
                 </PropertyRow>
                 <PropertyRow label="Text colour">
                   <ColorField aria-label="Text colour" value={activeClip.textStyle?.color || '#ffffff'} against={activeClip.textStyle?.backgroundColor || '#000000'} againstLabel="its background"

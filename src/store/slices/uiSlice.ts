@@ -7,15 +7,8 @@ export const createUiSlice: StateCreator<
   [],
   UiSlice
 > = (set) => ({
-  isLoading: false,
-  loadingMessage: null,
   toasts: [],
   zoomLevel: 10,
-  setLoading: (isLoading, message = null) =>
-    set((state) => {
-      state.isLoading = isLoading;
-      state.loadingMessage = message;
-    }),
   addToast: (message, type = 'info', duration = 3000) =>
     set((state) => {
       state.toasts.push({

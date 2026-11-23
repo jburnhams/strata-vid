@@ -28,7 +28,6 @@ describe('Integration: Help System', () => {
       tracks: {},
       clips: {},
       toasts: [],
-      isLoading: false
     });
   });
 

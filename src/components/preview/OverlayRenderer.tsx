@@ -147,7 +147,8 @@ export const OverlayRenderer: React.FC<OverlayRendererProps> = ({ clip, asset, c
                 mapStyle={clip.properties.mapStyle}
                 customMapStyleUrl={clip.properties.customMapStyleUrl}
                 zoom={mapZoom}
-                heatmap={clip.properties.heatmap?.enabled ? clip.properties.heatmap.dataSource : undefined}
+                // The inspector shows Speed until another reading is chosen, so no reading means speed.
+                heatmap={clip.properties.heatmap?.enabled ? clip.properties.heatmap.dataSource ?? 'speed' : undefined}
                 showElevationProfile={clip.properties.showElevationProfile}
                 onToggleElevationProfile={onToggleElevationProfile}
                 onSeek={onSeek}

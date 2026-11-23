@@ -3,7 +3,7 @@ import { screen } from '@testing-library/react';
 import { renderWithStrata as render } from 'strata-react/testing';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
-import { MapPanel, heatScale, heatValues, tilesFor, type MapTrackData } from '../../../src/components/MapPanel';
+import { MapPanel, heatScale, heatValues, routeLines, tilesFor, type MapTrackData } from '../../../src/components/MapPanel';
 import type { GpxPoint } from '../../../src/types';
 
 // RouteMap itself (strata-react/map) is drawn for real: Leaflet runs in jsdom. These tests check what
@@ -22,6 +22,7 @@ const track = (id: string, points: GpxPoint[], extra: Partial<MapTrackData> = {}
 });
 
 const mapOf = () => screen.getByLabelText('Map clip');
+const mapText = () => document.getElementById(mapOf().getAttribute('aria-describedby') ?? '')?.textContent ?? '';
 
 describe('MapPanel', () => {
   it('draws nothing without a track', () => {
@@ -80,5 +81,27 @@ describe('heat readings', () => {
 
   it('has one step when every reading is the same', () => {
     expect(heatScale([5, 5])).toHaveLength(1);
+  });
+});
+
+describe('routeLines', () => {
+  const line = (lon: number) => ({ type: 'Feature' as const, properties: {}, geometry: { type: 'LineString' as const, coordinates: [[lon, 51], [lon, 52]] } });
+  const twoTracks = { type: 'FeatureCollection' as const, features: [line(0), line(1)] };
+
+  it('keeps every track in a file, the timed one first', () => {
+    const lines = routeLines({ id: 'a', label: 'a', gpxPoints: run, geoJson: twoTracks });
+    expect(lines).toHaveLength(2);
+    expect(lines[0][0]).toEqual([run[0].lat, run[0].lon]);
+    expect(lines[1]).toEqual([[51, 1], [52, 1]]);
+  });
+
+  it('draws the file\'s lines when it has no timed points', () => {
+    const multi = { type: 'FeatureCollection' as const, features: [{ type: 'Feature' as const, properties: {}, geometry: { type: 'MultiLineString' as const, coordinates: [[[0, 51], [0, 52]], [[2, 51], [2, 52]]] } }] };
+    expect(routeLines({ id: 'a', label: 'a', geoJson: multi })).toHaveLength(2);
+  });
+
+  it('names a second track of one file as a part of it', () => {
+    render(<MapPanel tracks={[{ id: 'a', label: 'Ridge', gpxPoints: run, geoJson: twoTracks }]} />);
+    expect(mapText()).toMatch(/Ridge, part 2/);
   });
 });

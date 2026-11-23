@@ -83,11 +83,28 @@ const DEFAULT_ROUTE_COLOUR = '#007acc';
 const DEFAULT_MARKER_COLOUR = 'red';
 const HEAT_COLOURS = ['#0000ff', '#00ff00', '#ffff00', '#ff0000'];
 
-function pointsOf(track: MapTrackData): [number, number][] {
-  if (track.gpxPoints?.length) return track.gpxPoints.map((p) => [p.lat, p.lon]);
-  const line = track.geoJson?.features.find((f) => f.geometry.type === 'LineString')?.geometry;
-  if (line?.type !== 'LineString') return [];
-  return line.coordinates.map(([lon, lat]) => [lat, lon]);
+type Line = [number, number][];
+
+/** Every line in a file's GeoJSON (a file can hold several tracks), as [lat, lon] points. */
+export function linesOf(geoJson: MapTrackData['geoJson']): Line[] {
+  const lines: Line[] = [];
+  for (const feature of geoJson?.features ?? []) {
+    const g = feature.geometry;
+    if (g?.type === 'LineString') lines.push(g.coordinates.map(([lon, lat]) => [lat, lon]));
+    else if (g?.type === 'MultiLineString') g.coordinates.forEach((part) => lines.push(part.map(([lon, lat]) => [lat, lon])));
+  }
+  return lines;
+}
+
+/**
+ * A file's lines: the first is its timed track (`gpxPoints`, which the runner follows and the heatmap
+ * colours) when there is one, and every other line in the file follows it. The old Leaflet panel drew
+ * the whole GeoJSON, so a file with several tracks keeps them all.
+ */
+export function routeLines(track: MapTrackData): Line[] {
+  const lines = linesOf(track.geoJson);
+  if (!track.gpxPoints?.length) return lines;
+  return [track.gpxPoints.map((p) => [p.lat, p.lon]), ...lines.slice(1)];
 }
 
 /** One reading per point: speed in m/s over the leg into it (the first point takes the first leg's), or elevation in metres. */
@@ -142,16 +159,19 @@ export const MapPanel: React.FC<MapPanelProps> = ({
   // Rebuilt only when the tracks or their styles change, never as the runner moves.
   const routes = useMemo<MapRoute[]>(
     () =>
-      tracks.map((track, i) => ({
-        id: track.id,
-        label: track.label,
-        points: pointsOf(track),
-        colour: track.trackStyle?.color || DEFAULT_ROUTE_COLOUR,
-        weight: track.trackStyle?.weight || 4,
-        arrows: false,
-        ends: false,
-        ...(i === 0 && heat ? { values: heat.values } : {}),
-      })),
+      tracks.flatMap((track, i) =>
+        routeLines(track).map((points, n) => ({
+          // The first line keeps the track's id, so its runner (`routeId`) is on it.
+          id: n === 0 ? track.id : `${track.id}:${n}`,
+          label: n === 0 ? track.label : `${track.label}, part ${n + 1}`,
+          points,
+          colour: track.trackStyle?.color || DEFAULT_ROUTE_COLOUR,
+          weight: track.trackStyle?.weight || 4,
+          arrows: false,
+          ends: false,
+          ...(i === 0 && n === 0 && heat ? { values: heat.values } : {}),
+        })),
+      ),
     [tracks, heat],
   );
 

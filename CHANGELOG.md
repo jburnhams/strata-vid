@@ -37,6 +37,11 @@ swap left waiting, on strata-react#161, which has landed; this is that swap, wit
 - `docs/PORT.md`, `docs/FEATURES.md`, `docs/ARCHITECTURE.md`, `README.md`: updated. Two known gaps remain
   between preview and export: export draws OSM tiles whatever the style, and draws no heatmap.
 
+**Map review fixes** (branch `claude/project-thread-3drc3w`, PR #153). Two findings from the automated review of the RouteMap swap. Both were real regressions from the old panel.
+- `src/components/MapPanel.tsx`: a GPX file with several tracks keeps all of them. The first is the timed track the runner follows, and the rest come from the file's GeoJSON, named "<file>, part 2". The swap had drawn only the first. The export still draws only the first.
+- `src/components/preview/OverlayRenderer.tsx`: a heatmap switched on before a reading was chosen colours by speed, which is what the inspector shows. The swap had treated it as off.
+- Tests: `tests/unit/components/MapPanel.test.tsx` (`routeLines`), `tests/integration/Heatmap.test.tsx` (a heatmap with no reading chosen, which fails without the fix).
+
 **Remove the loading overlay nothing showed** (branch `claude/project-thread-3drc3w`).
 Found while checking whether strata-react's `useClientWork` and `JobStatus` should replace it: nothing ever
 called `setLoading`, so the overlay was never drawn. Each file's loading is shown in its library row.

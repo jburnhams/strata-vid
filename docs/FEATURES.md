@@ -35,7 +35,7 @@ features as rows (new IDs continue the letter, or start N).
 | B7b | Multi-select (Shift/Ctrl-click) | Dropped | A run edit has a handful of clips; the store keeps one `selectedClipId` |
 | B8 | Zoom, scroll, zoom to fit | Done | `TimelineZoomControls` |
 | B8b | Zoom anchored to the pointer | Dropped here | Zoom belongs to strata-react's `Timeline`; raise it there if wanted |
-| — | Drag a file from the library onto a lane | Done | Back on 2026-11-12 through strata-react #121's drops from outside; refused with a reason over a locked track or the wrong kind of track. Pointer only; the keyboard uses "Add to timeline" |
+| — | Drag a file from the library onto a lane | Done | Back on 2026-11-12 through strata-react #121's drops from outside; refused with a reason over a locked track or the wrong kind of track. By pointer or, since 2026-11-23, from the keyboard with the row's grip (strata-react `DragSource`) |
 
 ## C. Preview rendering
 
